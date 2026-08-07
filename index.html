@@ -614,15 +614,6 @@ tbody tr td:first-child{font-weight:700; color:var(--v-ink-900);}
    políticas de RLS já criadas pelo veros_flow_schema.sql.
    ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
-const SUPABASE_URL = 'https://sdpwhompowjhoijrczxy.supabase.co'; // URL base (sem /rest/v1/)
-const SUPABASE_ANON_KEY = 'sb_publishable__8nOKMvimCa1rVrfQrr0Ng_1_ejBWvH'; // Sua publishable key
-const SUPABASE_STORAGE_BUCKET = 'anexos-veros-flow'; // Mantenha o nome do bucket que você criou no Storage
-
-const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
-const supabase = SUPABASE_CONFIGURED
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-/* ------------------------------------------------------------------------ */
 const SUPABASE_URL = 'https://sdpwhompowjhoijrczxy.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__8nOKMvimCa1rVrfQrr0Ng_1_ejBWvH';
 const SUPABASE_STORAGE_BUCKET = 'anexos-veros-flow';
