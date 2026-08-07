@@ -2236,5 +2236,123 @@ const Render = {
 
 App.init();
 </script>
+
+<script>
+/* VEROS_FLOW_PERSISTENCE_PATCH_V1 */
+(function(){
+  const originalOpenCadModal = Render.openCadModal;
+
+  Data.saveUsuarioPerfil = async function(id, data){
+    Data.requireConfig();
+    const { data: result, error } = await supabaseClient.functions.invoke('manage-user', {
+      body:{
+        action:id ? 'update' : 'create',
+        user_id:id || null,
+        data:{nome:data.nome,email:data.email,perfil:data.perfil,unidade:data.unidade || null,telefone:data.telefone || null,status:data.status || 'Ativo',senha:data.senha || ''}
+      }
+    });
+    if(error) throw new Error(error.message || 'Falha ao chamar o serviço de usuários.');
+    if(result && result.error) throw new Error(result.error);
+    return result;
+  };
+
+  Render.openCadModal = function(tab, id){
+    if(tab==='usuarios'){
+      const u = id ? DB.usuarios.find(x=>x.id===id) : {nome:'',email:'',perfil:'RC',unidade:DB.unidades[0]?.id || '',telefone:'',status:'Ativo',senha:''};
+      Modal.open(id?'Editar usuário':'Novo usuário', `
+        <div class="form-grid">
+          <div class="field full"><label>Nome *</label><input id="cm_nome" value="${U.esc(u.nome || '')}"></div>
+          <div class="field full"><label>E-mail *</label><input id="cm_email" type="email" value="${U.esc(u.email || '')}"></div>
+          <div class="field"><label>Perfil *</label><select id="cm_perfil">${DB.perfis.map(p=>`<option value="${p.id}" ${p.id===u.perfil?'selected':''}>${p.nome}</option>`).join('')}</select></div>
+          <div class="field"><label>Unidade *</label><select id="cm_unidade"><option value="">Selecione</option>${DB.unidades.map(un=>`<option value="${un.id}" ${un.id===u.unidade?'selected':''}>${U.esc(un.nome)}</option>`).join('')}</select></div>
+          <div class="field"><label>Telefone</label><input id="cm_tel" value="${U.esc(u.telefone || '')}"></div>
+          <div class="field"><label>Status</label><select id="cm_status"><option ${u.status==='Ativo'?'selected':''}>Ativo</option><option ${u.status==='Inativo'?'selected':''}>Inativo</option></select></div>
+          <div class="field full"><label>${id?'Nova senha (opcional)':'Senha inicial *'}</label><input id="cm_senha" type="password" value=""></div>
+          <div class="field full"><div class="field-hint">A senha nunca é salva na tabela pública. Ela é criada/alterada com segurança no Supabase Auth.</div></div>
+        </div>`,[
+          {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
+          {label:'Salvar',cls:'btn-primary',onClick:async function(){
+            const btn=this;
+            const data={
+              nome:document.getElementById('cm_nome').value.trim(),
+              cmail:document.getElementById('cm_email').value.trim(),
+              perfil:document.getElementById('cm_perfil').value,
+              unidade:document.getElementById('cm_unidade').value || null,
+              telefone:document.getElementById('cm_tel').value.trim(),
+              status:document.getElementById('cm_status').value,
+              senha:document.getElementById('cm_senha').value
+            };
+            if(!data.nome || !data.email){App.toast('Campos obrigatórios','Preencha nome e e-mail.','err');return;}
+            if(!id && data.senha.length<6){App.toast('Senha inválida','A senha inicial deve ter pelo menos 6 caracteres.','err');return;}
+            if(!data.unidade){App.toast('Unidade obrigatória','Selecione a unidade do usuário.','err');return;}
+            btn.disabled=true;btn.textContent='Salvando...';
+            try{
+              await Data.saveUsuarioPerfil(id,data);
+              await Data.loadUsuarios();
+              Modal.close();
+              App.toast(id?'Usuário atualizado':'Usuário criado','Cadastro salvo no Supabase Auth e no banco.','ok');
+              Render.renderCadTable();
+            }catch(err){
+              console.error('[VerOS Flow] Erro ao salvar usuário:',err);
+              App.toast('Não foi possível salvar',err.message || 'Verifique o Supabase.','err');
+            }finally{btn.disabled=false;btn.textContent='Salvar';}
+          }}
+        ]);
+      return;
+    }
+
+    if(tab==='unidades'){
+      const u=id ? DB.unidades.find(x=>x.id===id) : {codigo:'',nome:'',cidade:'',uf:'',status:'Ativo'};
+      Modal.open(id?'Editar unidade':'Nova unidade',`
+        <div class="form-grid">
+          <div class="field"><label>Código *</label><input id="cm_codigo" value="${U.esc(u.codigo || '')}"></div>
+          <div class="field"><label>Nome *</label><input id="cm_nome" value="${U.esc(u.nome || '')}"></div>
+          <div class="field"><label>Cidade *</label><input id="cm_cidade" value="${U.esc(u.cidade || '')}"></div>
+          <div class="field"><label>UF *</label><input id="cm_uf" maxlength="2" value="${U.esc(u.uf || '')}"></div>
+          <div class="field full"><label>Status</label><select id="cm_status"><option ${u.status==='Ativo'?'selected':''}>Ativo</option><option ${u.status==='Inativo'?'selected':''}>Inativo</option></select></div>
+        </div>`,[
+          {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
+          {label:'Salvar',cls:'btn-primary',onClick:async function({
+            const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),nome:document.getElementById('cm_nome').value.trim(),cidade:document.getElementById('cm_cidade').value.trim(),uf:document.getElementById('cm_uf').value.toUpperCase().trim(),status:document.getElementById('cm_status').value};
+            if(!data.codigo||!data.nome||!data.cidade||!data.uf){App.toast('Campos obrigatïrios','Preencha os dados da unidade.','ers');return;}
+            btn.disabled=true;btn.textContent='Salvando...';
+            try{await Data.saveUnidade(id,data);await Data.loadCadastros();Modal.close();App.toast(id?'Unidade atualizada':'Unidade criada','Cadastro salvo no Supabase.','ok');Render.renderCadTable();}catch(err){console.error('[VerOS Flow] Erro ao salvar unidade:',err);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
+            finally{btn.disabled=false;btn.textContent='Salvar';}
+          }}
+        ]);
+      return;
+    }
+
+    if(tab==='produtos'){
+      const p=id ? DB.produtos.find(x=>x.id===id) : {codigo:'',cultura:'',variedade:'',tratamento:'',tamanhoSc:'',peso:'',status:'Ativo'};
+      Modal.open(id?'Editar produto':'Novo produto',`
+        <div class="form-grid">
+          <div class="field"><label>Código *</label><input id="cm_codigo" value="${U.esc(p.codigo || '')}"></div>
+          <div class="field"><label>Cultura *</label><input id="cm_cultura" value="${U.esc(p.cultura || '')}"></div>
+          <div class="field"><label>Variedade *</label><input id="cm_variedade" value="${U.esc(p.variedade || '')}"></div>
+          <div class="field"><label>Tratamento</label><input id="cm_trat" value="${U.esc(p.tratamento || '')}"></div>
+          <div class="field"><label>Tamanho SC</label><input id="cm_tam" value="${U.esc(p.tamanhoSc || '')}"></div>
+          <div class="field"><label>Peso (kg)</label><input id="cm_peso" value="${U.esc(p.peso || '')}"></div>
+          <div class="field full"><label>Status</label><select id="cm_status"><option ${p.status==='Ativo'?'selected':''}>Ativo</option><option ${p.status==='Inativo'?'selected':''}>Inativo</option></select></div>
+          </div>`,[
+            {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
+            {label:'Salvar',cls:'btn-primary',onClick:async function(){
+            const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),cultura:document.getElementById('cm_cultura').value.trim(),variedade:Document.getElementById('cm_variedade').value.trim(),tratamento:document.getElementById('cm_trat').value.trim(),tamanhoSc:document.getElementById('cm_tam').value.trim(),peso:Document.getElementById('cm_peso').value.trim(),status:document.getElementById('cm_status').value};
+            const needs=!data.codigo||!data.cultura||!data.variedade;
+            if(needs){App.toast('Campos obrigatórios','Preencha código, cultura e variaedade','err');return;}
+            btn.disabled=true;btn.textContent='Salvando...';
+            try{await Data.saveProduto(id,data);await Data.loadCadastros();Modal.close();App.toast(id?'Produto atualizado':'Produto criado','Cadastro salvo no Supabase.','ok');Render.renderCadTable();}
+            catch(err){console.error('[VerOS Flow] Erro ao salvar produto:',w);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
+            finally{btn.disabled=false;btn.textContent='Salvar';}
+          }}
+        ]);
+      return;
+    }
+
+    originalOpenCadModal.call(Render,tab,id);
+  };
+})();
+
+</script>
 </body>
 </html>
