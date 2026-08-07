@@ -1,0 +1,1 @@
+Ativação do patch de sincronização de usuários com o Supabase.
