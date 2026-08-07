@@ -5,8 +5,128 @@
   const url='https://raw.githubusercontent.com/vitoriafariacorporativo-lgtm/verosflow/b0622bee9f2d5e2bf9df8c68494f2ef7437612ec/index.html';
   const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('Falha ao carregar a versão base: '+r.status);
   let html=await r.text();
-  html=html.replace('</body>','<script src="https://vitoriafariacorporativo-lgtm.github.io/verosflow/user-sync.js"></script></body>');
+  html=html.replace('<script>
+/* VEROS_FLOW_USER_SYNC_FIX_V1 */
+(function(){
+  if (typeof Data === 'undefined') return;
+
+  const originalLoadCadastros = Data.loadCadastros.bind(Data);
+  Data.loadCadastros = async function(){
+    await originalLoadCadastros();
+    try { await Data.loadUsuarios(); }
+    catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
+  };
+
+  if (typeof Data.saveUsuarioPerfil === 'function') {
+    const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
+    Data.saveUsuarioPerfil = async function(id, data){
+      const result = await originalSaveUsuarioPerfil(id, data);
+      await Data.loadUsuarios();
+      if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+        const el = document.getElementById('cadContent');
+        if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
+      }
+      return result;
+    };
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(async function(){
+      try {
+        if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
+          await Data.loadUsuarios();
+          if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+            const el = document.getElementById('cadContent');
+            if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
+          }
+        }
+      } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
+    }, 300);
+  });
+})();
+</script>
+</body>','<script src="https://vitoriafariacorporativo-lgtm.github.io/verosflow/user-sync.js"></script><script>
+/* VEROS_FLOW_USER_SYNC_FIX_V1 */
+(function(){
+  if (typeof Data === 'undefined') return;
+
+  const originalLoadCadastros = Data.loadCadastros.bind(Data);
+  Data.loadCadastros = async function(){
+    await originalLoadCadastros();
+    try { await Data.loadUsuarios(); }
+    catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
+  };
+
+  if (typeof Data.saveUsuarioPerfil === 'function') {
+    const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
+    Data.saveUsuarioPerfil = async function(id, data){
+      const result = await originalSaveUsuarioPerfil(id, data);
+      await Data.loadUsuarios();
+      if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+        const el = document.getElementById('cadContent');
+        if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
+      }
+      return result;
+    };
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(async function(){
+      try {
+        if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
+          await Data.loadUsuarios();
+          if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+            const el = document.getElementById('cadContent');
+            if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
+          }
+        }
+      } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
+    }, 300);
+  });
+})();
+</script>
+</body>');
   document.open(); document.write(html); document.close();
  }catch(e){document.body.innerHTML='<pre style="font-family:monospace;white-space:pre-wrap;padding:30px">Erro ao carregar o VerOS Flow: '+String(e.message||e)+'</pre>';}
 })();
-</script></body></html>
+</script><script>
+/* VEROS_FLOW_USER_SYNC_FIX_V1 */
+(function(){
+  if (typeof Data === 'undefined') return;
+
+  const originalLoadCadastros = Data.loadCadastros.bind(Data);
+  Data.loadCadastros = async function(){
+    await originalLoadCadastros();
+    try { await Data.loadUsuarios(); }
+    catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
+  };
+
+  if (typeof Data.saveUsuarioPerfil === 'function') {
+    const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
+    Data.saveUsuarioPerfil = async function(id, data){
+      const result = await originalSaveUsuarioPerfil(id, data);
+      await Data.loadUsuarios();
+      if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+        const el = document.getElementById('cadContent');
+        if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
+      }
+      return result;
+    };
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(async function(){
+      try {
+        if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
+          await Data.loadUsuarios();
+          if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+            const el = document.getElementById('cadContent');
+            if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
+          }
+        }
+      } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
+    }, 300);
+  });
+})();
+</script>
+</body></html>
