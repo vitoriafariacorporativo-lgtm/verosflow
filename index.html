@@ -2312,7 +2312,7 @@ App.init();
           <div class="field full"><label>Status</label><select id="cm_status"><option ${u.status==='Ativo'?'selected':''}>Ativo</option><option ${u.status==='Inativo'?'selected':''}>Inativo</option></select></div>
         </div>`,[
           {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
-          {label:'Salvar',cls:'btn-primary',onClick:async function({
+          {label:'Salvar',cls:'btn-primary',onClick:async function(){
             const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),nome:document.getElementById('cm_nome').value.trim(),cidade:document.getElementById('cm_cidade').value.trim(),uf:document.getElementById('cm_uf').value.toUpperCase().trim(),status:document.getElementById('cm_status').value};
             if(!data.codigo||!data.nome||!data.cidade||!data.uf){App.toast('Campos obrigatïrios','Preencha os dados da unidade.','ers');return;}
             btn.disabled=true;btn.textContent='Salvando...';
@@ -2337,12 +2337,12 @@ App.init();
           </div>`,[
             {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
             {label:'Salvar',cls:'btn-primary',onClick:async function(){
-            const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),cultura:document.getElementById('cm_cultura').value.trim(),variedade:Document.getElementById('cm_variedade').value.trim(),tratamento:document.getElementById('cm_trat').value.trim(),tamanhoSc:document.getElementById('cm_tam').value.trim(),peso:Document.getElementById('cm_peso').value.trim(),status:document.getElementById('cm_status').value};
+            const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),cultura:document.getElementById('cm_cultura').value.trim(),variedade:document.getElementById('cm_variedade').value.trim(),tratamento:document.getElementById('cm_trat').value.trim(),tamanhoSc:document.getElementById('cm_tam').value.trim(),peso:document.getElementById('cm_peso').value.trim(),status:document.getElementById('cm_status').value};
             const needs=!data.codigo||!data.cultura||!data.variedade;
-            if(needs){App.toast('Campos obrigatórios','Preencha código, cultura e variaedade','err');return;}
+            if(needs){App.toast('Campos obrigatórios','Preencha código, cultura e variedade','err');return;}
             btn.disabled=true;btn.textContent='Salvando...';
             try{await Data.saveProduto(id,data);await Data.loadCadastros();Modal.close();App.toast(id?'Produto atualizado':'Produto criado','Cadastro salvo no Supabase.','ok');Render.renderCadTable();}
-            catch(err){console.error('[VerOS Flow] Erro ao salvar produto:',w);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
+            catch(err){console.error('[VerOS Flow] Erro ao salvar produto:',err);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
             finally{btn.disabled=false;btn.textContent='Salvar';}
           }}
         ]);
