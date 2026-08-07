@@ -21,11 +21,11 @@ jobs:
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
+          changed = False
+
           marker = '/* VEROS_FLOW_USER_SYNC_FIX_V1 */'
-          if marker in s:
-              print('Patch already present')
-              raise SystemExit(0)
-          patch = r'''<script>
+          if marker not in s:
+              patch = r'''<script>
           /* VEROS_FLOW_USER_SYNC_FIX_V1 */
           (function(){
             if (typeof Data === 'undefined') return;
@@ -65,8 +65,26 @@ jobs:
             });
           })();
           </script>'''
-          s = s.replace('</body>', patch + '\n</body>')
+              s = s.replace('</body>', patch + '\n</body>')
+              changed = True
+
+          old = "const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\\s+/g,'_');"
+          if old in s:
+              new = '''const safeName = String(file.name || 'arquivo')
+        .normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
+        .replace(/[^a-zA-Z0-9._-]+/g,'_')
+        .replace(/^\\.+|\\.+$/g,'')
+        .slice(0,180) || 'arquivo';
+      const safePrefix = String(pastaPrefixo || 'anexos')
+        .replace(/[^a-zA-Z0-9._\\/-]+/g,'_')
+        .replace(/\\/+/g,'/')
+        .replace(/^\\/+|\\/+$/g,'');
+      const path = `${safePrefix}/${Date.now()}_${safeName}`;'''
+              s = s.replace(old, new, 1)
+              changed = True
+
           p.write_text(s, encoding='utf-8')
+          print('index.html atualizado:', changed)
           PY
 
       - name: Commit patch
@@ -75,5 +93,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'fix: sincronizar usuários do Supabase com a interface'
+          git commit -m 'fix: sincronizar dados e normalizar anexos do Storage'
           git push
