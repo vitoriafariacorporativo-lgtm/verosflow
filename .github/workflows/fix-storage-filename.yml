@@ -16,26 +16,27 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Corrigir upload de anexos
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           old = "const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\\s+/g,'_');"
-          new = r'''const safeName = String(file.name || 'arquivo')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          new = '''const safeName = String(file.name || 'arquivo')
+        .normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
         .replace(/[^a-zA-Z0-9._-]+/g,'_')
-        .replace(/^\.+|\.+$/g,'')
+        .replace(/^\\.+|\\.+$/g,'')
         .slice(0,180) || 'arquivo';
       const safePrefix = String(pastaPrefixo || 'anexos')
-        .replace(/[^a-zA-Z0-9._/-]+/g,'_')
-        .replace(/\/+/g,'/')
-        .replace(/^\/+|\/+$/g,'');
+        .replace(/[^a-zA-Z0-9._\\/-]+/g,'_')
+        .replace(/\\/+/g,'/')
+        .replace(/^\\/+|\\/+$/g,'');
       const path = `${safePrefix}/${Date.now()}_${safeName}`;'''
           if old not in s:
               raise SystemExit('Trecho de upload esperado não encontrado; nenhuma alteração feita.')
           s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
+          PY
 
       - name: Publicar correção
         run: |
