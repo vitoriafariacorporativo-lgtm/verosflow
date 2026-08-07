@@ -848,7 +848,16 @@ const Data = {
 
   async uploadFile(pastaPrefixo, file){
     if(!file) return null;
-    const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\s+/g,'_');
+    const safeName = String(file.name || 'arquivo')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-zA-Z0-9._-]+/g,'_')
+        .replace(/^\.+|\.+$/g,'')
+        .slice(0,180) || 'arquivo';
+      const safePrefix = String(pastaPrefixo || 'anexos')
+        .replace(/[^a-zA-Z0-9._\/-]+/g,'_')
+        .replace(/\/+/g,'/')
+        .replace(/^\/+|\/+$/g,'');
+      const path = `${safePrefix}/${Date.now()}_${safeName}`;
     const { error } = await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).upload(path, file, { upsert:true });
     if(error) throw error;
     return path;
