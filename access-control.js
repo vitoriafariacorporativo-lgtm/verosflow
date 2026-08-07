@@ -33,7 +33,8 @@
   const FIN_STATUSES = ['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'];
   const LOG_QUOTE_STATUSES = ['Aguardando Crédito e Logística','Produção','Aguardando Frete'];
   const LOG_CONTRACT_STATUSES = ['Aguardando Frete','Produção'];
-  const BILLING_STATUS = 'Frete contratado';
+  // Conforme a regra de negócio definida: Operações pode faturar após a produção concluída.
+  const BILLING_STATUSES = ['Aguardando Frete','Frete contratado'];
 
   if(window.Render){
     Render.visibleSolicitacoes = () => DB.solicitacoes.filter(canSee);
@@ -46,7 +47,7 @@
         return App.navigate('solicitacoes');
       }
       originalDetail.apply(Render, arguments);
-      setTimeout(enhanceDetail, 0);
+      setTimeout(()=>enhanceDetail(sol), 0);
     };
 
     async function downloadAttachment(name){
@@ -63,11 +64,62 @@
       }catch(err){ App.toast('Erro ao baixar anexo',err.message||'Tente novamente.','err'); }
     }
 
-    function enhanceDetail(){
+    function stageByTitle(root,title){
+      return [...root.querySelectorAll('.stage-block')].find(el=>(el.querySelector('h4')?.textContent||'').includes(title));
+    }
+
+    function enhanceDetail(sol){
       const root=document.getElementById('view-detail');
       if(!root) return;
-      if(role()==='OPERACOES') root.querySelectorAll('button').forEach(btn=>{ if((btn.textContent||'').includes('Marcar produção concluída')) btn.remove(); });
-      if(role()==='ADM_UBS') root.querySelectorAll('button').forEach(btn=>{ if((btn.textContent||'').includes('Saldo disponível')) btn.textContent='Liberar produção'; if((btn.textContent||'').includes('Sem saldo')) btn.textContent='Sem saldo / informar prazo'; });
+
+      if(role()==='OPERACOES'){
+        root.querySelectorAll('button').forEach(btn=>{ if((btn.textContent||'').includes('Marcar produção concluída')) btn.remove(); });
+        // Aguardando Frete = produção já concluída. Liberar faturamento conforme regra do perfil.
+        if(BILLING_STATUSES.includes(sol.status) && !sol.faturamento?.concluido){
+          const stage=stageByTitle(root,'Faturamento');
+          if(stage && !stage.querySelector('[data-vf-billing-action]')){
+            const lock=stage.querySelector('.lock-note');
+            if(lock) lock.remove();
+            const p=document.createElement('p');
+            p.style.cssText='font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;';
+            p.textContent='Produção concluída. Emita a nota fiscal para concluir o faturamento.';
+            const btn=document.createElement('button');
+            btn.className='btn btn-primary btn-sm';
+            btn.dataset.vfBillingAction='1';
+            btn.textContent='Emitir NF';
+            btn.onclick=()=>Render.abrirFaturamentoModal(sol.id);
+            stage.appendChild(p); stage.appendChild(btn);
+          }
+        }
+      }
+
+      if(role()==='COORD_LOG'){
+        // O status Aguardando Crédito e Logística representa atuação paralela de Financeiro e Logística.
+        if(LOG_QUOTE_STATUSES.includes(sol.status) && !sol.logistica?.transportadora){
+          const stage=stageByTitle(root,'Logística');
+          if(stage && !stage.querySelector('[data-vf-quote-action]')){
+            const lock=stage.querySelector('.lock-note');
+            if(lock) lock.remove();
+            const p=document.createElement('p');
+            p.style.cssText='font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;';
+            p.textContent='Registre a cotação de frete para esta solicitação.';
+            const btn=document.createElement('button');
+            btn.className='btn btn-secondary btn-sm';
+            btn.dataset.vfQuoteAction='1';
+            btn.textContent='Registrar cotação';
+            btn.onclick=()=>Render.abrirCotacaoModal(sol.id);
+            stage.appendChild(p); stage.appendChild(btn);
+          }
+        }
+      }
+
+      if(role()==='ADM_UBS'){
+        root.querySelectorAll('button').forEach(btn=>{
+          if((btn.textContent||'').includes('Saldo disponível')) btn.textContent='Liberar produção';
+          if((btn.textContent||'').includes('Sem saldo')) btn.textContent='Sem saldo / informar prazo';
+        });
+      }
+
       if(hasAction('finance')) root.querySelectorAll('.upload-tag').forEach(tag=>{
         if(tag.dataset.downloadBound==='1') return;
         const name=tag.textContent.trim(); if(!name) return;
@@ -180,7 +232,7 @@
     if(originalFat) Render.abrirFaturamentoModal=function(id){
       if(!hasAction('billing')) return deny('Somente Operações de Negócio pode emitir a NF e concluir o faturamento.');
       const sol=solById(id); if(!canSee(sol)) return deny();
-      if(sol.status!==BILLING_STATUS) return deny('O faturamento fica disponível após a contratação do frete.');
+      if(!BILLING_STATUSES.includes(sol.status)) return deny('O faturamento fica disponível após a produção ser concluída.');
       return originalFat.apply(Render,arguments);
     };
 
@@ -199,7 +251,7 @@
       COORD_FIN:['Visualizar todas as solicitações','Aprovar / Recusar crédito','Acessar e baixar anexos financeiros'],
       COORD_LOG:['Visualizar todas as solicitações','Cotar frete','Contratar frete','Atualizar status de entrega'],
       ADM_UBS:['Visualizar solicitações da própria UBS','Verificar saldo','Informar tempo para produção quando necessário','Liberar produção'],
-      OPERACOES:['Visualizar todas as solicitações','Emitir NF','Concluir faturamento após contratação do frete'],
+      OPERACOES:['Visualizar todas as solicitações','Emitir NF','Concluir faturamento após produção concluída'],
       COMERCIAL_ADM:['Acesso total','Gerenciar cadastros','Editar qualquer etapa','Gerenciar usuários','Indicadores e configurações']
     };
     Object.entries(perms).forEach(([id,p])=>{ const x=DB.perfis.find(v=>v.id===id); if(x) x.permissoes=p; });
