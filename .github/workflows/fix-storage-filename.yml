@@ -1,0 +1,50 @@
+name: Fix Storage Filename
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fix-storage-filename.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Corrigir upload de anexos
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\\s+/g,'_');"
+          new = r'''const safeName = String(file.name || 'arquivo')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-zA-Z0-9._-]+/g,'_')
+        .replace(/^\.+|\.+$/g,'')
+        .slice(0,180) || 'arquivo';
+      const safePrefix = String(pastaPrefixo || 'anexos')
+        .replace(/[^a-zA-Z0-9._/-]+/g,'_')
+        .replace(/\/+/g,'/')
+        .replace(/^\/+|\/+$/g,'');
+      const path = `${safePrefix}/${Date.now()}_${safeName}`;'''
+          if old not in s:
+              raise SystemExit('Trecho de upload esperado não encontrado; nenhuma alteração feita.')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Publicar correção
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Nenhuma alteração necessária."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: normalizar nomes de anexos no Storage [skip ci]"
+          git push
