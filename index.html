@@ -833,12 +833,12 @@ const Data = {
 
   async loadLogs(){
     Data.requireConfig();
-    const { data, error } = await supabaseClient.from('logs_auditoria').select('*, usuarios(nome)').order('criado_em', {ascending:false}).limit(500);
+    const { data, error } = await supabaseClient.from('logs_auditoria').select('*, usuarios(nome), solicitacoes(numero_pedido_mobi)').order('criado_em', {ascending:false}).limit(500);
     if(error) throw error;
     DB.logs = (data||[]).map(l=>({
       data: U.fmtDate(l.criado_em), hora: U.fmtTime(l.criado_em),
       usuario: (l.usuarios && l.usuarios.nome) || '—', perfil: U.perfilNome(l.perfil),
-      campo: l.campo, valorAnterior: l.valor_anterior, novoValor: l.novo_valor, solicitacaoId: l.solicitacao_id,
+      campo: l.campo, valorAnterior: l.valor_anterior, novoValor: l.novo_valor, pedido: (l.solicitacoes && l.solicitacoes.numero_pedido_mobi) || null, solicitacaoId: l.solicitacao_id,
     }));
   },
 
@@ -1359,7 +1359,7 @@ const Render = {
             ${recentLogs.length ? recentLogs.map(l=>`
               <div class="activity-item">
                 <div class="dotwrap" style="background:var(--v-green-500)"></div>
-                <div class="txt"><b>${U.esc(l.usuario)}</b> (${U.esc(l.perfil)}) alterou <b>${U.esc(l.campo)}</b> de "${U.esc(l.valorAnterior)}" para "${U.esc(l.novoValor)}" no pedido <span class="row-link" onclick="App.navigate('detail',{id:'${l.solicitacaoId}'})">${l.solicitacaoId}</span></div>
+                <div class="txt"><b>${U.esc(l.usuario)}</b> (${U.esc(l.perfil)}) alterou <b>${U.esc(l.campo)}</b> de "${U.esc(l.valorAnterior)}" para "${U.esc(l.novoValor)}" no pedido <span class="row-link" onclick="App.navigate('detail',{id:'${l.solicitacaoId}'})">${U.esc(l.pedido || 'Pedido sem número')}</span></div>
               </div>`).join('') : `<div class="table-empty"><div class="ic">${Ic('inbox',30)}</div>Nenhuma atividade registrada ainda nesta sessão.</div>`}
           </div>
         </div>
@@ -2138,7 +2138,7 @@ const Render = {
       <div class="card card-pad">
         <div class="section-title">Histórico de alterações (log)</div>
         ${DB.logs.length ? `<div style="overflow-x:auto;"><table><thead><tr><th>Data</th><th>Hora</th><th>Usuário</th><th>Perfil</th><th>Campo</th><th>De</th><th>Para</th><th>Pedido</th></tr></thead><tbody>
-          ${DB.logs.map(l=>`<tr><td>${l.data}</td><td>${l.hora}</td><td>${U.esc(l.usuario)}</td><td>${U.esc(l.perfil)}</td><td>${U.esc(l.campo)}</td><td>${U.esc(l.valorAnterior)}</td><td>${U.esc(l.novoValor)}</td><td class="row-link" onclick="App.navigate('detail',{id:'${l.solicitacaoId}'})">${l.solicitacaoId}</td></tr>`).join('')}
+          ${DB.logs.map(l=>`<tr><td>${l.data}</td><td>${l.hora}</td><td>${U.esc(l.usuario)}</td><td>${U.esc(l.perfil)}</td><td>${U.esc(l.campo)}</td><td>${U.esc(l.valorAnterior)}</td><td>${U.esc(l.novoValor)}</td><td class="row-link" onclick="App.navigate('detail',{id:'${l.solicitacaoId}'})">${U.esc(l.pedido || 'Pedido sem número')}</td></tr>`).join('')}
         </tbody></table></div>` : `<div class="table-empty"><div class="ic">${Ic('inbox',30)}</div>Nenhuma alteração registrada nesta sessão ainda. Interaja com uma solicitação para gerar o log.</div>`}
       </div>
     `;
@@ -2186,7 +2186,7 @@ const Render = {
   exportLogCSV(){
     if(!DB.logs.length){ App.toast('Nada para exportar','Ainda não há alterações registradas.','warn'); return; }
     const headers = ['Data','Hora','Usuário','Perfil','Campo','Valor Anterior','Novo Valor','Pedido'];
-    const rows = DB.logs.map(l=>[l.data, l.hora, l.usuario, l.perfil, l.campo, l.valorAnterior, l.novoValor, l.solicitacaoId]);
+    const rows = DB.logs.map(l=>[l.data, l.hora, l.usuario, l.perfil, l.campo, l.valorAnterior, l.novoValor, (l.pedido || 'Pedido sem número')]);
     Render.downloadCSV('veros-flow-log-auditoria.csv', headers, rows);
     App.toast('Exportação concluída','O log de auditoria foi baixado com sucesso.','ok');
   },
