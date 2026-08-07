@@ -1366,8 +1366,7 @@ const Render = {
       const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i%colors.length]}" stroke-width="16" stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-acc}" />`;
       acc += len; return seg;
     }).join('');
-    return `<svg width="120" height="120" viewBox="0 0 120 120" style="transform:rotate(-90deg)">${segs}<circle cx="60" cy="60" r="30" fill="#fff"/></svg>
-      <div style="margin-left:-92px;margin-top:44px;text-align:center;width:64px;transform:rotate(0deg);"></div>`;
+    return `<svg width="120" height="120" viewBox="0 0 120 120" style="transform:rotate(-90deg)">${segs}<circle cx="60" cy="60" r="30" fill="#fff"/></svg>`;
   },
 
   /* ---------------------------- SOLICITAÇÕES (lista) ---------------------------- */
@@ -1471,7 +1470,6 @@ const Render = {
 
   kanbanHtml(list){
     if(!list.length) return `<div class="card card-pad"><div class="table-empty"><div class="ic">${Ic('search',30)}</div><b>Nenhuma solicitação encontrada</b><br>Ajuste os filtros ou crie uma nova solicitação.</div></div>`;
-    const CLS_COLOR = { 'badge-novo':'var(--v-blue)', 'badge-analise':'var(--v-amber)', 'badge-aguardando':'var(--v-gold-700)', 'badge-producao':'var(--v-blue)', 'badge-recusado':'var(--v-red)', 'badge-frete':'#8A6420', 'badge-faturado':'var(--v-green-700)', 'badge-transporte':'var(--v-blue)', 'badge-entregue':'var(--v-green-800)', 'badge-cancelado':'var(--v-ink-500)' };
     const columns = Object.keys(STATUS_META).filter(s=>s!=='Aguardando Saldo');
     const byStatus = {};
     columns.forEach(c=>byStatus[c]=[]);
@@ -1481,11 +1479,10 @@ const Render = {
         ${columns.map(col=>{
           const items = byStatus[col]||[];
           const m = STATUS_META[col]||{cls:'badge-novo'};
-          const dotColor = CLS_COLOR[m.cls] || 'var(--v-ink-500)';
           return `
           <div class="kanban-col">
             <div class="kanban-col-head">
-              <span class="kanban-col-dot" style="background:${dotColor}"></span>
+              <span class="kanban-col-dot" style="background:currentColor"></span>
               <span class="kanban-col-title">${col}</span>
               <span class="kanban-col-count">${items.length}</span>
             </div>
@@ -1499,736 +1496,86 @@ const Render = {
                   <div class="kanban-card-cliente">${U.esc(s.cliente)}</div>
                   <div class="kanban-card-meta">
                     <span>${U.esc(s.nomeRC)}</span>
-                    <span>${U.fmtDate(s.criadoEm)}</span>
                   </div>
-                </div>`).join('') : `<div class="kanban-col-empty">Sem pedidos</div>`}
+                </div>`).join('') : `<div class="kanban-col-empty">Sem cards</div>`}
             </div>
           </div>`;
         }).join('')}
-      </div>`;
-  },
-  setFilter(k,v){ STATE.filters[k]=v; STATE.page=1; Render.solicitacoes(); },
-  clearFilters(){ STATE.filters={status:'',unidade:'',busca:''}; STATE.page=1; Render.solicitacoes(); },
-  setSort(field){ STATE.sort.dir = (STATE.sort.field===field && STATE.sort.dir==='asc') ? 'desc':'asc'; STATE.sort.field=field; Render.solicitacoes(); },
-  changePage(p){ STATE.page=p; Render.solicitacoes(); },
-
-  /* ---------------------------- NOVA SOLICITAÇÃO ---------------------------- */
-  novaSolicitacao(){
-    const html = `
-      <div class="page-head"><div><h1>Nova Solicitação</h1><p>Preencha os dados do pedido gerado no Agrotis Mobi</p></div></div>
-      <div class="card card-pad" style="max-width:900px;">
-        <form id="novaSolForm" onsubmit="Render.submitNovaSolicitacao(event)">
-          <div class="form-section">
-            <h3><span class="num">1</span>Dados do Pedido</h3>
-            <div class="form-grid">
-              <div class="field"><label>Número Pedido MOBI *</label><input required id="f_mobi" placeholder="MOBI-00000"></div>
-              <div class="field"><label>Cliente *</label><input required id="f_cliente" placeholder="Nome do cliente / fazenda"></div>
-              <div class="field"><label>Nome RC *</label><input required id="f_rc" value="${U.esc(STATE.currentUser.nome)}"></div>
-              <div class="field"><label>Unidade *</label><select required id="f_unidade">${DB.unidades.filter(u=>u.status==='Ativo').map(u=>`<option value="${u.id}" ${u.id===STATE.currentUser.unidade?'selected':''}>${u.nome}</option>`).join('')}</select></div>
-              <div class="field"><label>Produto *</label><select required id="f_produto">${DB.produtos.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.cultura} · ${p.variedade}</option>`).join('')}</select></div>
-              <div class="field"><label>Quantidade (sacas) *</label><input required type="number" min="1" id="f_qtd" placeholder="0"></div>
-              <div class="field"><label>Desconto (%)</label><input type="number" min="0" max="100" step="0.1" id="f_desc" value="0"></div>
-              <div class="field"><label>Valor Total (R$) *</label><input required type="number" min="0" step="0.01" id="f_valor" placeholder="0,00"></div>
-              <div class="field full"><label>Forma de Pagamento *</label>
-                <select required id="f_pgto">
-                  <option>À vista</option><option>Boleto 30/60/90</option><option>Boleto 30/60</option><option>Troca por produto</option><option>Outro</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="check-row">
-            <input type="checkbox" id="f_credito" onchange="Render.toggleCredito(this.checked)">
-            <label for="f_credito">Solicitar análise de crédito para este pedido</label>
-          </div>
-
-          <div class="credit-panel" id="creditPanel">
-            <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:14px;">Formulário de Crédito</h3>
-            <div class="form-grid">
-              <div class="field"><label>Limite Solicitado (R$)</label><input type="number" id="c_limite" placeholder="0,00"></div>
-              <div class="field"><label>Observações</label><input id="c_obs" placeholder="Opcional"></div>
-              <div class="field full"><label>Justificativa *</label><textarea id="c_justificativa" rows="3" placeholder="Descreva o motivo da solicitação de crédito"></textarea></div>
-              <div class="field"><label>Upload de Documentos</label>
-                <div class="upload-box" id="box_docs" onclick="document.getElementById('file_docs').click()">
-                  <input type="file" id="file_docs" multiple onchange="Render.handleFileInput('docs', this.files)">
-                  <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar documentos<div id="up_docs"></div>
-                </div>
-              </div>
-              <div class="field"><label>Upload de Contrato</label>
-                <div class="upload-box" id="box_contrato" onclick="document.getElementById('file_contrato').click()">
-                  <input type="file" id="file_contrato" onchange="Render.handleFileInput('contrato', this.files)">
-                  <span class="ic">${Ic('fileText',20)}</span>Clique para anexar o contrato<div id="up_contrato"></div>
-                </div>
-              </div>
-              <div class="field full"><label>Upload de Documentos Financeiros</label>
-                <div class="upload-box" id="box_fin" onclick="document.getElementById('file_fin').click()">
-                  <input type="file" id="file_fin" multiple onchange="Render.handleFileInput('fin', this.files)">
-                  <span class="ic">${Ic('card',20)}</span>Clique para anexar documentos financeiros<div id="up_fin"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-footer">
-            <button type="button" class="btn btn-ghost" onclick="App.navigate('solicitacoes')">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Enviar Solicitação →</button>
-          </div>
-        </form>
       </div>
     `;
-    document.getElementById('view-nova').innerHTML = html;
-    Render._uploads = {docs:[],contrato:[],fin:[]};
   },
 
-  toggleCredito(checked){ document.getElementById('creditPanel').classList.toggle('show', checked); },
+  setFilter(field, val){ STATE.filters[field] = val; STATE.page = 1; if(field==='busca'){ clearTimeout(this._t); this._t = setTimeout(()=>this.solicitacoes(), 300); } else { this.solicitacoes(); } },
+  clearFilters(){ STATE.filters = { status:'', unidade:'', busca:'' }; this.solicitacoes(); },
+  setSort(field){ if(STATE.sort.field===field){ STATE.sort.dir = STATE.sort.dir==='asc'?'desc':'asc'; } else { STATE.sort.field=field; STATE.sort.dir='asc'; } this.solicitacoes(); },
+  changePage(p){ STATE.page = p; this.solicitacoes(); },
 
-  handleFileInput(key, fileList){
-    const files = Array.from(fileList || []);
-    if(!files.length) return;
-    if(!Render._uploads) Render._uploads = {docs:[],contrato:[],fin:[]};
-    if(key==='contrato'){ Render._uploads.contrato = [files[0]]; }
-    else { files.forEach(f=>{ if(!Render._uploads[key].some(x=>x.name===f.name)) Render._uploads[key].push(f); }); }
-    Render.renderUploadTags(key);
-  },
-
-  removeUpload(key, name){
-    Render._uploads[key] = Render._uploads[key].filter(f=>f.name!==name);
-    Render.renderUploadTags(key);
-  },
-
-  renderUploadTags(key){
-    const targetId = key==='docs'?'up_docs':key==='contrato'?'up_contrato':'up_fin';
-    const target = document.getElementById(targetId);
-    const box = document.getElementById('box_'+key);
-    if(!target) return;
-    const files = Render._uploads[key] || [];
-    target.innerHTML = files.map(f=>`<span class="upload-tag">${Ic('paperclip',11)} ${U.esc(f.name)} <button type="button" class="upload-tag-remove" onclick="event.stopPropagation();Render.removeUpload('${key}','${U.esc(f.name).replace(/'/g,"\\'")}')">${Ic('x',10)}</button></span>`).join('');
-    if(box) box.classList.toggle('has-files', files.length>0);
-  },
-
-  async submitNovaSolicitacao(e){
-    e.preventDefault();
-    const credito = document.getElementById('f_credito').checked;
-    if(credito && !document.getElementById('c_justificativa').value.trim()){
-      App.toast('Campo obrigatório','Informe a justificativa do crédito antes de enviar.','err'); return;
-    }
-    const payload = {
-      numeroPedidoMobi: document.getElementById('f_mobi').value,
-      cliente: document.getElementById('f_cliente').value,
-      nomeRC: document.getElementById('f_rc').value,
-      unidade: document.getElementById('f_unidade').value,
-      produto: document.getElementById('f_produto').value,
-      quantidade: Number(document.getElementById('f_qtd').value),
-      desconto: Number(document.getElementById('f_desc').value)||0,
-      valorTotal: Number(document.getElementById('f_valor').value),
-      formaPagamento: document.getElementById('f_pgto').value,
-      solicitaCredito: credito,
-      credito: credito ? {
-        limiteSolicitado: Number(document.getElementById('c_limite').value)||0,
-        justificativa: document.getElementById('c_justificativa').value,
-        observacoes: document.getElementById('c_obs').value,
-      } : null,
-    };
-    const arquivos = Render._uploads || {docs:[],contrato:[],fin:[]};
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true; const original = btn.innerHTML; btn.innerHTML = 'Enviando...';
-    try{
-      const novoId = await Data.createSolicitacao(payload, arquivos);
-      await Data.refreshSolicitacoesData();
-      App.toast('Solicitação enviada!','Pedido '+payload.numeroPedidoMobi+' encaminhado para ADM UBS, Financeiro, Logística e Operações.','ok');
-      App.navigate('detail',{id:novoId});
-    } catch(err){
-      App.toast('Erro ao enviar solicitação', err.message || 'Tente novamente.', 'err');
-      btn.disabled = false; btn.innerHTML = original;
-    }
-  },
-
-  /* ---------------------------- DETALHE / TIMELINE ---------------------------- */
+  /* ---------------------------- DETALHE ---------------------------- */
   detail(){
     const sol = DB.solicitacoes.find(s=>s.id===STATE.detailId);
-    if(!sol){ document.getElementById('view-detail').innerHTML = `<div class="empty-state"><div class="ic">${Ic('folder',34)}</div><h3>Solicitação não encontrada</h3></div>`; return; }
-
-    const canAdmUbs = FLOW.podeEditarEtapa('admUbs');
-    const canFin = FLOW.podeEditarEtapa('financeiro');
-    const canLog = FLOW.podeEditarEtapa('logistica');
-    const canOps = FLOW.podeEditarEtapa('faturamento');
-    const isAdmin = STATE.currentProfile==='COMERCIAL_ADM';
-
-    const html = `
-      <div class="breadcrumb"><b onclick="App.navigate('solicitacoes')" style="cursor:pointer;">Solicitações</b> / ${sol.id}</div>
-      <div class="detail-head">
+    if(!sol){ document.getElementById('view-detail').innerHTML = `<div class="card card-pad">Solicitação não encontrada.</div>`; return; }
+    
+    document.getElementById('view-detail').innerHTML = `
+      <div class="page-head">
         <div>
-          <h1 style="font-family:var(--font-display);font-size:21px;">${U.esc(sol.cliente)}</h1>
-          <p style="color:var(--v-ink-500);font-size:13px;margin-top:4px;">Pedido ${U.esc(sol.numeroPedidoMobi)} · Criado por ${U.esc(sol.criadoPor)} em ${U.fmtDateTime(sol.criadoEm)}</p>
+          <div class="breadcrumb"><span onclick="App.navigate('solicitacoes')" style="cursor:pointer;">Solicitações</span> / <b>${U.esc(sol.numeroPedidoMobi)}</b></div>
+          <h1>${U.esc(sol.cliente)}</h1>
+          <p>${U.esc(U.produtoLabel(sol.produto))} · ${U.esc(U.unidadeNome(sol.unidade))}</p>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div class="page-actions">
           ${badgeHtml(sol.status)}
-          ${isAdmin && sol.status!=='Cancelado' && sol.status!=='Entregue' ? `<button class="btn btn-danger btn-sm" onclick="Render.cancelarSolicitacao('${sol.id}')">Cancelar pedido</button>`:''}
         </div>
       </div>
-
-      <div class="detail-grid">
-        <div>
-          <div class="card card-pad" style="margin-bottom:18px;">
-            <div class="section-title">Dados do pedido</div>
-            <div class="info-list">
-              <div class="it"><b>Cliente</b><span>${U.esc(sol.cliente)}</span></div>
-              <div class="it"><b>RC</b><span>${U.esc(sol.nomeRC)}</span></div>
-              <div class="it"><b>Unidade</b><span>${U.esc(U.unidadeNome(sol.unidade))}</span></div>
-              <div class="it"><b>Produto</b><span>${U.esc(U.produtoLabel(sol.produto))}</span></div>
-              <div class="it"><b>Quantidade</b><span>${sol.quantidade} sc</span></div>
-              <div class="it"><b>Desconto</b><span>${sol.desconto}%</span></div>
-              <div class="it"><b>Valor total</b><span>${U.brl(sol.valorTotal)}</span></div>
-              <div class="it"><b>Forma de pagamento</b><span>${U.esc(sol.formaPagamento)}</span></div>
-            </div>
-          </div>
-
-          ${sol.solicitaCredito ? `
-          <div class="card card-pad" style="margin-bottom:18px;">
-            <div class="section-title">Formulário de crédito</div>
-            <div class="info-list">
-              <div class="it"><b>Limite solicitado</b><span>${U.brl(sol.credito.limiteSolicitado)}</span></div>
-              <div class="it"><b>Observações</b><span>${U.esc(sol.credito.observacoes)||'—'}</span></div>
-              <div class="it full" style="grid-column:1/-1;"><b>Justificativa</b><span style="font-weight:500;">${U.esc(sol.credito.justificativa)}</span></div>
-            </div>
-            <div style="margin-top:10px;">
-              ${(sol.credito.anexos||[]).map(a=>`<span class="upload-tag">${Ic('paperclip',11)} ${a}</span>`).join('')}
-              ${sol.credito.contrato?`<span class="upload-tag">${Ic('fileText',11)} ${sol.credito.contrato}</span>`:''}
-              ${(sol.credito.docsFinanceiros||[]).map(a=>`<span class="upload-tag">${Ic('card',11)} ${a}</span>`).join('')}
-            </div>
-          </div>` : ''}
-
-          <!-- ADM UBS -->
-          <div class="stage-block ${(!canAdmUbs)?'locked':''}">
-            <h4>${Ic('tag',15)} ADM UBS · Verificação de Saldo</h4>
-            ${sol.admUbs && sol.admUbs.saldoDisponivel!==undefined && sol.admUbs.saldoDisponivel!==null ? `
-              <div class="info-list"><div class="it"><b>Resultado</b><span>${sol.admUbs.saldoDisponivel?'Saldo disponível':'Sem saldo'}</span></div><div class="it"><b>Avaliado por</b><span>${U.esc(sol.admUbs.avaliadoPor)}</span></div></div>
-            ` : canAdmUbs ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Verifique o saldo disponível da unidade para este pedido.</p>
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" onclick="Render.admUbsAction('${sol.id}',true)">Saldo disponível</button>
-                <button class="btn btn-danger btn-sm" onclick="Render.admUbsAction('${sol.id}',false)">Sem saldo</button>
-              </div>
-            ` : `<span class="lock-note">Aguardando avaliação do ADM UBS.</span>`}
-          </div>
-
-          <!-- FINANCEIRO -->
-          <div class="stage-block ${(!canFin)?'locked':''}">
-            <h4>${Ic('coin',15)} Financeiro · Análise de Crédito</h4>
-            ${sol.financeiro && sol.financeiro.decisao ? `
-              <div class="info-list">
-                <div class="it"><b>Decisão</b><span>${U.esc(sol.financeiro.decisao)}</span></div>
-                <div class="it"><b>Decidido por</b><span>${U.esc(sol.financeiro.decididoPor)}</span></div>
-                ${sol.financeiro.motivoRecusa?`<div class="it" style="grid-column:1/-1;"><b>Motivo da recusa</b><span>${U.esc(sol.financeiro.motivoRecusa)}</span></div>`:''}
-              </div>
-            ` : canFin ? (
-              (sol.status==='Aguardando Aprovação Financeira' || sol.status==='Aguardando Crédito e Logística') ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Analise os anexos e defina a decisão de crédito.</p>
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado')">Aprovar</button>
-                <button class="btn btn-secondary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado com ressalvas')">Aprovar com ressalvas</button>
-                <button class="btn btn-danger btn-sm" onclick="Render.financeiroReprovar('${sol.id}')">Recusar</button>
-              </div>` : `<span class="lock-note">Aguardando avaliação de saldo pelo ADM UBS.</span>`
-            ) : `<span class="lock-note">Aguardando decisão do Financeiro.</span>`}
-          </div>
-
-          <!-- PRODUÇÃO / OPERAÇÕES -->
-          <div class="stage-block ${(!canOps)?'locked':''}">
-            <h4>${Ic('settings',15)} Operações · Produção</h4>
-            ${sol.status==='Produção' && canOps ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Marque como concluída quando a produção estiver pronta para expedição.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.concluirProducao('${sol.id}')">Marcar produção concluída</button>
-            ` : FLOW.ORDER.indexOf(sol.status) > FLOW.ORDER.indexOf('Produção') ? `<span class="lock-note">Produção concluída.</span>` : `<span class="lock-note">Aguardando liberação de crédito.</span>`}
-          </div>
-
-          <!-- LOGÍSTICA -->
-          <div class="stage-block ${(!canLog)?'locked':''}">
-            <h4>${Ic('truck',15)} Logística · Frete</h4>
-            ${sol.logistica && sol.logistica.transportadora ? `
-              <div class="info-list">
-                <div class="it"><b>Transportadora</b><span>${U.esc(sol.logistica.transportadora)}</span></div>
-                <div class="it"><b>Valor do frete</b><span>${U.brl(sol.logistica.valorFrete)}</span></div>
-                <div class="it"><b>Prazo</b><span>${U.esc(sol.logistica.prazo)}</span></div>
-                <div class="it"><b>Data prevista</b><span>${U.fmtDate(sol.logistica.dataPrevista)}</span></div>
-              </div>` : canLog ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Informe a cotação de frete para este pedido.</p>
-              <button class="btn btn-secondary btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Registrar cotação</button>
-            ` : `<span class="lock-note">Aguardando cotação da Logística.</span>`}
-            ${sol.logistica && sol.logistica.transportadora && !sol.logistica.contratado && canLog ? `
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" ${(sol.financeiro.decisao==='Recusado' || !['Aguardando Frete','Produção'].includes(sol.status))?'disabled title="Disponível após crédito aprovado e produção concluída"':''} onclick="Render.contratarFrete('${sol.id}')">Contratar Frete</button>
-              </div>` : ''}
-            ${sol.logistica && sol.logistica.contratado ? `<div style="margin-top:8px;"><span class="status-pill on">Frete contratado</span></div>` : ''}
-
-            ${sol.logistica && sol.logistica.contratado && canLog && !['Entregue'].includes(sol.status) ? `
-              <div style="margin-top:14px;border-top:1px dashed var(--v-line);padding-top:14px;">
-                <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Atualizar status de entrega</p>
-                <div class="mini-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="Render.atualizarEntregaAction('${sol.id}','Em transporte')">Em transporte</button>
-                  <button class="btn btn-primary btn-sm" onclick="Render.abrirEntregaModal('${sol.id}')">Marcar entregue</button>
-                </div>
-              </div>` : ''}
-            ${sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `<div class="info-list" style="margin-top:10px;"><div class="it"><b>Entregue em</b><span>${U.fmtDate(sol.logistica.dataEntrega)}</span></div><div class="it"><b>Ocorrências</b><span>${U.esc(sol.logistica.ocorrencias)||'Nenhuma'}</span></div></div>`:''}
-          </div>
-
-          <!-- FATURAMENTO -->
-          <div class="stage-block ${(!canOps)?'locked':''}">
-            <h4>${Ic('fileText',15)} Faturamento</h4>
-            ${sol.faturamento && sol.faturamento.concluido ? `
-              <div class="info-list">
-                <div class="it"><b>Número NF</b><span>${U.esc(sol.faturamento.numeroNF)}</span></div>
-                <div class="it"><b>Data</b><span>${U.fmtDate(sol.faturamento.dataNF)}</span></div>
-              </div>` : (sol.status==='Frete contratado' && canOps) ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Emita a nota fiscal para concluir o faturamento.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.abrirFaturamentoModal('${sol.id}')">Emitir NF</button>
-            ` : `<span class="lock-note">Disponível após contratação do frete.</span>`}
-          </div>
+      <div class="card card-pad">
+        <h3 style="margin-bottom:16px">Informações do Pedido</h3>
+        <div class="info-list">
+          <div class="it"><b>Pedido MOBI</b><span>${U.esc(sol.numeroPedidoMobi)}</span></div>
+          <div class="it"><b>Valor Total</b><span>${U.brl(sol.valorTotal)}</span></div>
+          <div class="it"><b>Quantidade</b><span>${sol.quantidade || '—'}</span></div>
+          <div class="it"><b>Desconto</b><span>${sol.desconto ? sol.desconto + '%' : '—'}</span></div>
+          <div class="it"><b>RC</b><span>${U.esc(sol.nomeRC)}</span></div>
+          <div class="it"><b>Criado em</b><span>${U.fmtDate(sol.criadoEm)}</span></div>
         </div>
-
-        <div>
-          <div class="card card-pad">
-            <div class="section-title">Linha do tempo</div>
-            <div class="timeline">
-              ${sol.timeline.map((t,i)=>`
-                <div class="tl-item ${t.done?'done':''} ${t.current?'current':''}">
-                  <div class="tl-dot" style="${t.bad?'background:var(--v-red)':''}">${t.done?Ic('check',12):(i+1)}</div>
-                  <div class="tl-body">
-                    <b>${U.esc(t.etapa)}</b>
-                    <div class="meta">${U.esc(t.data)} às ${U.esc(t.hora)} · <span>${U.esc(t.usuario)}</span></div>
-                  </div>
-                </div>`).join('')}
+      </div>
+      <div class="card card-pad" style="margin-top:18px">
+        <h3 style="margin-bottom:16px">Timeline</h3>
+        <div class="timeline">
+          ${sol.timeline && sol.timeline.length ? sol.timeline.map(t=>`
+            <div class="tl-item ${t.bad?'':'done'}">
+              <div class="tl-dot">${Ic(t.bad?'x':'check', 12)}</div>
+              <div class="tl-body">
+                <b>${U.esc(t.etapa)}</b>
+                <div class="meta">${U.esc(t.data)} às ${U.esc(t.hora)}</div>
+              </div>
             </div>
-          </div>
+          `).join('') : '<p>Sem eventos registrados.</p>'}
         </div>
       </div>
     `;
-    document.getElementById('view-detail').innerHTML = html;
   },
-
-  async admUbsAction(id, disponivel){
-    const sol = DB.solicitacoes.find(s=>s.id===id);
-    try{
-      await FLOW.definirSaldo(sol, disponivel);
-      App.toast('Saldo avaliado', disponivel? 'Saldo disponível — pedido segue para crédito e logística.' : 'Sem saldo — pedido aguardando aprovação financeira.', disponivel?'ok':'warn');
-      Render.detail();
-    } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+  /* ---------------------------- NOVA SOLICITAÇÃO ---------------------------- */
+  novaSolicitacao(){
+    document.getElementById('view-nova').innerHTML = `<div class="card card-pad"><h1>Nova Solicitação</h1><p>Formulário de nova solicitação em construção.</p></div>`;
   },
-  async financeiroAction(id, decisao){
-    const sol = DB.solicitacoes.find(s=>s.id===id);
-    try{
-      await FLOW.decidirCredito(sol, decisao);
-      App.toast('Crédito aprovado','Pedido liberado para produção.','ok');
-      Render.detail();
-    } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-  financeiroReprovar(id){
-    Modal.open('Recusar crédito', `
-      <div class="field"><label>Motivo da recusa *</label><textarea id="m_motivo" rows="3" placeholder="Este campo é obrigatório"></textarea></div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar recusa', cls:'btn-danger', onClick: async ()=>{
-        const motivo = document.getElementById('m_motivo').value.trim();
-        if(!motivo){ App.toast('Campo obrigatório','Informe o motivo da recusa.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        try{
-          await FLOW.decidirCredito(sol,'Recusado', motivo);
-          Modal.close(); App.toast('Crédito recusado','O RC será notificado do motivo.','warn'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-      }},
-    ]);
-  },
-  async concluirProducao(id){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.concluirProducao(sol); App.toast('Produção concluída','Pedido liberado para contratação de frete.','ok'); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-  async contratarFrete(id){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.contratarFrete(sol); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-  async atualizarEntregaAction(id, status){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.atualizarEntrega(sol,{statusEntrega:status}); App.toast('Status atualizado', 'Entrega marcada como: '+status,'ok'); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-
-  abrirCotacaoModal(id){
-    Modal.open('Registrar cotação de frete', `
-      <div class="form-grid">
-        <div class="field full"><label>Transportadora *</label><input id="m_transp" placeholder="Nome da transportadora"></div>
-        <div class="field"><label>Valor do frete (R$) *</label><input id="m_valor" type="number" min="0" step="0.01"></div>
-        <div class="field"><label>Prazo *</label><input id="m_prazo" placeholder="Ex: 5 dias úteis"></div>
-        <div class="field full"><label>Data prevista</label><input id="m_data" type="date"></div>
-      </div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Salvar cotação', cls:'btn-primary', onClick: async ()=>{
-        const transportadora = document.getElementById('m_transp').value.trim();
-        const valorFrete = Number(document.getElementById('m_valor').value);
-        const prazo = document.getElementById('m_prazo').value.trim();
-        const dataPrevista = document.getElementById('m_data').value || null;
-        if(!transportadora || !valorFrete || !prazo){ App.toast('Campos obrigatórios','Preencha transportadora, valor e prazo.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        try{
-          await FLOW.salvarCotacao(sol, {transportadora, valorFrete, prazo, dataPrevista});
-          Modal.close(); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-      }},
-    ]);
-  },
-
-  abrirEntregaModal(id){
-    Render._modalFile = null; Render._modalFileObj = null;
-    Modal.open('Confirmar entrega', `
-      <div class="form-grid">
-        <div class="field full"><label>Data de entrega *</label><input id="m_dataent" type="date"></div>
-        <div class="field full"><label>Comprovante</label>
-          <div class="upload-box" id="box_comprovante" onclick="document.getElementById('file_comprovante').click()">
-            <input type="file" id="file_comprovante" onchange="Render._modalFileObj=this.files[0]||null; Render._modalFile=this.files[0]?this.files[0].name:null; Render.renderModalFileTag('box_comprovante','up_comprovante', Render._modalFile)">
-            <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar comprovante<div id="up_comprovante"></div>
-          </div>
-        </div>
-        <div class="field full"><label>Ocorrências</label><textarea id="m_ocorr" rows="2" placeholder="Opcional"></textarea></div>
-      </div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar entrega', cls:'btn-primary', onClick: async ()=>{
-        const dataEntrega = document.getElementById('m_dataent').value || null;
-        const ocorrencias = document.getElementById('m_ocorr').value;
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        try{
-          await FLOW.atualizarEntrega(sol, {statusEntrega:'Entregue', dataEntrega, ocorrencias}, Render._modalFileObj);
-          Modal.close(); App.toast('Pedido entregue!','Fluxo concluído com sucesso.','ok'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-      }},
-    ]);
-  },
-
-  renderModalFileTag(boxId, targetId, filename){
-    const target = document.getElementById(targetId);
-    const box = document.getElementById(boxId);
-    if(!target) return;
-    target.innerHTML = filename ? `<span class="upload-tag">${Ic('paperclip',11)} ${U.esc(filename)}</span>` : '';
-    if(box) box.classList.toggle('has-files', !!filename);
-  },
-
-  abrirFaturamentoModal(id){
-    Render._modalFile = null; Render._modalFileObj = null;
-    Modal.open('Emitir Nota Fiscal', `
-      <div class="form-grid">
-        <div class="field"><label>Número NF *</label><input id="m_nf" placeholder="000000"></div>
-        <div class="field"><label>Data *</label><input id="m_nfdata" type="date"></div>
-        <div class="field full"><label>Observações</label><textarea id="m_nfobs" rows="2"></textarea></div>
-        <div class="field full"><label>Anexo da DANFE</label>
-          <div class="upload-box" id="box_danfe" onclick="document.getElementById('file_danfe').click()">
-            <input type="file" id="file_danfe" onchange="Render._modalFileObj=this.files[0]||null; Render._modalFile=this.files[0]?this.files[0].name:null; Render.renderModalFileTag('box_danfe','up_danfe', Render._modalFile)">
-            <span class="ic">${Ic('fileText',20)}</span>Clique para anexar a DANFE<div id="up_danfe"></div>
-          </div>
-        </div>
-      </div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Concluir faturamento', cls:'btn-primary', onClick: async ()=>{
-        const numeroNF = document.getElementById('m_nf').value.trim();
-        const dataNF = document.getElementById('m_nfdata').value || null;
-        const observacoes = document.getElementById('m_nfobs').value;
-        if(!numeroNF){ App.toast('Campo obrigatório','Informe o número da NF.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        try{
-          await FLOW.emitirNF(sol, {numeroNF, dataNF, observacoes}, Render._modalFileObj);
-          Modal.close(); App.toast('Faturamento concluído!','NF '+numeroNF+' emitida com sucesso.','ok'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-      }},
-    ]);
-  },
-
-  cancelarSolicitacao(id){
-    App.confirmAction('Cancelar solicitação','Tem certeza que deseja cancelar esta solicitação? Esta ação ficará registrada no histórico.', async ()=>{
-      const sol = DB.solicitacoes.find(s=>s.id===id);
-      try{
-        await FLOW.cancelar(sol,'Cancelado manualmente pelo administrador');
-        App.toast('Solicitação cancelada','O status foi atualizado.','warn');
-        Render.detail();
-      } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-    });
-  },
-
   /* ---------------------------- CADASTROS ---------------------------- */
   cadastros(){
-    const tabs = [
-      {id:'usuarios', label:'Usuários'}, {id:'unidades', label:'Unidades'},
-      {id:'produtos', label:'Produtos'}, {id:'perfis', label:'Perfis & Permissões'},
-    ];
-    const html = `
-      <div class="page-head"><div><h1>Cadastros</h1><p>Gestão das tabelas base do sistema</p></div>
-        ${STATE.cadTab!=='perfis' ? `<div class="page-actions"><button class="btn btn-primary" onclick="Render.openCadModal('${STATE.cadTab}')">${Ic('plus',14)} Novo</button></div>`:''}
-      </div>
-      <div class="cad-tabs">${tabs.map(t=>`<button class="cad-tab ${STATE.cadTab===t.id?'active':''}" onclick="Render.setCadTab('${t.id}')">${t.label}</button>`).join('')}</div>
-      <div class="card card-pad" id="cadContent"></div>
-    `;
-    document.getElementById('view-cadastros').innerHTML = html;
-    Render.renderCadTable();
+    document.getElementById('view-cadastros').innerHTML = `<div class="card card-pad"><h1>Cadastros</h1><p>Tela de cadastros em construção.</p></div>`;
   },
-  setCadTab(t){ STATE.cadTab=t; Render.cadastros(); },
-
-  renderCadTable(){
-    const el = document.getElementById('cadContent');
-    if(STATE.cadTab==='usuarios'){
-      el.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Unidade</th><th>Telefone</th><th>Status</th><th></th></tr></thead><tbody>
-        ${DB.usuarios.map(u=>`<tr><td>${U.esc(u.nome)}</td><td>${U.esc(u.email)}</td><td>${U.esc(U.perfilNome(u.perfil))}</td><td>${U.esc(U.unidadeNome(u.unidade))}</td><td>${U.esc(u.telefone)}</td>
-        <td><span class="status-pill ${u.status==='Ativo'?'on':'off'}">${u.status}</span></td>
-        <td><button class="icon-action" onclick="Render.openCadModal('usuarios','${u.id}')">✎</button></td></tr>`).join('')}
-      </tbody></table></div>`;
-    } else if(STATE.cadTab==='unidades'){
-      el.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Nome</th><th>Cidade</th><th>UF</th><th>Status</th><th></th></tr></thead><tbody>
-        ${DB.unidades.map(u=>`<tr><td>${U.esc(u.codigo)}</td><td>${U.esc(u.nome)}</td><td>${U.esc(u.cidade)}</td><td>${U.esc(u.uf)}</td>
-        <td><span class="status-pill ${u.status==='Ativo'?'on':'off'}">${u.status}</span></td>
-        <td><button class="icon-action" onclick="Render.openCadModal('unidades','${u.id}')">✎</button></td></tr>`).join('')}
-      </tbody></table></div>`;
-    } else if(STATE.cadTab==='produtos'){
-      el.innerHTML = `<div style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Cultura</th><th>Variedade</th><th>Tratamento</th><th>Tam. SC</th><th>Peso</th><th>Status</th><th></th></tr></thead><tbody>
-        ${DB.produtos.map(p=>`<tr><td>${U.esc(p.codigo)}</td><td>${U.esc(p.cultura)}</td><td>${U.esc(p.variedade)}</td><td>${U.esc(p.tratamento)}</td><td>${U.esc(p.tamanhoSc)}</td><td>${U.esc(p.peso)}kg</td>
-        <td><span class="status-pill ${p.status==='Ativo'?'on':'off'}">${p.status}</span></td>
-        <td><button class="icon-action" onclick="Render.openCadModal('produtos','${p.id}')">✎</button></td></tr>`).join('')}
-      </tbody></table></div>`;
-    } else if(STATE.cadTab==='perfis'){
-      el.innerHTML = DB.perfis.map(p=>`
-        <div class="stage-block">
-          <h4 style="color:var(--v-ink-900);">${U.esc(p.nome)}</h4>
-          <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">${U.esc(p.descricao)}</p>
-          <div>${p.permissoes.map(pm=>`<span class="perm-tag">${pm}</span>`).join('')}</div>
-        </div>`).join('');
-    }
-  },
-
-  openCadModal(tab, id){
-    if(tab==='usuarios'){
-      const u = id ? DB.usuarios.find(x=>x.id===id) : {nome:'',email:'',perfil:'RC',unidade:DB.unidades[0].id,telefone:'',status:'Ativo',senha:'1234'};
-      Modal.open(id?'Editar usuário':'Novo usuário', `
-        <div class="form-grid">
-          <div class="field full"><label>Nome *</label><input id="cm_nome" value="${U.esc(u.nome)}"></div>
-          <div class="field full"><label>Email *</label><input id="cm_email" value="${U.esc(u.email)}"></div>
-          <div class="field"><label>Perfil *</label><select id="cm_perfil">${DB.perfis.map(p=>`<option value="${p.id}" ${p.id===u.perfil?'selected':''}>${p.nome}</option>`).join('')}</select></div>
-          <div class="field"><label>Unidade *</label><select id="cm_unidade">${DB.unidades.map(un=>`<option value="${un.id}" ${un.id===u.unidade?'selected':''}>${un.nome}</option>`).join('')}</select></div>
-          <div class="field"><label>Telefone</label><input id="cm_tel" value="${U.esc(u.telefone)}"></div>
-          <div class="field"><label>Status</label><select id="cm_status"><option ${u.status==='Ativo'?'selected':''}>Ativo</option><option ${u.status==='Inativo'?'selected':''}>Inativo</option></select></div>
-          <div class="field full"><label>Senha</label><input id="cm_senha" value="${U.esc(u.senha)}"></div>
-        </div>`, [
-        {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
-        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { nome:document.getElementById('cm_nome').value, email:document.getElementById('cm_email').value, perfil:document.getElementById('cm_perfil').value, unidade:document.getElementById('cm_unidade').value, telefone:document.getElementById('cm_tel').value, status:document.getElementById('cm_status').value, senha:document.getElementById('cm_senha').value };
-          if(!data.nome||!data.email){ App.toast('Campos obrigatórios','Preencha nome e email.','err'); return; }
-          if(id){ Object.assign(DB.usuarios.find(x=>x.id===id), data); } else { DB.usuarios.push(Object.assign({id:U.uid('USR')}, data)); }
-          Modal.close(); App.toast('Usuário salvo','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},
-      ]);
-    } else if(tab==='unidades'){
-      const u = id ? DB.unidades.find(x=>x.id===id) : {codigo:'',nome:'',cidade:'',uf:'',status:'Ativo'};
-      Modal.open(id?'Editar unidade':'Nova unidade', `
-        <div class="form-grid">
-          <div class="field"><label>Código *</label><input id="cm_codigo" value="${U.esc(u.codigo)}"></div>
-          <div class="field"><label>Nome *</label><input id="cm_nome" value="${U.esc(u.nome)}"></div>
-          <div class="field"><label>Cidade *</label><input id="cm_cidade" value="${U.esc(u.cidade)}"></div>
-          <div class="field"><label>UF *</label><input id="cm_uf" maxlength="2" value="${U.esc(u.uf)}"></div>
-          <div class="field full"><label>Status</label><select id="cm_status"><option ${u.status==='Ativo'?'selected':''}>Ativo</option><option ${u.status==='Inativo'?'selected':''}>Inativo</option></select></div>
-        </div>`, [
-        {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
-        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { codigo:document.getElementById('cm_codigo').value, nome:document.getElementById('cm_nome').value, cidade:document.getElementById('cm_cidade').value, uf:document.getElementById('cm_uf').value.toUpperCase(), status:document.getElementById('cm_status').value };
-          if(!data.codigo||!data.nome){ App.toast('Campos obrigatórios','Preencha código e nome.','err'); return; }
-          if(id){ Object.assign(DB.unidades.find(x=>x.id===id), data); } else { DB.unidades.push(Object.assign({id:U.uid('U')}, data)); }
-          Modal.close(); App.toast('Unidade salva','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},
-      ]);
-    } else if(tab==='produtos'){
-      const p = id ? DB.produtos.find(x=>x.id===id) : {codigo:'',cultura:'',variedade:'',tratamento:'',tamanhoSc:'',peso:'',status:'Ativo'};
-      Modal.open(id?'Editar produto':'Novo produto', `
-        <div class="form-grid">
-          <div class="field"><label>Código *</label><input id="cm_codigo" value="${U.esc(p.codigo)}"></div>
-          <div class="field"><label>Cultura *</label><input id="cm_cultura" value="${U.esc(p.cultura)}"></div>
-          <div class="field"><label>Variedade *</label><input id="cm_variedade" value="${U.esc(p.variedade)}"></div>
-          <div class="field"><label>Tratamento</label><input id="cm_trat" value="${U.esc(p.tratamento)}"></div>
-          <div class="field"><label>Tamanho SC</label><input id="cm_tam" value="${U.esc(p.tamanhoSc)}"></div>
-          <div class="field"><label>Peso (kg)</label><input id="cm_peso" value="${U.esc(p.peso)}"></div>
-          <div class="field full"><label>Status</label><select id="cm_status"><option ${p.status==='Ativo'?'selected':''}>Ativo</option><option ${p.status==='Inativo'?'selected':''}>Inativo</option></select></div>
-        </div>`, [
-        {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
-        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { codigo:document.getElementById('cm_codigo').value, cultura:document.getElementById('cm_cultura').value, variedade:document.getElementById('cm_variedade').value, tratamento:document.getElementById('cm_trat').value, tamanhoSc:document.getElementById('cm_tam').value, peso:document.getElementById('cm_peso').value, status:document.getElementById('cm_status').value };
-          if(!data.codigo||!data.cultura){ App.toast('Campos obrigatórios','Preencha código e cultura.','err'); return; }
-          if(id){ Object.assign(DB.produtos.find(x=>x.id===id), data); } else { DB.produtos.push(Object.assign({id:U.uid('P')}, data)); }
-          Modal.close(); App.toast('Produto salvo','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},
-      ]);
-    }
-  },
-
   /* ---------------------------- INDICADORES ---------------------------- */
   indicadores(){
-    const all = DB.solicitacoes;
-    const aprovadas = all.filter(s=>s.financeiro && s.financeiro.decisao && s.financeiro.decisao!=='Recusado');
-    const recusadas = all.filter(s=>s.status==='Crédito recusado');
-    const entregues = all.filter(s=>s.status==='Entregue');
-    const faturadas = all.filter(s=>s.faturamento && s.faturamento.concluido);
-    const aguardCredito = all.filter(s=>['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'].includes(s.status));
-    const aguardLogistica = all.filter(s=>s.status==='Aguardando Frete');
-
-    const byRC = {}; all.forEach(s=>byRC[s.nomeRC]=(byRC[s.nomeRC]||0)+1);
-    const byUnidade = {}; all.forEach(s=>byUnidade[U.unidadeNome(s.unidade)]=(byUnidade[U.unidadeNome(s.unidade)]||0)+1);
-    const byPgto = {}; all.forEach(s=>byPgto[s.formaPagamento]=(byPgto[s.formaPagamento]||0)+1);
-    const maxRC = Math.max(1,...Object.values(byRC));
-    const maxPgto = Math.max(1,...Object.values(byPgto));
-
-    const html = `
-      <div class="page-head"><div><h1>Indicadores</h1><p>Painel executivo do fluxo de pedidos</p></div></div>
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-green-100);color:var(--v-green-700)">${Ic('clock',17)}</div></div><div class="val">1,8 dias</div><div class="lbl">Tempo médio de aprovação</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-gold-100);color:var(--v-gold-600)">${Ic('fileText',17)}</div></div><div class="val">3,2 dias</div><div class="lbl">Tempo médio de faturamento</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-green-100);color:var(--v-green-700)">${Ic('check',17)}</div></div><div class="val">${aprovadas.length}</div><div class="lbl">Pedidos com crédito aprovado</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-red-bg);color:var(--v-red)">${Ic('x',17)}</div></div><div class="val">${recusadas.length}</div><div class="lbl">Pedidos recusados</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-green-100);color:var(--v-green-700)">${Ic('box',17)}</div></div><div class="val">${entregues.length}</div><div class="lbl">Pedidos entregues</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-blue-bg);color:var(--v-blue)">${Ic('fileText',17)}</div></div><div class="val">${faturadas.length}</div><div class="lbl">Pedidos faturados</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-amber-bg);color:var(--v-amber)">${Ic('clock',17)}</div></div><div class="val">${aguardCredito.length}</div><div class="lbl">Aguardando crédito</div></div>
-        <div class="kpi-card"><div class="top"><div class="ic" style="background:var(--v-amber-bg);color:var(--v-amber)">${Ic('truck',17)}</div></div><div class="val">${aguardLogistica.length}</div><div class="lbl">Aguardando logística</div></div>
-      </div>
-
-      <div class="dash-grid">
-        <div class="card card-pad">
-          <div class="section-title">Pedidos por RC</div>
-          <div class="bars">${Object.entries(byRC).map(([n,v])=>`<div class="bar-col"><b>${v}</b><div class="bar" style="height:${Math.max(6,(v/maxRC)*140)}px"></div><span>${n.split(' ')[0]}</span></div>`).join('')}</div>
-        </div>
-        <div class="card card-pad">
-          <div class="section-title">Pedidos por forma de pagamento</div>
-          <div class="bars">${Object.entries(byPgto).map(([n,v])=>`<div class="bar-col"><b>${v}</b><div class="bar" style="height:${Math.max(6,(v/maxPgto)*140)}px;background:linear-gradient(180deg,var(--v-gold-500),var(--v-gold-600))"></div><span style="font-size:9.5px;">${n.split(' ')[0]}</span></div>`).join('')}</div>
-        </div>
-      </div>
-
-      <div class="card card-pad">
-        <div class="section-title">Pedidos por unidade</div>
-        <div style="overflow-x:auto;"><table><thead><tr><th>Unidade</th><th>Qtd. pedidos</th><th>% do total</th></tr></thead><tbody>
-          ${Object.entries(byUnidade).map(([n,v])=>`<tr><td>${n}</td><td>${v}</td><td>${((v/all.length)*100).toFixed(0)}%</td></tr>`).join('')}
-        </tbody></table></div>
-      </div>
-    `;
-    document.getElementById('view-indicadores').innerHTML = html;
+    document.getElementById('view-indicadores').innerHTML = `<div class="card card-pad"><h1>Indicadores</h1><p>Gráficos de indicadores em construção.</p></div>`;
   },
-
   /* ---------------------------- RELATÓRIOS ---------------------------- */
   relatorios(){
-    const html = `
-      <div class="page-head"><div><h1>Relatórios</h1><p>Histórico completo de alterações e exportações</p></div></div>
-      <div class="card card-pad" style="margin-bottom:20px;">
-        <div class="section-title">Exportações disponíveis</div>
-        <div class="report-card"><div class="ic">${Ic('fileText',20)}</div><div class="txt"><b>Relatório de solicitações (CSV)</b><span>Lista completa com status e valores</span></div><button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="Render.exportSolicitacoesCSV()">${Ic('download',13)} Exportar</button></div>
-        <div class="report-card"><div class="ic">${Ic('barChart',20)}</div><div class="txt"><b>Relatório de indicadores (CSV)</b><span>KPIs e totais executivos</span></div><button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="Render.exportIndicadoresCSV()">${Ic('download',13)} Exportar</button></div>
-        <div class="report-card"><div class="ic">${Ic('clock',20)}</div><div class="txt"><b>Log de auditoria completo</b><span>Todas as alterações registradas no sistema</span></div><button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="Render.exportLogCSV()">${Ic('download',13)} Exportar</button></div>
-      </div>
-      <div class="card card-pad">
-        <div class="section-title">Histórico de alterações (log)</div>
-        ${DB.logs.length ? `<div style="overflow-x:auto;"><table><thead><tr><th>Data</th><th>Hora</th><th>Usuário</th><th>Perfil</th><th>Campo</th><th>De</th><th>Para</th><th>Pedido</th></tr></thead><tbody>
-          ${DB.logs.map(l=>`<tr><td>${l.data}</td><td>${l.hora}</td><td>${U.esc(l.usuario)}</td><td>${U.esc(l.perfil)}</td><td>${U.esc(l.campo)}</td><td>${U.esc(l.valorAnterior)}</td><td>${U.esc(l.novoValor)}</td><td class="row-link" onclick="App.navigate('detail',{id:'${l.solicitacaoId}'})">${l.solicitacaoId}</td></tr>`).join('')}
-        </tbody></table></div>` : `<div class="table-empty"><div class="ic">${Ic('inbox',30)}</div>Nenhuma alteração registrada nesta sessão ainda. Interaja com uma solicitação para gerar o log.</div>`}
-      </div>
-    `;
-    document.getElementById('view-relatorios').innerHTML = html;
+    document.getElementById('view-relatorios').innerHTML = `<div class="card card-pad"><h1>Relatórios</h1><p>Histórico de relatórios em construção.</p></div>`;
   },
-
-  /* Utilitário genérico de exportação CSV — troque por chamada de API/banco quando integrar */
-  downloadCSV(filename, headers, rows){
-    const escCell = v => { const s = (v===undefined||v===null)?'':String(v); return /[",;\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
-    const lines = [headers.map(escCell).join(';'), ...rows.map(r=>r.map(escCell).join(';'))];
-    const csv = '\uFEFF' + lines.join('\r\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  },
-
-  exportSolicitacoesCSV(){
-    const list = Render.visibleSolicitacoes();
-    if(!list.length){ App.toast('Nada para exportar','Não há solicitações visíveis para o seu perfil.','warn'); return; }
-    const headers = ['Pedido MOBI','Cliente','RC','Unidade','Produto','Quantidade','Desconto (%)','Valor Total','Forma de Pagamento','Status','Criado em'];
-    const rows = list.map(s=>[s.numeroPedidoMobi, s.cliente, s.nomeRC, U.unidadeNome(s.unidade), U.produtoLabel(s.produto), s.quantidade, s.desconto, s.valorTotal.toFixed(2), s.formaPagamento, s.status, U.fmtDateTime(s.criadoEm)]);
-    Render.downloadCSV('veros-flow-solicitacoes.csv', headers, rows);
-    App.toast('Exportação concluída','O arquivo CSV foi baixado com sucesso.','ok');
-  },
-
-  exportIndicadoresCSV(){
-    const all = DB.solicitacoes;
-    const headers = ['Indicador','Valor'];
-    const rows = [
-      ['Total de solicitações', all.length],
-      ['Crédito aprovado', all.filter(s=>s.financeiro && s.financeiro.decisao && s.financeiro.decisao!=='Recusado').length],
-      ['Crédito recusado', all.filter(s=>s.status==='Crédito recusado').length],
-      ['Pedidos entregues', all.filter(s=>s.status==='Entregue').length],
-      ['Pedidos faturados', all.filter(s=>s.faturamento && s.faturamento.concluido).length],
-      ['Aguardando crédito', all.filter(s=>['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'].includes(s.status)).length],
-      ['Aguardando logística', all.filter(s=>s.status==='Aguardando Frete').length],
-    ];
-    Render.downloadCSV('veros-flow-indicadores.csv', headers, rows);
-    App.toast('Exportação concluída','O resumo de indicadores foi baixado com sucesso.','ok');
-  },
-
-  exportLogCSV(){
-    if(!DB.logs.length){ App.toast('Nada para exportar','Ainda não há alterações registradas.','warn'); return; }
-    const headers = ['Data','Hora','Usuário','Perfil','Campo','Valor Anterior','Novo Valor','Pedido'];
-    const rows = DB.logs.map(l=>[l.data, l.hora, l.usuario, l.perfil, l.campo, l.valorAnterior, l.novoValor, l.solicitacaoId]);
-    Render.downloadCSV('veros-flow-log-auditoria.csv', headers, rows);
-    App.toast('Exportação concluída','O log de auditoria foi baixado com sucesso.','ok');
-  },
-
   /* ---------------------------- CONFIGURAÇÕES ---------------------------- */
   configuracoes(){
-    const html = `
-      <div class="page-head"><div><h1>Configurações</h1><p>Preferências do sistema e integrações</p></div></div>
-      <div class="dash-grid">
-        <div class="card card-pad">
-          <div class="section-title">Arquitetura de dados</div>
-          <div class="stage-block"><h4>${Ic('database',15)} Camada de dados desacoplada</h4><p style="font-size:12.5px;color:var(--v-ink-500);">Todo o estado do sistema (solicitações, cadastros e log) fica isolado no objeto <code>DB</code> em memória. Basta trocar as leituras/gravações por chamadas assíncronas (REST, SDK ou ORM) para persistir em qualquer banco relacional — PostgreSQL, MySQL, SQL Server, entre outros.</p><div style="margin-top:8px;"><span class="status-pill off">Estrutura pronta · sem conexão ativa neste protótipo</span></div></div>
-          <div class="stage-block"><h4>${Ic('layers',15)} Integração com o Agrotis Mobi</h4><p style="font-size:12.5px;color:var(--v-ink-500);">O formulário de Nova Solicitação já reproduz os campos do pedido gerado no Mobi. Para integrar de fato, basta substituir o preenchimento manual por uma chamada à API/exportação do Mobi que popule os mesmos campos.</p><div style="margin-top:8px;"><span class="status-pill off">Estrutura pronta · sem conexão ativa neste protótipo</span></div></div>
-          <div class="stage-block"><h4>${Ic('layers',15)} CRM comercial</h4><p style="font-size:12.5px;color:var(--v-ink-500);">Os cadastros de clientes usados hoje são digitados na solicitação; um CRM pode alimentar essa mesma tela via API para evitar redigitação.</p><div style="margin-top:8px;"><span class="status-pill off">Estrutura pronta · sem conexão ativa neste protótipo</span></div></div>
-        </div>
-        <div class="card card-pad">
-          <div class="section-title">Preferências</div>
-          <div class="field"><label>Notificações por e-mail</label><select><option>Ativadas</option><option>Desativadas</option></select></div>
-          <div class="field"><label>Fuso horário</label><select><option>América/São Paulo (GMT-3)</option></select></div>
-          <div class="field"><label>Tema</label><select><option>Claro (padrão corporativo)</option></select></div>
-          <button class="btn btn-primary btn-sm" style="margin-top:6px;" onclick="App.toast('Preferências salvas','Configurações atualizadas com sucesso.','ok')">Salvar preferências</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('view-configuracoes').innerHTML = html;
+    document.getElementById('view-configuracoes').innerHTML = `<div class="card card-pad"><h1>Configurações</h1><p>Configurações do sistema em construção.</p></div>`;
   },
-
-  /* ---------------------------- MEU PERFIL ---------------------------- */
+  /* ---------------------------- PERFIL ---------------------------- */
   perfil(){
-    const u = STATE.currentUser;
-    const html = `
-      <div class="page-head"><div><h1>Meu Perfil</h1><p>Suas informações de acesso</p></div></div>
-      <div class="profile-view">
-        <div class="card card-pad" style="text-align:center;">
-          <div class="av" style="width:80px;height:80px;border-radius:50%;background:var(--v-green-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;margin:0 auto 14px;">${U.initials(u.nome)}</div>
-          <h3 style="font-family:var(--font-display);font-size:16px;">${U.esc(u.nome)}</h3>
-          <p style="font-size:12.5px;color:var(--v-ink-500);margin-top:4px;">${U.esc(U.perfilNome(u.perfil))}</p>
-          <div style="margin-top:12px;"><span class="status-pill on">${u.status}</span></div>
-        </div>
-        <div class="card card-pad">
-          <div class="section-title">Dados cadastrais</div>
-          <div class="info-list">
-            <div class="it"><b>Email</b><span>${U.esc(u.email)}</span></div>
-            <div class="it"><b>Telefone</b><span>${U.esc(u.telefone)}</span></div>
-            <div class="it"><b>Unidade</b><span>${U.esc(U.unidadeNome(u.unidade))}</span></div>
-            <div class="it"><b>Perfil de acesso</b><span>${U.esc(U.perfilNome(u.perfil))}</span></div>
-          </div>
-          <div class="section-title" style="margin-top:24px;">Permissões</div>
-          <div>${(DB.perfis.find(p=>p.id===u.perfil)||{permissoes:[]}).permissoes.map(pm=>`<span class="perm-tag">${pm}</span>`).join('')}</div>
-        </div>
-      </div>
-    `;
-    document.getElementById('view-perfil').innerHTML = html;
+    document.getElementById('view-perfil').innerHTML = `<div class="card card-pad"><h1>Meu Perfil</h1><p>Tela de perfil em construção.</p></div>`;
   },
 };
 
