@@ -2244,7 +2244,7 @@ App.init();
 
   Data.saveUsuarioPerfil = async function(id, data){
     Data.requireConfig();
-    const { data: result, error } = await supabaseClient.functions.invoke('manage-user', {
+    const { data: result, error } = await supabaseClient.functions.invoke('manage-user-v3', {
       body:{
         action:id ? 'update' : 'create',
         user_id:id || null,
