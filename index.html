@@ -614,11 +614,11 @@ tbody tr td:first-child{font-weight:700; color:var(--v-ink-900);}
    políticas de RLS já criadas pelo veros_flow_schema.sql.
    ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
-const SUPABASE_URL = 'https://sdpwhompowjhoijrczxy.supabase.co';
+const SUPABASE_URL = 'https://sdpwhompowjhoijrczxy.supabaseClient.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__8nOKMvimCa1rVrfQrr0Ng_1_ejBWvH';
 const SUPABASE_STORAGE_BUCKET = 'anexos-veros-flow';
 const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
-const supabase = SUPABASE_CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const supabaseClient = SUPABASE_CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 /* ------------------------------------------------------------------------
    1. CACHE LOCAL (espelha as tabelas do Supabase depois de carregadas)
    ------------------------------------------------------------------------
@@ -759,8 +759,8 @@ const Data = {
   async loadCadastros(){
     Data.requireConfig();
     const [{data: unidades, error: e1}, {data: produtos, error: e2}] = await Promise.all([
-      supabase.from('unidades').select('*').order('nome'),
-      supabase.from('produtos').select('*').order('cultura'),
+      supabaseClient.from('unidades').select('*').order('nome'),
+      supabaseClient.from('produtos').select('*').order('cultura'),
     ]);
     if(e1) throw e1; if(e2) throw e2;
     DB.unidades = (unidades||[]).map(u=>({ id:u.id, codigo:u.codigo, nome:u.nome, cidade:u.cidade, uf:u.uf, status:u.status }));
@@ -769,7 +769,7 @@ const Data = {
 
   async loadUsuarios(){
     Data.requireConfig();
-    const { data, error } = await supabase.from('usuarios').select('*').order('nome');
+    const { data, error } = await supabaseClient.from('usuarios').select('*').order('nome');
     if(error) throw error;
     DB.usuarios = (data||[]).map(Data._mapUsuario);
   },
@@ -779,14 +779,14 @@ const Data = {
 
   async loadSolicitacoes(){
     Data.requireConfig();
-    const { data: rows, error } = await supabase.from('vw_solicitacoes_completas').select('*').order('created_at', {ascending:false});
+    const { data: rows, error } = await supabaseClient.from('vw_solicitacoes_completas').select('*').order('created_at', {ascending:false});
     if(error) throw error;
     const ids = (rows||[]).map(r=>r.id);
     let anexos = [], timeline = [];
     if(ids.length){
       const [{data: aData, error: aErr}, {data: tData, error: tErr}] = await Promise.all([
-        supabase.from('anexos_credito').select('*').in('solicitacao_id', ids),
-        supabase.from('timeline_eventos').select('*').in('solicitacao_id', ids).order('criado_em', {ascending:true}),
+        supabaseClient.from('anexos_credito').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('timeline_eventos').select('*').in('solicitacao_id', ids).order('criado_em', {ascending:true}),
       ]);
       if(aErr) throw aErr; if(tErr) throw tErr;
       anexos = aData||[]; timeline = tData||[];
@@ -830,7 +830,7 @@ const Data = {
 
   async loadLogs(){
     Data.requireConfig();
-    const { data, error } = await supabase.from('logs_auditoria').select('*, usuarios(nome)').order('criado_em', {ascending:false}).limit(500);
+    const { data, error } = await supabaseClient.from('logs_auditoria').select('*, usuarios(nome)').order('criado_em', {ascending:false}).limit(500);
     if(error) throw error;
     DB.logs = (data||[]).map(l=>({
       data: U.fmtDate(l.criado_em), hora: U.fmtTime(l.criado_em),
@@ -846,24 +846,24 @@ const Data = {
   async uploadFile(pastaPrefixo, file){
     if(!file) return null;
     const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\s+/g,'_');
-    const { error } = await supabase.storage.from(SUPABASE_STORAGE_BUCKET).upload(path, file, { upsert:true });
+    const { error } = await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).upload(path, file, { upsert:true });
     if(error) throw error;
     return path;
   },
 
   async logAcao(solicitacaoId, campo, de, para){
-    await supabase.from('logs_auditoria').insert({
+    await supabaseClient.from('logs_auditoria').insert({
       solicitacao_id: solicitacaoId, usuario_id: STATE.currentUser.id, perfil: STATE.currentProfile,
       campo, valor_anterior: String(de), novo_valor: String(para),
     });
   },
   async addTimeline(solicitacaoId, etapa, ruim){
-    await supabase.from('timeline_eventos').insert({ solicitacao_id: solicitacaoId, etapa, usuario_id: STATE.currentUser.id, ruim: !!ruim });
+    await supabaseClient.from('timeline_eventos').insert({ solicitacao_id: solicitacaoId, etapa, usuario_id: STATE.currentUser.id, ruim: !!ruim });
   },
 
   async createSolicitacao(payload, arquivos){
     Data.requireConfig();
-    const { data: sol, error } = await supabase.from('solicitacoes').insert({
+    const { data: sol, error } = await supabaseClient.from('solicitacoes').insert({
       numero_pedido_mobi: payload.numeroPedidoMobi, cliente: payload.cliente,
       rc_usuario_id: STATE.currentUser.id, nome_rc: payload.nomeRC,
       unidade_id: payload.unidade, produto_id: payload.produto,
@@ -874,7 +874,7 @@ const Data = {
     if(error) throw error;
 
     if(payload.solicitaCredito && payload.credito){
-      const { error: cErr } = await supabase.from('credito_solicitacoes').insert({
+      const { error: cErr } = await supabaseClient.from('credito_solicitacoes').insert({
         solicitacao_id: sol.id, limite_solicitado: payload.credito.limiteSolicitado,
         justificativa: payload.credito.justificativa, observacoes: payload.credito.observacoes,
       });
@@ -884,7 +884,7 @@ const Data = {
       for(const f of (arquivos.docs||[])){ const p = await Data.uploadFile(`${sol.id}/documentos`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'documento', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
       if(arquivos.contrato && arquivos.contrato[0]){ const f=arquivos.contrato[0]; const p = await Data.uploadFile(`${sol.id}/contrato`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'contrato', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
       for(const f of (arquivos.fin||[])){ const p = await Data.uploadFile(`${sol.id}/financeiro`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'financeiro', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
-      if(anexoRows.length){ const { error: axErr } = await supabase.from('anexos_credito').insert(anexoRows); if(axErr) throw axErr; }
+      if(anexoRows.length){ const { error: axErr } = await supabaseClient.from('anexos_credito').insert(anexoRows); if(axErr) throw axErr; }
     }
 
     await Data.addTimeline(sol.id, 'Pedido criado');
@@ -893,7 +893,7 @@ const Data = {
   },
 
   async definirSaldo(solId, disponivel){
-    const { error } = await supabase.from('adm_ubs_avaliacoes').upsert({
+    const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert({
       solicitacao_id: solId, saldo_disponivel: disponivel, avaliado_por: STATE.currentUser.id, avaliado_em: new Date().toISOString(),
     });
     if(error) throw error;
@@ -904,7 +904,7 @@ const Data = {
   },
 
   async decidirCredito(solId, decisao, motivo){
-    const { error } = await supabase.from('financeiro_decisoes').upsert({
+    const { error } = await supabaseClient.from('financeiro_decisoes').upsert({
       solicitacao_id: solId, decisao, motivo_recusa: motivo||null, decidido_por: STATE.currentUser.id, decidido_em: new Date().toISOString(),
     });
     if(error) throw error;
@@ -921,7 +921,7 @@ const Data = {
   },
 
   async salvarCotacao(solId, dados){
-    const { error } = await supabase.from('logistica_fretes').upsert({
+    const { error } = await supabaseClient.from('logistica_fretes').upsert({
       solicitacao_id: solId, transportadora: dados.transportadora, valor_frete: dados.valorFrete,
       prazo: dados.prazo, data_prevista: dados.dataPrevista,
     });
@@ -930,7 +930,7 @@ const Data = {
   },
 
   async contratarFrete(solId){
-    const { error } = await supabase.from('logistica_fretes').update({ contratado:true, contratado_em:new Date().toISOString() }).eq('solicitacao_id', solId);
+    const { error } = await supabaseClient.from('logistica_fretes').update({ contratado:true, contratado_em:new Date().toISOString() }).eq('solicitacao_id', solId);
     if(error) throw error;
     await Data._setStatus(solId, 'Frete contratado');
     await Data.addTimeline(solId, 'Frete contratado');
@@ -940,7 +940,7 @@ const Data = {
   async emitirNF(solId, dados, arquivo){
     let path = null;
     if(arquivo) path = await Data.uploadFile(`${solId}/danfe`, arquivo);
-    const { error } = await supabase.from('faturamentos').upsert({
+    const { error } = await supabaseClient.from('faturamentos').upsert({
       solicitacao_id: solId, numero_nf: dados.numeroNF, data_nf: dados.dataNF, observacoes: dados.observacoes,
       anexo_danfe_path: path, concluido:true, concluido_em: new Date().toISOString(),
     });
@@ -957,7 +957,7 @@ const Data = {
     if(dados.dataEntrega) update.data_entrega = dados.dataEntrega;
     if(dados.ocorrencias !== undefined) update.ocorrencias = dados.ocorrencias;
     if(comprovantePath) update.comprovante_path = comprovantePath;
-    const { error } = await supabase.from('logistica_fretes').update(update).eq('solicitacao_id', solId);
+    const { error } = await supabaseClient.from('logistica_fretes').update(update).eq('solicitacao_id', solId);
     if(error) throw error;
     await Data._setStatus(solId, dados.statusEntrega);
     await Data.addTimeline(solId, dados.statusEntrega==='Entregue' ? 'Pedido entregue' : 'Pedido em transporte');
@@ -971,19 +971,19 @@ const Data = {
   },
 
   async _setStatus(solId, status){
-    const { error } = await supabase.from('solicitacoes').update({ status }).eq('id', solId);
+    const { error } = await supabaseClient.from('solicitacoes').update({ status }).eq('id', solId);
     if(error) throw error;
   },
 
   async saveUnidade(id, data){
     const payload = { codigo:data.codigo, nome:data.nome, cidade:data.cidade, uf:data.uf, status:data.status };
-    const q = id ? supabase.from('unidades').update(payload).eq('id', id) : supabase.from('unidades').insert(payload);
+    const q = id ? supabaseClient.from('unidades').update(payload).eq('id', id) : supabaseClient.from('unidades').insert(payload);
     const { error } = await q;
     if(error) throw error;
   },
   async saveProduto(id, data){
     const payload = { codigo:data.codigo, cultura:data.cultura, variedade:data.variedade, tratamento:data.tratamento, tamanho_sc:data.tamanhoSc, peso_kg:data.peso||null, status:data.status };
-    const q = id ? supabase.from('produtos').update(payload).eq('id', id) : supabase.from('produtos').insert(payload);
+    const q = id ? supabaseClient.from('produtos').update(payload).eq('id', id) : supabaseClient.from('produtos').insert(payload);
     const { error } = await q;
     if(error) throw error;
   },
@@ -994,11 +994,11 @@ const Data = {
     // service_role key — a anon key do front-end não tem essa permissão.
     const payload = { nome:data.nome, email:data.email, perfil:data.perfil, unidade_id:data.unidade, telefone:data.telefone, status:data.status };
     if(id){
-      const { error } = await supabase.from('usuarios').update(payload).eq('id', id);
+      const { error } = await supabaseClient.from('usuarios').update(payload).eq('id', id);
       if(error) throw error;
     } else {
       if(!data.authId) throw new Error('Informe o ID do usuário criado no Supabase Auth.');
-      const { error } = await supabase.from('usuarios').insert(Object.assign({ id:data.authId }, payload));
+      const { error } = await supabaseClient.from('usuarios').insert(Object.assign({ id:data.authId }, payload));
       if(error) throw error;
     }
   },
@@ -1094,7 +1094,7 @@ const App = {
       return;
     }
     // Se já existir uma sessão válida (usuário não deslogou), entra direto.
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if(session){
       const ok = await App._carregarSessao(session.user.id);
       if(ok) return;
@@ -1112,7 +1112,7 @@ const App = {
     const btn = document.getElementById('btnLogin');
     btn.disabled = true; const originalLabel = btn.innerHTML; btn.innerHTML = 'Entrando...';
     try{
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
       if(error) throw error;
       const ok = await App._carregarSessao(data.user.id);
       if(!ok) throw new Error('Seu login foi validado, mas não encontramos seu cadastro na tabela "usuarios". Peça ao administrador para vincular seu acesso.');
@@ -1127,7 +1127,7 @@ const App = {
   // Busca o perfil do usuário na tabela `usuarios` e carrega os dados iniciais
   async _carregarSessao(authUserId){
     try{
-      const { data: user, error } = await supabase.from('usuarios').select('*').eq('id', authUserId).single();
+      const { data: user, error } = await supabaseClient.from('usuarios').select('*').eq('id', authUserId).single();
       if(error || !user) return false;
       STATE.currentUser = Data._mapUsuario(user);
       STATE.currentProfile = user.perfil;
@@ -1147,7 +1147,7 @@ const App = {
   },
 
   async logout(){
-    if(SUPABASE_CONFIGURED) await supabase.auth.signOut();
+    if(SUPABASE_CONFIGURED) await supabaseClient.auth.signOut();
     STATE.currentUser=null; STATE.detailId=null;
     DB.solicitacoes = []; DB.logs = []; DB.unidades = []; DB.produtos = []; DB.usuarios = [];
     document.getElementById('appShell').classList.remove('show');
