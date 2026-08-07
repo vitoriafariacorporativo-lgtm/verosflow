@@ -15,21 +15,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Patch upload path
         run: |
-          python3 <<'PY'
+          python3 - <<'PY'
+          import base64
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          old = "const path = `${pastaPrefixo}/${Date.now()}_${file.name}`.replace(/\\s+/g,'_');"
-          new = '''const safeName = String(file.name || 'arquivo')
-        .normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
-        .replace(/[^a-zA-Z0-9._-]+/g,'_')
-        .replace(/^\\.+|\\.+$/g,'')
-        .slice(0,180) || 'arquivo';
-      const safePrefix = String(pastaPrefixo || 'anexos')
-        .replace(/[^a-zA-Z0-9._\\/-]+/g,'_')
-        .replace(/\\/+/g,'/')
-        .replace(/^\\/+|\\/+$/g,'');
-      const path = `${safePrefix}/${Date.now()}_${safeName}`;'''
+          old = base64.b64decode('Y29uc3QgcGF0aCA9IGAke3Bhc3RhUHJlZml4b30vJHtEYXRlLm5vdygpfV8ke2ZpbGUubmFtZX1gLnJlcGxhY2UoL1xzKy9nLCdfJyk7').decode()
+          new = base64.b64decode('Y29uc3Qgc2FmZU5hbWUgPSBTdHJpbmcoZmlsZS5uYW1lIHx8ICdhcnF1aXZvJykKICAgICAgICAubm9ybWFsaXplKCdORkQnKS5yZXBsYWNlKC9bXHUwMzAwLVx1MDM2Zl0vZywnJykKICAgICAgICAucmVwbGFjZSgvW15hLXpBLVowLTkuXy1dKy9nLCdfJykKICAgICAgICAucmVwbGFjZSgvXlwuK3xcLiskL2csJycpCiAgICAgICAgLnNsaWNlKDAsMTgwKSB8fCAnYXJxdWl2byc7CiAgICAgIGNvbnN0IHNhZmVQcmVmaXggPSBTdHJpbmcocGFzdGFQcmVmaXhvIHx8ICdhbmV4b3MnKQogICAgICAgIC5yZXBsYWNlKC9bXmEtekEtWjAtOS5fXC8tXSsvZywnXycpCiAgICAgICAgLnJlcGxhY2UoL1wvKy9nLCcvJykKICAgICAgICAucmVwbGFjZSgvXlwvK3xcLyskL2csJycpOwogICAgICBjb25zdCBwYXRoID0gYCR7c2FmZVByZWZpeH0vJHtEYXRlLm5vdygpfV8ke3NhZmVOYW1lfWA7').decode()
           if old not in s:
               raise SystemExit('upload line not found')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
