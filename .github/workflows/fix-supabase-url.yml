@@ -1,4 +1,4 @@
-name: Fix VerOS Flow deployment
+name: VerOS Flow deployment patch
 
 on:
   push:
@@ -12,101 +12,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch index.html
-        shell: python
+      - name: Apply persistence patch
+        shell: bash
+        env:
+          PATCH_B64: PLACEHOLDER
         run: |
+          python - <<'PY'
+          import os, base64
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
+          patch=base64.b64decode(os.environ['PATCH_B64']).decode('utf-8')
+          marker='/* VEROS_FLOW_PERSISTENCE_PATCH_V1 */'
+          if marker not in s:
+              insertion='\n<script>\n'+marker+'\n'+patch+'\n</script>\n'
+              s=s.replace('</body>', insertion+'</body>')
           s=s.replace('https://sdpwhompowjhoijrczxy.supabaseClient.co','https://sdpwhompowjhoijrczxy.supabase.co')
-
-          old="""  async saveUsuarioPerfil(id, data){
-    // Só atualiza o perfil (nome, perfil, unidade, telefone, status) de um usuário
-    // que já existe no Supabase Auth. Criar login novo exige o painel do
-    // Supabase (Authentication → Users) ou uma função server-side com a
-    // service_role key — a anon key do front-end não tem essa permissão.
-    const payload = { nome:data.nome, email:data.email, perfil:data.perfil, unidade_id:data.unidade, telefone:data.telefone, status:data.status };
-    if(id){
-      const { error } = await supabaseClient.from('usuarios').update(payload).eq('id', id);
-      if(error) throw error;
-    } else {
-      if(!data.authId) throw new Error('Informe o ID do usuário criado no Supabase Auth.');
-      const { error } = await supabaseClient.from('usuarios').insert(Object.assign({ id:data.authId }, payload));
-      if(error) throw error;
-    }
-  },"""
-          new="""  async saveUsuarioPerfil(id, data){
-    Data.requireConfig();
-    const { data: result, error } = await supabaseClient.functions.invoke('manage-user', {
-      body: { action:id?'update':'create', user_id:id||null, data:{
-        nome:data.nome, email:data.email, perfil:data.perfil, unidade:data.unidade||null,
-        telefone:data.telefone||null, status:data.status||'Ativo', senha:data.senha||''
-      }}
-    });
-    if(error) throw new Error(error.message || 'Falha ao chamar o serviço de usuários.');
-    if(result?.error) throw new Error(result.error);
-    return result;
-  },"""
-          if old in s: s=s.replace(old,new)
-
-          old_user="""        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { nome:document.getElementById('cm_nome').value, email:document.getElementById('cm_email').value, perfil:document.getElementById('cm_perfil').value, unidade:document.getElementById('cm_unidade').value, telefone:document.getElementById('cm_tel').value, status:document.getElementById('cm_status').value, senha:document.getElementById('cm_senha').value };
-          if(!data.nome||!data.email){ App.toast('Campos obrigatórios','Preencha nome e email.','err'); return; }
-          if(id){ Object.assign(DB.usuarios.find(x=>x.id===id), data); } else { DB.usuarios.push(Object.assign({id:U.uid('USR')}, data)); }
-          Modal.close(); App.toast('Usuário salvo','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},"""
-          new_user="""        {label:'Salvar', cls:'btn-primary', onClick:async function(){
-          const btn=this;
-          const data={nome:document.getElementById('cm_nome').value.trim(),email:document.getElementById('cm_email').value.trim(),perfil:document.getElementById('cm_perfil').value,unidade:document.getElementById('cm_unidade').value||null,telefone:document.getElementById('cm_tel').value.trim(),status:document.getElementById('cm_status').value,senha:document.getElementById('cm_senha').value};
-          if(!data.nome||!data.email){App.toast('Campos obrigatórios','Preencha nome e email.','err');return;}
-          if(!id&&data.senha.length<6){App.toast('Senha inválida','A senha inicial deve ter pelo menos 6 caracteres.','err');return;}
-          btn.disabled=true;btn.textContent='Salvando...';
-          try{await Data.saveUsuarioPerfil(id,data);await Data.loadUsuarios();Modal.close();App.toast(id?'Usuário atualizado':'Usuário criado','Cadastro salvo no Supabase Auth e no banco.','ok');Render.renderCadTable();}
-          catch(err){console.error('[VerOS Flow] Erro ao salvar usuário:',err);App.toast('Não foi possível salvar',err.message||'Verifique o Supabase.','err');}
-          finally{btn.disabled=false;btn.textContent='Salvar';}
-        }},"""
-          if old_user in s: s=s.replace(old_user,new_user)
-
-          old_unit="""        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { codigo:document.getElementById('cm_codigo').value, nome:document.getElementById('cm_nome').value, cidade:document.getElementById('cm_cidade').value, uf:document.getElementById('cm_uf').value.toUpperCase(), status:document.getElementById('cm_status').value };
-          if(!data.codigo||!data.nome){ App.toast('Campos obrigatórios','Preencha código e nome.','err'); return; }
-          if(id){ Object.assign(DB.unidades.find(x=>x.id===id), data); } else { DB.unidades.push(Object.assign({id:U.uid('U')}, data)); }
-          Modal.close(); App.toast('Unidade salva','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},"""
-          new_unit="""        {label:'Salvar', cls:'btn-primary', onClick:async function(){
-          const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),nome:document.getElementById('cm_nome').value.trim(),cidade:document.getElementById('cm_cidade').value.trim(),uf:document.getElementById('cm_uf').value.toUpperCase().trim(),status:document.getElementById('cm_status').value};
-          if(!data.codigo||!data.nome){App.toast('Campos obrigatórios','Preencha código e nome.','err');return;}
-          btn.disabled=true;btn.textContent='Salvando...';
-          try{await Data.saveUnidade(id,data);await Data.loadCadastros();Modal.close();App.toast(id?'Unidade atualizada':'Unidade criada','Cadastro salvo no Supabase.','ok');Render.renderCadTable();}
-          catch(err){console.error('[VerOS Flow] Erro ao salvar unidade:',err);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
-          finally{btn.disabled=false;btn.textContent='Salvar';}
-        }},"""
-          if old_unit in s: s=s.replace(old_unit,new_unit)
-
-          old_prod="""        {label:'Salvar', cls:'btn-primary', onClick:()=>{
-          const data = { codigo:document.getElementById('cm_codigo').value, cultura:document.getElementById('cm_cultura').value, variedade:document.getElementById('cm_variedade').value, tratamento:document.getElementById('cm_trat').value, tamanhoSc:document.getElementById('cm_tam').value, peso:document.getElementById('cm_peso').value, status:document.getElementById('cm_status').value };
-          if(!data.codigo||!data.cultura){ App.toast('Campos obrigatórios','Preencha código e cultura.','err'); return; }
-          if(id){ Object.assign(DB.produtos.find(x=>x.id===id), data); } else { DB.produtos.push(Object.assign({id:U.uid('P')}, data)); }
-          Modal.close(); App.toast('Produto salvo','Cadastro atualizado com sucesso.','ok'); Render.renderCadTable();
-        }},"""
-          new_prod="""        {label:'Salvar', cls:'btn-primary', onClick:async function(){
-          const btn=this; const data={codigo:document.getElementById('cm_codigo').value.trim(),cultura:document.getElementById('cm_cultura').value.trim(),variedade:document.getElementById('cm_variedade').value.trim(),tratamento:document.getElementById('cm_trat').value.trim(),tamanhoSc:document.getElementById('cm_tam').value.trim(),peso:document.getElementById('cm_peso').value.trim(),status:document.getElementById('cm_status').value};
-          if(!data.codigo||!data.cultura){App.toast('Campos obrigatórios','Preencha código e cultura.','err');return;}
-          btn.disabled=true;btn.textContent='Salvando...';
-          try{await Data.saveProduto(id,data);await Data.loadCadastros();Modal.close();App.toast(id?'Produto atualizado':'Produto criado','Cadastro salvo no Supabase.','ok');Render.renderCadTable();}
-          catch(err){console.error('[VerOS Flow] Erro ao salvar produto:',err);App.toast('Não foi possível salvar',err.message||'Erro no Supabase.','err');}
-          finally{btn.disabled=false;btn.textContent='Salvar';}
-        }},"""
-          if old_prod in s: s=s.replace(old_prod,new_prod)
-
           p.write_text(s,encoding='utf-8')
-
-      - name: Commit
+          PY
+      - name: Commit patch
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Persist VerOS Flow users and catalogs in Supabase'
+          git commit -m 'Fix VerOS Flow Supabase persistence'
           git push
