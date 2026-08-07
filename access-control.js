@@ -1,27 +1,32 @@
-/* VerOS Flow — Controle de acesso por perfil + roteamento operacional */
+/* VerOS Flow — Controle de acesso e filas operacionais V2 */
 (function(){
   'use strict';
 
   const RULES = {
-    RC:          { ownOnly:true,  views:['dashboard','solicitacoes','nova','perfil'], actions:['create','timeline'] },
-    COORD_FIN:   { all:true,      views:['dashboard','solicitacoes','perfil'], actions:['finance'] },
-    COORD_LOG:   { all:true,      views:['dashboard','solicitacoes','perfil'], actions:['logistics'] },
-    ADM_UBS:     { ownUnit:true,  views:['dashboard','solicitacoes','perfil'], actions:['ubs'] },
-    OPERACOES:   { all:true,      views:['dashboard','solicitacoes','perfil'], actions:['billing'] },
-    COMERCIAL_ADM:{ all:true,     views:['dashboard','solicitacoes','nova','cadastros','indicadores','relatorios','configuracoes','perfil'], actions:['all'] }
+    RC:           { views:['dashboard','solicitacoes','nova','perfil'], actions:['create','timeline'] },
+    COORD_FIN:    { views:['dashboard','solicitacoes','perfil'], actions:['finance'] },
+    COORD_LOG:    { views:['dashboard','solicitacoes','perfil'], actions:['logistics'] },
+    ADM_UBS:      { views:['dashboard','solicitacoes','perfil'], actions:['ubs'] },
+    OPERACOES:    { views:['dashboard','solicitacoes','perfil'], actions:['billing'] },
+    COMERCIAL_ADM:{ views:['dashboard','solicitacoes','nova','cadastros','indicadores','relatorios','configuracoes','perfil'], actions:['all'] }
   };
 
   const role = () => STATE.currentProfile || '';
-  const rule = () => RULES[role()] || {views:['perfil'],actions:[]};
   const isAdmin = () => role() === 'COMERCIAL_ADM';
-  const hasAction = a => isAdmin() || rule().actions.includes('all') || rule().actions.includes(a);
+  const hasAction = a => isAdmin() || (RULES[role()]?.actions || []).includes(a);
   const solById = id => DB.solicitacoes.find(s => s.id === id);
 
+  // REGRA DEFINITIVA DE VISUALIZAÇÃO:
+  // RC = somente próprias
+  // ADM UBS = somente própria UBS
+  // Financeiro, Logística e Operações = TODAS as unidades
+  // Comercial ADM = tudo
   function canSee(sol){
     if(!sol) return false;
-    if(isAdmin() || role()==='COORD_FIN' || role()==='COORD_LOG' || role()==='OPERACOES') return true;
-    if(role()==='ADM_UBS') return sol.unidade === STATE.currentUser?.unidade;
+    if(isAdmin()) return true;
     if(role()==='RC') return sol.rcUsuarioId === STATE.currentUser?.id || sol.nomeRC === STATE.currentUser?.nome;
+    if(role()==='ADM_UBS') return sol.unidade === STATE.currentUser?.unidade;
+    if(role()==='COORD_FIN' || role()==='COORD_LOG' || role()==='OPERACOES') return true;
     return false;
   }
 
@@ -33,57 +38,66 @@
   const FIN_STATUSES = ['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'];
   const LOG_QUOTE_STATUSES = ['Aguardando Crédito e Logística','Produção','Aguardando Frete'];
   const LOG_CONTRACT_STATUSES = ['Aguardando Frete','Produção'];
-  // Conforme a regra de negócio definida: Operações pode faturar após a produção concluída.
   const BILLING_STATUSES = ['Aguardando Frete','Frete contratado'];
 
+  // Reforça a carga dos dados após a aplicação original já ter iniciado.
+  // O index.html chama App.init() antes deste arquivo; sem este refresh
+  // o Dashboard poderia permanecer com o filtro antigo (por unidade).
+  async function refreshViewAfterPatch(){
+    try{
+      if(!STATE.currentUser || !window.Render) return;
+      await Data.loadSolicitacoes();
+      if(window.App?.buildSidebar) App.buildSidebar();
+      if(STATE.view === 'detail' && STATE.detailId){ Render.detail(); }
+      else if(STATE.view === 'solicitacoes'){ Render.solicitacoes(); }
+      else { Render.dispatch(STATE.view || 'dashboard'); }
+    }catch(err){
+      console.warn('[VerOS Flow] Não foi possível atualizar a visão após aplicar controle de acesso:', err);
+    }
+  }
+
   if(window.Render){
-    Render.visibleSolicitacoes = () => DB.solicitacoes.filter(canSee);
+    // Nunca restringir Financeiro/Logística/Operações por unidade no frontend.
+    Render.visibleSolicitacoes = function(){
+      return DB.solicitacoes.filter(canSee);
+    };
 
     const originalDetail = Render.detail;
     Render.detail = function(){
       const sol = solById(STATE.detailId);
       if(!canSee(sol)){
-        deny('Você só pode visualizar as solicitações permitidas ao seu perfil e unidade.');
+        deny('Esta solicitação não está disponível para o seu perfil.');
         return App.navigate('solicitacoes');
       }
       originalDetail.apply(Render, arguments);
-      setTimeout(()=>enhanceDetail(sol), 0);
+      setTimeout(() => enhanceDetail(sol), 0);
     };
 
-    async function downloadAttachment(name){
-      try{
-        const sol = solById(STATE.detailId);
-        if(!sol || !canSee(sol)) return deny('Você não possui acesso a esta solicitação.');
-        const {data,error} = await supabaseClient.from('anexos_credito').select('storage_path').eq('solicitacao_id',sol.id).eq('nome_arquivo',name).limit(1).maybeSingle();
-        if(error) throw error;
-        if(!data?.storage_path) throw new Error('Caminho do anexo não encontrado.');
-        const {data:urlData,error:urlError} = await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).createSignedUrl(data.storage_path,300);
-        if(urlError) throw urlError;
-        if(!urlData?.signedUrl) throw new Error('Não foi possível gerar o link do anexo.');
-        window.open(urlData.signedUrl,'_blank','noopener');
-      }catch(err){ App.toast('Erro ao baixar anexo',err.message||'Tente novamente.','err'); }
-    }
-
     function stageByTitle(root,title){
-      return [...root.querySelectorAll('.stage-block')].find(el=>(el.querySelector('h4')?.textContent||'').includes(title));
+      return [...root.querySelectorAll('.stage-block')].find(el => (el.querySelector('h4')?.textContent || '').includes(title));
     }
 
     function enhanceDetail(sol){
-      const root=document.getElementById('view-detail');
+      const root = document.getElementById('view-detail');
       if(!root) return;
 
+      // Operações NÃO conclui produção. Produção é somente visualização para este perfil.
       if(role()==='OPERACOES'){
-        root.querySelectorAll('button').forEach(btn=>{ if((btn.textContent||'').includes('Marcar produção concluída')) btn.remove(); });
-        // Aguardando Frete = produção já concluída. Liberar faturamento conforme regra do perfil.
+        root.querySelectorAll('button').forEach(btn=>{
+          if((btn.textContent||'').includes('Marcar produção concluída')) btn.remove();
+        });
+
+        // Após produção concluída, Operações pode faturar em Aguardando Frete
+        // ou Frete contratado.
         if(BILLING_STATUSES.includes(sol.status) && !sol.faturamento?.concluido){
-          const stage=stageByTitle(root,'Faturamento');
+          const stage = stageByTitle(root,'Faturamento');
           if(stage && !stage.querySelector('[data-vf-billing-action]')){
-            const lock=stage.querySelector('.lock-note');
+            const lock = stage.querySelector('.lock-note');
             if(lock) lock.remove();
-            const p=document.createElement('p');
+            const p = document.createElement('p');
             p.style.cssText='font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;';
-            p.textContent='Produção concluída. Emita a nota fiscal para concluir o faturamento.';
-            const btn=document.createElement('button');
+            p.textContent='Produção concluída. Emita a NF para concluir o faturamento.';
+            const btn = document.createElement('button');
             btn.className='btn btn-primary btn-sm';
             btn.dataset.vfBillingAction='1';
             btn.textContent='Emitir NF';
@@ -93,23 +107,53 @@
         }
       }
 
-      if(role()==='COORD_LOG'){
-        // O status Aguardando Crédito e Logística representa atuação paralela de Financeiro e Logística.
-        if(LOG_QUOTE_STATUSES.includes(sol.status) && !sol.logistica?.transportadora){
-          const stage=stageByTitle(root,'Logística');
-          if(stage && !stage.querySelector('[data-vf-quote-action]')){
-            const lock=stage.querySelector('.lock-note');
-            if(lock) lock.remove();
-            const p=document.createElement('p');
-            p.style.cssText='font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;';
-            p.textContent='Registre a cotação de frete para esta solicitação.';
-            const btn=document.createElement('button');
-            btn.className='btn btn-secondary btn-sm';
-            btn.dataset.vfQuoteAction='1';
-            btn.textContent='Registrar cotação';
-            btn.onclick=()=>Render.abrirCotacaoModal(sol.id);
-            stage.appendChild(p); stage.appendChild(btn);
-          }
+      // Financeiro visualiza tudo, mas só recebe ação nas etapas financeiras.
+      if(role()==='COORD_FIN' && FIN_STATUSES.includes(sol.status) && !sol.financeiro?.decisao){
+        const stage = stageByTitle(root,'Financeiro');
+        if(stage){
+          stage.classList.remove('locked');
+          const lock = stage.querySelector('.lock-note');
+          if(lock) lock.remove();
+        }
+      }
+
+      // Financeiro pode baixar anexos financeiros das solicitações que consegue ver.
+      if(role()==='COORD_FIN'){
+        root.querySelectorAll('.upload-tag').forEach(tag=>{
+          if(tag.dataset.downloadBound==='1') return;
+          const name = tag.textContent.trim();
+          if(!name) return;
+          tag.dataset.downloadBound='1';
+          tag.style.cursor='pointer';
+          tag.title='Baixar anexo';
+          tag.onclick=async e=>{
+            e.preventDefault(); e.stopPropagation();
+            try{
+              const {data,error}=await supabaseClient.from('anexos_credito').select('storage_path').eq('solicitacao_id',sol.id).eq('nome_arquivo',name).limit(1).maybeSingle();
+              if(error) throw error;
+              if(!data?.storage_path) throw new Error('Caminho do anexo não encontrado.');
+              const {data:urlData,error:urlError}=await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).createSignedUrl(data.storage_path,300);
+              if(urlError) throw urlError;
+              if(!urlData?.signedUrl) throw new Error('Não foi possível gerar o link do anexo.');
+              window.open(urlData.signedUrl,'_blank','noopener');
+            }catch(err){ App.toast('Erro ao baixar anexo',err.message||'Tente novamente.','err'); }
+          };
+        });
+      }
+
+      if(role()==='COORD_LOG' && LOG_QUOTE_STATUSES.includes(sol.status) && !sol.logistica?.transportadora){
+        const stage=stageByTitle(root,'Logística');
+        if(stage && !stage.querySelector('[data-vf-quote-action]')){
+          const lock=stage.querySelector('.lock-note'); if(lock) lock.remove();
+          const p=document.createElement('p');
+          p.style.cssText='font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;';
+          p.textContent='Registre a cotação de frete para esta solicitação.';
+          const btn=document.createElement('button');
+          btn.className='btn btn-secondary btn-sm';
+          btn.dataset.vfQuoteAction='1';
+          btn.textContent='Registrar cotação';
+          btn.onclick=()=>Render.abrirCotacaoModal(sol.id);
+          stage.appendChild(p); stage.appendChild(btn);
         }
       }
 
@@ -119,33 +163,38 @@
           if((btn.textContent||'').includes('Sem saldo')) btn.textContent='Sem saldo / informar prazo';
         });
       }
-
-      if(hasAction('finance')) root.querySelectorAll('.upload-tag').forEach(tag=>{
-        if(tag.dataset.downloadBound==='1') return;
-        const name=tag.textContent.trim(); if(!name) return;
-        tag.dataset.downloadBound='1'; tag.style.cursor='pointer'; tag.title='Baixar anexo';
-        tag.onclick=e=>{e.preventDefault();e.stopPropagation();downloadAttachment(name);};
-      });
     }
   }
 
   if(window.App){
     App.buildSidebar=function(){
       const nav=document.getElementById('sideNav');
-      const items=[{id:'dashboard',label:'Dashboard',icon:'grid'},{id:'solicitacoes',label:'Solicitações',icon:'list'},{id:'nova',label:'Nova Solicitação',icon:'plus'},{id:'cadastros',label:'Cadastros',icon:'folder'},{id:'indicadores',label:'Indicadores',icon:'barChart'},{id:'relatorios',label:'Relatórios',icon:'fileText'},{id:'configuracoes',label:'Configurações',icon:'settings'},{id:'perfil',label:'Meu Perfil',icon:'user'}];
-      nav.innerHTML='<div class="nav-label">Menu</div>'+items.filter(i=>rule().views.includes(i.id)).map(i=>`<div class="nav-item" data-view="${i.id}" onclick="App.navigate('${i.id}')"><span class="nic">${Ic(i.icon,16)}</span><span>${i.label}</span></div>`).join('');
+      const items=[
+        {id:'dashboard',label:'Dashboard',icon:'grid'},
+        {id:'solicitacoes',label:'Solicitações',icon:'list'},
+        {id:'nova',label:'Nova Solicitação',icon:'plus'},
+        {id:'cadastros',label:'Cadastros',icon:'folder'},
+        {id:'indicadores',label:'Indicadores',icon:'barChart'},
+        {id:'relatorios',label:'Relatórios',icon:'fileText'},
+        {id:'configuracoes',label:'Configurações',icon:'settings'},
+        {id:'perfil',label:'Meu Perfil',icon:'user'}
+      ];
+      nav.innerHTML='<div class="nav-label">Menu</div>'+items.filter(i=>(RULES[role()]?.views||[]).includes(i.id)).map(i=>`<div class="nav-item" data-view="${i.id}" onclick="App.navigate('${i.id}')"><span class="nic">${Ic(i.icon,16)}</span><span>${i.label}</span></div>`).join('');
       document.getElementById('sideAvatar').textContent=U.initials(STATE.currentUser?.nome);
       document.getElementById('sideUserName').textContent=STATE.currentUser?.nome||'—';
       document.getElementById('sideUserRole').textContent=U.perfilNome(role());
-      const top=document.getElementById('btnNovaTopbar'); if(top) top.style.display=(role()==='RC'||isAdmin())?'flex':'none';
+      const top=document.getElementById('btnNovaTopbar');
+      if(top) top.style.display=(role()==='RC'||isAdmin())?'flex':'none';
     };
 
     const originalNavigate=App.navigate;
     App.navigate=function(view,params){
       if(view==='detail'){
         const sol=solById(params?.id);
-        if(!canSee(sol)){ deny('Esta solicitação não está disponível para o seu perfil.'); return; }
-      }else if(!rule().views.includes(view)){ deny('Seu perfil não possui acesso a esta área.'); return; }
+        if(!canSee(sol)) return deny('Esta solicitação não está disponível para o seu perfil.');
+      }else if(!(RULES[role()]?.views||[]).includes(view)){
+        return deny('Seu perfil não possui acesso a esta área.');
+      }
       return originalNavigate.call(App,view,params);
     };
   }
@@ -153,32 +202,14 @@
   if(window.FLOW){
     FLOW.podeEditarEtapa=function(etapa){
       if(isAdmin()) return true;
-      return (etapa==='financeiro'&&role()==='COORD_FIN') || (etapa==='logistica'&&role()==='COORD_LOG') || (etapa==='admUbs'&&role()==='ADM_UBS') || (etapa==='faturamento'&&role()==='OPERACOES');
+      return (etapa==='financeiro'&&role()==='COORD_FIN') ||
+             (etapa==='logistica'&&role()==='COORD_LOG') ||
+             (etapa==='admUbs'&&role()==='ADM_UBS') ||
+             (etapa==='faturamento'&&role()==='OPERACOES');
     };
   }
 
   if(window.Render){
-    const originalAdm=Render.admUbsAction;
-    if(originalAdm) Render.admUbsAction=async function(id,disponivel){
-      if(!hasAction('ubs')) return deny('Somente o ADM UBS da unidade da solicitação pode verificar saldo e liberar produção.');
-      const sol=solById(id); if(!canSee(sol)) return deny();
-      if(disponivel||role()!=='ADM_UBS') return originalAdm.apply(Render,arguments);
-      Modal.open('Sem saldo disponível',`<div class="field"><label>Tempo estimado para produção *</label><input id="m_tempo_producao" placeholder="Ex.: 15 dias úteis"></div>`,[
-        {label:'Cancelar',cls:'btn-ghost',onClick:()=>Modal.close()},
-        {label:'Registrar',cls:'btn-danger',onClick:async()=>{
-          const tempo=(document.getElementById('m_tempo_producao')?.value||'').trim();
-          if(!tempo) return App.toast('Campo obrigatório','Informe o tempo estimado para produção.','err');
-          try{
-            await Data.definirSaldo(sol.id,false);
-            const {error}=await supabaseClient.from('adm_ubs_avaliacoes').update({tempo_producao:tempo}).eq('solicitacao_id',sol.id);
-            if(error) throw error;
-            await Data.addTimeline(sol.id,'ADM UBS informou tempo de produção: '+tempo);
-            Modal.close(); App.toast('Avaliação registrada','Sem saldo. Tempo estimado: '+tempo,'warn'); await Data.refreshSolicitacoesData(); Render.detail();
-          }catch(err){ App.toast('Erro ao salvar',err.message||'Tente novamente.','err'); }
-        }}
-      ]);
-    };
-
     const originalFin=Render.financeiroAction;
     if(originalFin) Render.financeiroAction=async function(id,decisao){
       if(!hasAction('finance')) return deny('Somente o Coordenador Financeiro pode aprovar ou recusar crédito.');
@@ -236,6 +267,7 @@
       return originalFat.apply(Render,arguments);
     };
 
+    // Operações não pode concluir produção.
     Render.concluirProducao=async function(){ return deny('A conclusão da produção não é uma ação do perfil Operações de Negócio.'); };
 
     const originalCancelar=Render.cancelarSolicitacao;
@@ -245,31 +277,8 @@
     };
   }
 
-  if(window.DB?.perfis){
-    const perms={
-      RC:['Criar solicitação','Visualizar próprias solicitações','Acompanhar timeline'],
-      COORD_FIN:['Visualizar todas as solicitações','Aprovar / Recusar crédito','Acessar e baixar anexos financeiros'],
-      COORD_LOG:['Visualizar todas as solicitações','Cotar frete','Contratar frete','Atualizar status de entrega'],
-      ADM_UBS:['Visualizar solicitações da própria UBS','Verificar saldo','Informar tempo para produção quando necessário','Liberar produção'],
-      OPERACOES:['Visualizar todas as solicitações','Emitir NF','Concluir faturamento após produção concluída'],
-      COMERCIAL_ADM:['Acesso total','Gerenciar cadastros','Editar qualquer etapa','Gerenciar usuários','Indicadores e configurações']
-    };
-    Object.entries(perms).forEach(([id,p])=>{ const x=DB.perfis.find(v=>v.id===id); if(x) x.permissoes=p; });
-  }
-
-  if(window.supabaseClient?.auth && window.App){
-    supabaseClient.auth.onAuthStateChange((_event,session)=>{
-      if(session && STATE.currentUser) setTimeout(()=>{
-        App.buildSidebar();
-        if(STATE.view==='solicitacoes'||STATE.view==='dashboard') Render.dispatch(STATE.view);
-      },0);
-    });
-  }
-
-  setTimeout(()=>{
-    if(STATE.currentUser && window.App){
-      App.buildSidebar();
-      if(STATE.view==='solicitacoes'||STATE.view==='dashboard') Render.dispatch(STATE.view);
-    }
-  },250);
+  // Reaplica permissões e re-renderiza a tela que já pode ter sido montada
+  // antes deste arquivo carregar.
+  setTimeout(refreshViewAfterPatch, 250);
+  setTimeout(refreshViewAfterPatch, 1200);
 })();
