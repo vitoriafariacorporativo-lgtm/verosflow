@@ -126,4 +126,10 @@
     };
     Object.entries(perms).forEach(([id,p])=>{const x=DB.perfis.find(v=>v.id===id);if(x)x.permissoes=p;});
   }
+
+  // Sessões restauradas podem ser carregadas antes deste patch. Reaplica o menu assim que o Auth terminar.
+  if(window.supabase?.auth && window.App){
+    supabase.auth.onAuthStateChange((_event,session)=>{if(session)setTimeout(()=>{if(STATE.currentUser)App.buildSidebar();},0);});
+    setTimeout(()=>{if(STATE.currentUser)App.buildSidebar();},1200);
+  }
 })();
