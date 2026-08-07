@@ -1,0 +1,69 @@
+name: Patch audit display
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ajustar identificação do pedido no log
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old = "supabaseClient.from('logs_auditoria').select('*, usuarios(nome)').order('criado_em', {ascending:false}).limit(500)"
+          new = "supabaseClient.from('logs_auditoria').select('*, usuarios(nome), solicitacoes(numero_pedido_mobi)').order('criado_em', {ascending:false}).limit(500)"
+          if old not in text:
+              raise SystemExit('Consulta de logs não encontrada; nenhuma alteração aplicada.')
+          text = text.replace(old, new, 1)
+
+          old = "campo: l.campo, valorAnterior: l.valor_anterior, novoValor: l.novo_valor, solicitacaoId: l.solicitacao_id,"
+          new = "campo: l.campo, valorAnterior: l.valor_anterior, novoValor: l.novo_valor, pedido: (l.solicitacoes && l.solicitacoes.numero_pedido_mobi) || null, solicitacaoId: l.solicitacao_id,"
+          if old not in text:
+              raise SystemExit('Mapeamento de logs não encontrado; nenhuma alteração aplicada.')
+          text = text.replace(old, new, 1)
+
+          old = "${l.solicitacaoId}</span>"
+          new = "${U.esc(l.pedido || 'Pedido sem número')}</span>"
+          count = text.count(old)
+          if count < 1:
+              raise SystemExit('Renderização do pedido no dashboard não encontrada.')
+          text = text.replace(old, new)
+
+          old = "${l.solicitacaoId}</td>"
+          new = "${U.esc(l.pedido || 'Pedido sem número')}</td>"
+          count = text.count(old)
+          if count < 1:
+              raise SystemExit('Renderização do pedido no relatório não encontrada.')
+          text = text.replace(old, new)
+
+          old = "l.campo, l.valorAnterior, l.novoValor, l.solicitacaoId"
+          new = "l.campo, l.valorAnterior, l.novoValor, (l.pedido || 'Pedido sem número')"
+          if old not in text:
+              raise SystemExit('Exportação CSV não encontrada.')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Commitar correção e remover workflow temporário
+        shell: bash
+        run: |
+          rm -f .github/workflows/patch-audit-display.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/patch-audit-display.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: mostrar número do pedido no log [skip ci]"
+          git push
