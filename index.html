@@ -1,57 +1,12 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VerOS Flow · Workflow de Pedidos</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Franklin:wght@500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-/* FULL COMPLETE VEROS FLOW SOURCE */
-</style>
-</head>
-<body>
-<!-- COMPLETE SOURCE PRESERVED IN THE GENERATED FILE -->
-<script>
-/* VEROS_FLOW_USER_SYNC_FIX_V1 */
-(function(){
-  if (typeof Data === 'undefined') return;
-
-  const originalLoadCadastros = Data.loadCadastros.bind(Data);
-  Data.loadCadastros = async function(){
-    await originalLoadCadastros();
-    try { await Data.loadUsuarios(); }
-    catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
-  };
-
-  if (typeof Data.saveUsuarioPerfil === 'function') {
-    const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
-    Data.saveUsuarioPerfil = async function(id, data){
-      const result = await originalSaveUsuarioPerfil(id, data);
-      await Data.loadUsuarios();
-      if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
-        const el = document.getElementById('cadContent');
-        if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
-      }
-      return result;
-    };
-  }
-
-  window.addEventListener('load', function(){
-    setTimeout(async function(){
-      try {
-        if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
-          await Data.loadUsuarios();
-          if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
-            const el = document.getElementById('cadContent');
-            if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
-          }
-        }
-      } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
-    }, 300);
-  });
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VerOS Flow</title></head><body><div style="font-family:Arial;padding:30px">Carregando VerOS Flow…</div><script>
+(async()=>{
+ try{
+  const url='https://raw.githubusercontent.com/vitoriafariacorporativo-lgtm/verosflow/be73a0bfda57b8b92b82f12c81a6aba165679096/index.html';
+  const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('Falha ao carregar a versão base: '+r.status);
+  let html=await r.text();
+  html=html.replace('</body>','<script src="https://vitoriafariacorporativo-lgtm.github.io/verosflow/user-sync.js"></script></body>');
+  document.open(); document.write(html); document.close();
+ }catch(e){document.body.innerHTML='<pre style="font-family:monospace;white-space:pre-wrap;padding:30px">Erro ao carregar o VerOS Flow: '+String(e.message||e)+'</pre>';}
 })();
-</script>
-</body>
-</html>
+</script></body></html>
