@@ -2354,5 +2354,45 @@ App.init();
 })();
 
 </script>
+<script>
+/* VEROS_FLOW_USER_SYNC_FIX_V1 */
+(function(){
+  if (typeof Data === 'undefined') return;
+
+  const originalLoadCadastros = Data.loadCadastros.bind(Data);
+  Data.loadCadastros = async function(){
+    await originalLoadCadastros();
+    try { await Data.loadUsuarios(); }
+    catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
+  };
+
+  if (typeof Data.saveUsuarioPerfil === 'function') {
+    const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
+    Data.saveUsuarioPerfil = async function(id, data){
+      const result = await originalSaveUsuarioPerfil(id, data);
+      await Data.loadUsuarios();
+      if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+        const el = document.getElementById('cadContent');
+        if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
+      }
+      return result;
+    };
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(async function(){
+      try {
+        if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
+          await Data.loadUsuarios();
+          if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+            const el = document.getElementById('cadContent');
+            if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
+          }
+        }
+      } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
+    }, 300);
+  });
+})();
+</script>
 </body>
 </html>
