@@ -1,0 +1,45 @@
+name: Fix Supabase global collision
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-supabase-global:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rename local Supabase client
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if 'const supabaseClient =' in s:
+              print('Already fixed; nothing to do.')
+              raise SystemExit(0)
+          s = s.replace('const supabase = ', 'const supabaseClient = ', 1)
+          s = s.replace('window.supabase.', 'window.__VEROS_SUPABASE_GLOBAL__.')
+          s = s.replace('supabase.', 'supabaseClient.')
+          s = s.replace('window.__VEROS_SUPABASE_GLOBAL__.', 'window.supabase.')
+          p.write_text(s, encoding='utf-8')
+          print('Supabase client renamed to supabaseClient.')
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix Supabase client global name collision'
+          git push
