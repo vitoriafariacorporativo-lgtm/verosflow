@@ -623,12 +623,11 @@ const supabase = SUPABASE_CONFIGURED
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 /* ------------------------------------------------------------------------ */
-
+const SUPABASE_URL = 'https://sdpwhompowjhoijrczxy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__8nOKMvimCa1rVrfQrr0Ng_1_ejBWvH';
+const SUPABASE_STORAGE_BUCKET = 'anexos-veros-flow';
 const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
-const supabase = SUPABASE_CONFIGURED
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-
+const supabase = SUPABASE_CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 /* ------------------------------------------------------------------------
    1. CACHE LOCAL (espelha as tabelas do Supabase depois de carregadas)
    ------------------------------------------------------------------------
