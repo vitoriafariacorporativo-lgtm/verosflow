@@ -1,0 +1,79 @@
+name: Fix user persistence
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/workflows/fix-user-persistence.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch index.html
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '/* VEROS_FLOW_USER_SYNC_FIX_V1 */'
+          if marker in s:
+              print('Patch already present')
+              raise SystemExit(0)
+          patch = r'''<script>
+          /* VEROS_FLOW_USER_SYNC_FIX_V1 */
+          (function(){
+            if (typeof Data === 'undefined') return;
+
+            const originalLoadCadastros = Data.loadCadastros.bind(Data);
+            Data.loadCadastros = async function(){
+              await originalLoadCadastros();
+              try { await Data.loadUsuarios(); }
+              catch (err) { console.warn('VerOS Flow: falha ao carregar usuários do Supabase:', err); }
+            };
+
+            if (typeof Data.saveUsuarioPerfil === 'function') {
+              const originalSaveUsuarioPerfil = Data.saveUsuarioPerfil.bind(Data);
+              Data.saveUsuarioPerfil = async function(id, data){
+                const result = await originalSaveUsuarioPerfil(id, data);
+                await Data.loadUsuarios();
+                if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+                  const el = document.getElementById('cadContent');
+                  if (el && typeof STATE !== 'undefined' && STATE.cadTab === 'usuarios') Render.renderCadTable();
+                }
+                return result;
+              };
+            }
+
+            window.addEventListener('load', function(){
+              setTimeout(async function(){
+                try {
+                  if (typeof STATE !== 'undefined' && STATE.currentUser && typeof Data.loadUsuarios === 'function') {
+                    await Data.loadUsuarios();
+                    if (typeof Render !== 'undefined' && typeof Render.renderCadTable === 'function') {
+                      const el = document.getElementById('cadContent');
+                      if (el && STATE.cadTab === 'usuarios') Render.renderCadTable();
+                    }
+                  }
+                } catch (err) { console.warn('VerOS Flow: sincronização inicial de usuários falhou:', err); }
+              }, 300);
+            });
+          })();
+          </script>'''
+          s = s.replace('</body>', patch + '\n</body>')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: sincronizar usuários do Supabase com a interface'
+          git push
