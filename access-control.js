@@ -1,4 +1,4 @@
-/* VerOS Flow — Controle de acesso e fluxo operacional v4
+/* VerOS Flow — Controle de acesso e fluxo operacional v5
    Regra central: existe UMA solicitação de Pedido de Venda.
    Todos os perfis relevantes visualizam o mesmo pedido desde a criação;
    cada ação fica disponível somente quando seus pré-requisitos forem atendidos.
@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const ROLE = () => String(STATE.currentUser?.perfil || STATE.currentUser?.role || '').toUpperCase();
+  const ROLE = () => String(STATE.currentUser?.perfil || STATE.currentUser?.role || STATE.currentProfile || '').toUpperCase();
   const ADMIN = () => ROLE() === 'COMERCIAL_ADM';
   const ALL_ROLES = ['COORD_FIN','COORD_LOG','OPERACOES','COMERCIAL_ADM'];
   const creditApproved = s => !s?.solicitaCredito || ['Aprovado','Aprovado com ressalvas'].includes(s?.financeiro?.decisao);
@@ -17,27 +17,39 @@
   const productionFinished = s => ['Aguardando Frete','Frete contratado','Faturado','Em transporte','Entregue'].includes(s?.status) || !!s?.faturamento?.concluido;
   const freightQuoted = s => !!s?.logistica?.transportadora && Number(s?.logistica?.valorFrete || 0) > 0 && !!s?.logistica?.prazo;
 
+  // IMPORTANTE: Data._mapUsuario transforma usuarios.unidade_id em user.unidade
+  // e Data._mapSolicitacao transforma solicitacoes.unidade_id em sol.unidade.
+  // Portanto, a regra precisa usar os campos do cache da aplicação.
+  const unitIdOfPedido = s => s?.unidade_id || s?.unidadeId || s?.unidade;
+  const unitIdOfUsuario = u => u?.unidade_id || u?.unidadeId || u?.unidade;
+  const sameUnit = (s,u) => {
+    const pedido = String(unitIdOfPedido(s) ?? '').trim().toLowerCase();
+    const usuario = String(unitIdOfUsuario(u) ?? '').trim().toLowerCase();
+    return !!pedido && !!usuario && pedido === usuario;
+  };
+
   window.VEROS_FLOW_RULES = {
-    version:'4.0',
+    version:'5.0',
     roles:ROLE,
     canSee(s){
       if(!s || !STATE.currentUser) return false;
       const r=ROLE();
       if(ADMIN()) return true;
       if(r==='RC') return s.rcUsuarioId===STATE.currentUser.id || s.nomeRC===STATE.currentUser.nome;
-      if(r==='ADM_UBS') return String(s.unidade_id || s.unidadeId || '').trim().toLowerCase() === String(STATE.currentUser.unidade_id || '').trim().toLowerCase();
+      if(r==='ADM_UBS') return sameUnit(s, STATE.currentUser);
+      // Financeiro, Logística e Operações: todos os pedidos, de todas as unidades,
+      // independentemente do status e desde a criação.
       return ALL_ROLES.includes(r);
     },
-    creditApproved, creditPending, creditRejected, admDone, productionReady, productionFinished, freightQuoted
+    creditApproved, creditPending, creditRejected, admDone, productionReady, productionFinished, freightQuoted,
+    sameUnit
   };
 
-  // Sidebar/permissões: mantém navegação normal e garante acesso às solicitações.
   window.RULES = window.RULES || {};
   ['COORD_FIN','COORD_LOG','OPERACOES','COMERCIAL_ADM'].forEach(r=>{
     window.RULES[r] = window.RULES[r] || {views:['dashboard','solicitacoes','relatorios','perfil']};
   });
 
-  // 1) VISUALIZAÇÃO: todos os perfis de área veem o mesmo pedido desde a criação.
   if(window.Render){
     Render.visibleSolicitacoes = function(){
       return (DB.solicitacoes||[]).filter(VEROS_FLOW_RULES.canSee);
@@ -54,13 +66,13 @@
     }catch(e){ console.error('[VerOS Flow] refresh',e); }
   }
 
-  // 2) ADM UBS: SIM exige prazo em dias; NÃO não exige justificativa.
+  // ADM UBS: SIM exige prazo em dias; NÃO não exige justificativa.
   if(window.Render && Render.admUbsAction){
     Render.admUbsAction = async function(id, disponivel){
       const sol=DB.solicitacoes.find(s=>s.id===id);
       if(!sol) return;
       if(ROLE()!=='ADM_UBS' && !ADMIN()){ App.toast('Ação bloqueada','Somente o ADM UBS da unidade pode avaliar o saldo.','err'); return; }
-      if(ROLE()==='ADM_UBS' && String(sol.unidade_id || sol.unidadeId || '').trim().toLowerCase() !== String(STATE.currentUser.unidade_id || '').trim().toLowerCase()){ App.toast('Ação bloqueada','Este pedido pertence a outra UBS.','err'); return; }
+      if(ROLE()==='ADM_UBS' && !sameUnit(sol,STATE.currentUser)){ App.toast('Ação bloqueada','Este pedido pertence a outra UBS.','err'); return; }
       let tempo=null;
       if(disponivel){
         tempo=prompt('Informe o tempo estimado para produção (em dias):','');
@@ -89,7 +101,7 @@
     };
   }
 
-  // 3) FINANCEIRO: ação somente se o pedido realmente solicitou crédito e está pendente.
+  // FINANCEIRO: ação somente se o pedido realmente solicitou crédito e está pendente.
   if(window.Render && Render.financeiroAction){
     const originalFinanceiroAction=Render.financeiroAction.bind(Render);
     Render.financeiroAction=async function(id,decisao){
@@ -102,7 +114,7 @@
     };
   }
 
-  // 4) LOGÍSTICA: cotação pode ser feita desde a criação; contratação só quando o pedido estiver liberado.
+  // LOGÍSTICA: cotação pode ser feita desde a criação; contratação só quando o pedido estiver liberado.
   if(window.FLOW){
     FLOW.contratarFrete=async function(sol){
       sol=typeof sol==='string' ? DB.solicitacoes.find(s=>s.id===sol) : sol;
@@ -113,7 +125,7 @@
       if(!creditApproved(sol) || creditRejected(sol)){ App.toast('Ação bloqueada','A contratação depende da aprovação do crédito quando houver análise.','warn'); return; }
       const {error}=await supabaseClient.from('logistica_fretes').update({contratado:true,contratado_em:new Date().toISOString()}).eq('solicitacao_id',sol.id);
       if(error) throw error;
-      await Data.logAcao(sol.id,'Contratação de frete','—',sol.logistica.transportadora||'Frete contratado');
+      await Data.logAcao(sol.id,'Contratação de frete','—',sol.logistica?.transportadora||'Frete contratado');
       await refresh();
     };
   }
@@ -124,7 +136,7 @@
     };
   }
 
-  // 5) PRODUÇÃO: só pode ser concluída depois que ADM UBS avaliou e crédito, quando exigido, foi aprovado.
+  // PRODUÇÃO: só pode ser concluída depois que ADM UBS avaliou e crédito, quando exigido, foi aprovado.
   if(window.FLOW){
     FLOW.concluirProducao=async function(solId){
       const sol=DB.solicitacoes.find(s=>s.id===solId);
@@ -139,7 +151,7 @@
     };
   }
 
-  // 6) FATURAMENTO: fica visível desde a criação, mas a ação só libera após produção finalizada.
+  // FATURAMENTO: fica visível desde a criação, mas a ação só libera após produção finalizada.
   if(window.Render && Render.abrirFaturamentoModal){
     const originalFaturamento=Render.abrirFaturamentoModal.bind(Render);
     Render.abrirFaturamentoModal=function(id){
@@ -150,7 +162,6 @@
     };
   }
 
-  // 7) Bloqueios visuais: o pedido aparece para todos, mas os botões mostram claramente o motivo do bloqueio.
   function lockButton(btn,msg){
     if(!btn) return;
     btn.disabled=true;
@@ -171,7 +182,6 @@
       const pFinished=productionFinished(sol);
       const cReady=creditApproved(sol)&&!creditRejected(sol)&&admDone(sol);
 
-      // Financeiro: se não há crédito, mantém o pedido visível e ações bloqueadas.
       root.querySelectorAll('button').forEach(btn=>{
         const t=(btn.textContent||'').trim().toLowerCase();
         if(['aprovar','aprovar com ressalvas','recusar'].includes(t)){
@@ -189,7 +199,6 @@
         }
       });
 
-      // Faturamento: nunca esconder o estágio; deixa a ação explícita e travada até produção finalizada.
       const blocks=[...root.querySelectorAll('.stage-block')];
       const fat=blocks.find(b=>(b.querySelector('h4')?.textContent||'').toLowerCase().includes('faturamento'));
       if(fat && !sol.faturamento?.concluido){
@@ -211,11 +220,9 @@
         if(note && !pFinished) note.textContent='Faturamento disponível após informar a produção finalizada.';
       }
 
-      // Contratação não depende de produção concluída: depende da cotação + pré-requisitos do pedido.
       const contract=[...root.querySelectorAll('button')].find(b=>(b.textContent||'').trim().toLowerCase()==='contratar frete');
       if(contract && freightQuoted(sol) && cReady) contract.disabled=false;
 
-      // Comercial ADM: mantém a edição administrativa já implementada pelo admin-editor.js.
       if(ADMIN()){
         root.querySelectorAll('button').forEach(btn=>{
           const t=(btn.textContent||'').trim().toLowerCase();
@@ -237,18 +244,19 @@
     };
   }
 
-  // Reaplica o filtro quando a lista for renderizada e após refresh de dados.
   if(window.Render){
     const originalSolic=Render.solicitacoes?.bind(Render);
     if(originalSolic) Render.solicitacoes=function(){ const r=originalSolic(); setTimeout(()=>{},0); return r; };
   }
 
-  // Exposição para testes no console.
   window.VerOSFlowDebug={
     role:ROLE,
     canSee:VEROS_FLOW_RULES.canSee,
+    sameUnit,
+    unitIdOfPedido,
+    unitIdOfUsuario,
     admDone,creditApproved,productionReady,productionFinished,freightQuoted
   };
 
-  console.info('[VerOS Flow] fluxo v4 carregado — pedido único, visibilidade simultânea e ações condicionais.');
+  console.info('[VerOS Flow] fluxo v5 carregado — distribuição pela unidade do pedido.');
 })();
