@@ -14,7 +14,7 @@
   function role(){return norm(window.STATE?.currentUser?.perfil||window.STATE?.currentProfile||'');}
   function currentSol(){const id=window.STATE?.detailId;return id&&Array.isArray(window.DB?.solicitacoes)?window.DB.solicitacoes.find(s=>String(s.id)===String(id)):null;}
 
-  /* Substitui somente o UUID que aparece no breadcrumb do detalhe pelo identificador amigável do pedido. */
+  /* Substitui o UUID que aparece no texto do breadcrumb pelo identificador amigável do pedido. */
   function renderFriendlyBreadcrumb(){
     const s=currentSol();
     if(!s)return;
@@ -25,17 +25,20 @@
     ).trim();
     if(!friendly)return;
 
-    const uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const candidates=[...document.querySelectorAll('a,span,div,p')];
-    for(const el of candidates){
-      if(el.children.length>0)continue;
-      const text=String(el.textContent||'').trim();
-      if(!uuidRe.test(text)||text.toLowerCase()!==internalId.toLowerCase())continue;
-      const parent=el.parentElement;
-      const context=String(parent?.textContent||'').toLowerCase();
-      if(context.includes('solicita')){
-        el.textContent=friendly;
-        el.setAttribute('title',`Pedido: ${friendly}`);
+    const breadcrumb=document.querySelector('#view-detail .breadcrumb, .breadcrumb');
+    if(!breadcrumb)return;
+
+    /* O UUID está em um nó de texto irmão do <b>Solicitações</b>. A versão anterior
+       procurava apenas elementos sem filhos e por isso nunca encontrava esse nó. */
+    const walker=document.createTreeWalker(breadcrumb,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    let node;
+    while((node=walker.nextNode())) nodes.push(node);
+    for(const textNode of nodes){
+      if(String(textNode.nodeValue||'').toLowerCase().includes(internalId.toLowerCase())){
+        textNode.nodeValue=String(textNode.nodeValue).replace(new RegExp(internalId.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),friendly);
+        breadcrumb.setAttribute('title',`Pedido: ${friendly}`);
+        break;
       }
     }
   }
@@ -71,5 +74,5 @@
   }
   function refresh(){ensureStyles();renderFriendlyBreadcrumb();renderEstimate();renderAdmProductionAction();}
   let timer=null;function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(refresh,800);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.3',estimate};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.4',estimate};
 })();
