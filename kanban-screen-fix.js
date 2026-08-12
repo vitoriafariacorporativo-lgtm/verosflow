@@ -1,18 +1,17 @@
-/* VerOS Flow — Kanban: rolagem horizontal SOMENTE na área da tela */
+/* VerOS Flow — Kanban: layout original + UMA única rolagem horizontal na tela */
 (function(){
   'use strict';
   const STYLE_ID='vfKanbanScreenScrollFix';
+  const BOARD='[class*="kanban-board"],[class*="kanban-container"],[class*="kanban-grid"]';
+  const COL_WIDTH='380px';
 
   function install(){
-    if(!document.head) return;
+    if(!document.head)return;
     let style=document.getElementById(STYLE_ID);
     if(!style){style=document.createElement('style');style.id=STYLE_ID;document.head.appendChild(style);}
     style.textContent=`
-      /* A página fica estável; o conteúdo do Kanban é quem pode crescer horizontalmente. */
       html,body{overflow-x:hidden !important;}
-
-      #appShell.show{min-width:0 !important;width:100% !important;}
-
+      #appShell{min-width:0 !important;width:100% !important;}
       #appShell .main-area{
         flex:1 1 auto !important;
         min-width:0 !important;
@@ -23,55 +22,51 @@
         scrollbar-gutter:stable;
       }
 
-      /* Qualquer wrapper imediato do conteúdo não pode criar outra rolagem. */
-      #appShell .main-area .page,
-      #appShell .main-area .page-content,
-      #appShell .main-area .content,
-      #appShell .main-area .content-area{
-        min-width:0 !important;
-        max-width:none !important;
-        overflow-x:visible !important;
-      }
-
-      /* O board tem a largura real de todas as colunas e fica dentro do main-area. */
-      #appShell .kanban-board{
+      /* O conteúdo volta a ter o aspecto original: colunas alinhadas, mesma largura e topo. */
+      #appShell .main-area ${BOARD}{
         display:flex !important;
+        flex-direction:row !important;
         flex-wrap:nowrap !important;
         align-items:flex-start !important;
+        justify-content:flex-start !important;
         width:max-content !important;
         min-width:100% !important;
         max-width:none !important;
+        gap:16px !important;
+        padding-bottom:16px !important;
+        padding-right:24px !important;
         overflow:visible !important;
         overflow-x:visible !important;
         overflow-y:visible !important;
-        gap:16px !important;
-        padding-right:24px !important;
-        padding-bottom:16px !important;
+        box-sizing:border-box !important;
       }
 
-      #appShell .kanban-board > *,
-      #appShell .kanban-col{
-        flex:0 0 310px !important;
-        width:310px !important;
-        min-width:310px !important;
-        max-width:310px !important;
+      /* Todas as colunas têm exatamente a mesma caixa. */
+      #appShell .main-area ${BOARD} > *{
+        flex:0 0 ${COL_WIDTH} !important;
+        width:${COL_WIDTH} !important;
+        min-width:${COL_WIDTH} !important;
+        max-width:${COL_WIDTH} !important;
+        align-self:flex-start !important;
+        box-sizing:border-box !important;
         overflow-x:visible !important;
+        overflow-y:visible !important;
       }
 
-      /* Remove barras horizontais internas de QUALQUER elemento do Kanban. */
-      #appShell .kanban-board *{
+      /* Cards ocupam somente a largura interna da coluna, sem transbordar. */
+      #appShell .main-area ${BOARD} > * *{
+        box-sizing:border-box !important;
+      }
+
+      /* Nenhum elemento interno pode criar uma barra horizontal. */
+      #appShell .main-area ${BOARD} *{
         scrollbar-width:none !important;
-      }
-      #appShell .kanban-board *::-webkit-scrollbar:horizontal{
-        display:none !important;
-        height:0 !important;
-      }
-      #appShell .kanban-board,
-      #appShell .kanban-board > *,
-      #appShell .kanban-board .kanban-col,
-      #appShell .kanban-board .kanban-col-body,
-      #appShell .kanban-board .kanban-card{
         overflow-x:visible !important;
+      }
+      #appShell .main-area ${BOARD} *::-webkit-scrollbar:horizontal{
+        width:0 !important;
+        height:0 !important;
+        display:none !important;
       }
     `;
   }
@@ -80,7 +75,6 @@
     install();
     const app=document.getElementById('appShell');
     if(app){app.style.minWidth='0';app.style.width='100%';}
-
     document.querySelectorAll('#appShell .main-area').forEach(main=>{
       main.style.flex='1 1 auto';
       main.style.minWidth='0';
@@ -90,34 +84,30 @@
       main.style.overflowY='auto';
     });
 
-    document.querySelectorAll('#appShell .kanban-board').forEach(board=>{
-      board.style.display='flex';
-      board.style.flexWrap='nowrap';
-      board.style.alignItems='flex-start';
-      board.style.width='max-content';
-      board.style.minWidth='100%';
-      board.style.maxWidth='none';
-      board.style.overflow='visible';
-      board.style.overflowX='visible';
-      board.style.overflowY='visible';
+    document.querySelectorAll('#appShell .main-area '+BOARD).forEach(board=>{
+      Object.assign(board.style,{
+        display:'flex',flexDirection:'row',flexWrap:'nowrap',alignItems:'flex-start',justifyContent:'flex-start',
+        width:'max-content',minWidth:'100%',maxWidth:'none',gap:'16px',paddingBottom:'16px',paddingRight:'24px',
+        overflow:'visible',overflowX:'visible',overflowY:'visible',boxSizing:'border-box'
+      });
       Array.from(board.children).forEach(col=>{
-        col.style.flex='0 0 310px';
-        col.style.width='310px';
-        col.style.minWidth='310px';
-        col.style.maxWidth='310px';
-        col.style.overflowX='visible';
+        Object.assign(col.style,{flex:'0 0 '+COL_WIDTH,width:COL_WIDTH,minWidth:COL_WIDTH,maxWidth:COL_WIDTH,alignSelf:'flex-start',boxSizing:'border-box',overflowX:'visible',overflowY:'visible'});
+        col.querySelectorAll('*').forEach(el=>{
+          el.style.boxSizing='border-box';
+          el.style.overflowX='visible';
+          el.style.scrollbarWidth='none';
+        });
       });
     });
   }
 
   function start(){
     apply();
-    const observer=new MutationObserver(()=>apply());
+    const observer=new MutationObserver(apply);
     observer.observe(document.body,{childList:true,subtree:true});
     window.addEventListener('resize',apply);
     window.addEventListener('load',apply);
     window.addEventListener('verosflow:render',apply);
   }
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
