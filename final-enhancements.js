@@ -2,6 +2,7 @@
    1) ADM UBS: saldo + tempo de produção e também conclusão da produção.
    2) Kanban: layout controlado exclusivamente por kanban-screen-fix.js.
    3) Estimativa de entrega por pedido.
+   4) Breadcrumb do pedido: exibir número/nome do pedido em vez do UUID interno.
 */
 (function(){
   'use strict';
@@ -11,7 +12,34 @@
   const addDays=(date,days)=>{const d=new Date(date);d.setDate(d.getDate()+days);return d;};
   const fmtDate=d=>d instanceof Date&&!isNaN(d)?d.toLocaleDateString('pt-BR'):'—';
   function role(){return norm(window.STATE?.currentUser?.perfil||window.STATE?.currentProfile||'');}
-  function currentSol(){const id=window.STATE?.detailId;return id&&Array.isArray(window.DB?.solicitacoes)?window.DB.solicitacoes.find(s=>s.id===id):null;}
+  function currentSol(){const id=window.STATE?.detailId;return id&&Array.isArray(window.DB?.solicitacoes)?window.DB.solicitacoes.find(s=>String(s.id)===String(id)):null;}
+
+  /* Substitui somente o UUID que aparece no breadcrumb do detalhe pelo identificador amigável do pedido. */
+  function renderFriendlyBreadcrumb(){
+    const s=currentSol();
+    if(!s)return;
+    const internalId=String(s.id||'').trim();
+    if(!internalId)return;
+    const friendly=String(
+      s.numero_pedido_mobi ?? s.numeroPedidoMobi ?? s.numero_pedido ?? s.numeroPedido ?? s.codigo ?? s.nome ?? ''
+    ).trim();
+    if(!friendly)return;
+
+    const uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const candidates=[...document.querySelectorAll('a,span,div,p')];
+    for(const el of candidates){
+      if(el.children.length>0)continue;
+      const text=String(el.textContent||'').trim();
+      if(!uuidRe.test(text)||text.toLowerCase()!==internalId.toLowerCase())continue;
+      const parent=el.parentElement;
+      const context=String(parent?.textContent||'').toLowerCase();
+      if(context.includes('solicita')){
+        el.textContent=friendly;
+        el.setAttribute('title',`Pedido: ${friendly}`);
+      }
+    }
+  }
+
   function canAdmForSol(s){if(role()!=='ADM_UBS'||!s)return false;const u=window.STATE?.currentUser||{};const pu=s.unidade??s.unidade_id;const uu=u.unidade??u.unidade_id;return!!pu&&!!uu&&String(pu)===String(uu);}
   function ensureStyles(){
     if(document.getElementById('vfFinalEnhancementStyles'))return;
@@ -41,7 +69,7 @@
   function renderAdmProductionAction(){
     const old=document.getElementById('vfAdmProductionAction');if(old)old.remove();const s=currentSol();if(!s||!canAdmForSol(s))return;const st=norm(s.status);if(!st.includes('PRODUCAO')||st.includes('FATURAMENTO'))return;ensureStyles();const box=document.createElement('section');box.id='vfAdmProductionAction';box.className='vf-adm-production';box.innerHTML='<h4>Operação da produção</h4><p>O ADM UBS desta unidade também pode informar que a produção foi finalizada. Essa ação libera a etapa de faturamento conforme o fluxo aprovado.</p><button type="button" class="btn btn-primary" id="vfAdmFinishProduction">Informar produção finalizada →</button>';box.querySelector('#vfAdmFinishProduction').addEventListener('click',concluirProducao);const est=document.getElementById('vfDeliveryEstimate'),main=document.querySelector('#appShell .main-area');if(est&&est.parentNode)est.parentNode.insertBefore(box,est.nextSibling);else if(main)main.prepend(box);
   }
-  function refresh(){ensureStyles();renderEstimate();renderAdmProductionAction();}
+  function refresh(){ensureStyles();renderFriendlyBreadcrumb();renderEstimate();renderAdmProductionAction();}
   let timer=null;function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(refresh,800);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.2',estimate};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.3',estimate};
 })();
