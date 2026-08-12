@@ -96,8 +96,22 @@
     const s=document.createElement('script');
     s.src='final-enhancements.js?v=1.0';
     s.async=false;
-    s.onload=()=>console.info('[VerOS Flow] melhorias finais v1 carregadas');
+    s.onload=()=>{
+      console.info('[VerOS Flow] melhorias finais v1 carregadas');
+      loadKanbanScreenFix();
+    };
     s.onerror=e=>console.error('[VerOS Flow] erro ao carregar melhorias finais:',e);
+    document.head.appendChild(s);
+  }
+
+  function loadKanbanScreenFix(){
+    if(window.__vfKanbanScreenFixLoaded) return;
+    window.__vfKanbanScreenFixLoaded = true;
+    const s=document.createElement('script');
+    s.src='kanban-screen-fix.js?v=20260812';
+    s.async=false;
+    s.onload=()=>console.info('[VerOS Flow] correção de rolagem do Kanban carregada');
+    s.onerror=e=>console.error('[VerOS Flow] erro ao carregar correção do Kanban:',e);
     document.head.appendChild(s);
   }
 
@@ -129,7 +143,8 @@
 
     loadFinalEnhancements();
     console.info('[VerOS Flow] controle de acesso v10 instalado:', {
-      perfil: role(), usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
+      perfil: STATE.currentUser?.email || STATE.currentUser?.nome || '',
+      usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
       totalPedidos: DB.solicitacoes?.length || 0, pedidosVisiveis: visible().length
     });
     return true;
