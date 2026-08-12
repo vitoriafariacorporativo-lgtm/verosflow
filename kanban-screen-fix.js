@@ -1,31 +1,43 @@
-/* VerOS Flow — Kanban: uma única rolagem horizontal na tela principal */
+/* VerOS Flow — Kanban: rolagem horizontal SOMENTE na área da tela */
 (function(){
   'use strict';
-
-  const STYLE_ID = 'vfKanbanScreenScrollFix';
+  const STYLE_ID='vfKanbanScreenScrollFix';
 
   function install(){
     if(!document.head) return;
     let style=document.getElementById(STYLE_ID);
-    if(!style){
-      style=document.createElement('style');
-      style.id=STYLE_ID;
-      document.head.appendChild(style);
-    }
+    if(!style){style=document.createElement('style');style.id=STYLE_ID;document.head.appendChild(style);}
     style.textContent=`
-      /* O container da página é o único responsável pela rolagem horizontal. */
+      /* A página fica estável; o conteúdo do Kanban é quem pode crescer horizontalmente. */
+      html,body{overflow-x:hidden !important;}
+
+      #appShell.show{min-width:0 !important;width:100% !important;}
+
       #appShell .main-area{
+        flex:1 1 auto !important;
         min-width:0 !important;
-        width:100% !important;
+        width:auto !important;
         max-width:none !important;
         overflow-x:auto !important;
         overflow-y:auto !important;
+        scrollbar-gutter:stable;
       }
 
-      /* O board nunca cria uma segunda barra horizontal. */
+      /* Qualquer wrapper imediato do conteúdo não pode criar outra rolagem. */
+      #appShell .main-area .page,
+      #appShell .main-area .page-content,
+      #appShell .main-area .content,
+      #appShell .main-area .content-area{
+        min-width:0 !important;
+        max-width:none !important;
+        overflow-x:visible !important;
+      }
+
+      /* O board tem a largura real de todas as colunas e fica dentro do main-area. */
       #appShell .kanban-board{
         display:flex !important;
         flex-wrap:nowrap !important;
+        align-items:flex-start !important;
         width:max-content !important;
         min-width:100% !important;
         max-width:none !important;
@@ -33,7 +45,8 @@
         overflow-x:visible !important;
         overflow-y:visible !important;
         gap:16px !important;
-        padding-bottom:8px !important;
+        padding-right:24px !important;
+        padding-bottom:16px !important;
       }
 
       #appShell .kanban-board > *,
@@ -45,27 +58,42 @@
         overflow-x:visible !important;
       }
 
-      /* Cards e corpos das colunas não possuem rolagem horizontal própria. */
-      #appShell .kanban-col-body,
-      #appShell .kanban-card{
+      /* Remove barras horizontais internas de QUALQUER elemento do Kanban. */
+      #appShell .kanban-board *{
+        scrollbar-width:none !important;
+      }
+      #appShell .kanban-board *::-webkit-scrollbar:horizontal{
+        display:none !important;
+        height:0 !important;
+      }
+      #appShell .kanban-board,
+      #appShell .kanban-board > *,
+      #appShell .kanban-board .kanban-col,
+      #appShell .kanban-board .kanban-col-body,
+      #appShell .kanban-board .kanban-card{
         overflow-x:visible !important;
-        max-width:none !important;
       }
     `;
   }
 
   function apply(){
     install();
+    const app=document.getElementById('appShell');
+    if(app){app.style.minWidth='0';app.style.width='100%';}
+
     document.querySelectorAll('#appShell .main-area').forEach(main=>{
+      main.style.flex='1 1 auto';
       main.style.minWidth='0';
-      main.style.width='100%';
+      main.style.width='auto';
       main.style.maxWidth='none';
       main.style.overflowX='auto';
       main.style.overflowY='auto';
     });
+
     document.querySelectorAll('#appShell .kanban-board').forEach(board=>{
       board.style.display='flex';
       board.style.flexWrap='nowrap';
+      board.style.alignItems='flex-start';
       board.style.width='max-content';
       board.style.minWidth='100%';
       board.style.maxWidth='none';
@@ -84,7 +112,7 @@
 
   function start(){
     apply();
-    const observer=new MutationObserver(apply);
+    const observer=new MutationObserver(()=>apply());
     observer.observe(document.body,{childList:true,subtree:true});
     window.addEventListener('resize',apply);
     window.addEventListener('load',apply);
