@@ -25,7 +25,7 @@
       const r=ROLE();
       if(ADMIN()) return true;
       if(r==='RC') return s.rcUsuarioId===STATE.currentUser.id || s.nomeRC===STATE.currentUser.nome;
-      if(r==='ADM_UBS') return s.unidade===STATE.currentUser.unidade || s.unidadeId===STATE.currentUser.unidade_id;
+      if(r==='ADM_UBS') return window.VerOSRequestVisibility?.unitMatches ? window.VerOSRequestVisibility.unitMatches(s, STATE.currentUser) : (s.unidadeId===STATE.currentUser.unidade_id || s.unidade===STATE.currentUser.unidade);
       return ALL_ROLES.includes(r);
     },
     creditApproved, creditPending, creditRejected, admDone, productionReady, productionFinished, freightQuoted
