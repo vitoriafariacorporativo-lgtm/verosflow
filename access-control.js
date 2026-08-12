@@ -25,7 +25,7 @@
       const r=ROLE();
       if(ADMIN()) return true;
       if(r==='RC') return s.rcUsuarioId===STATE.currentUser.id || s.nomeRC===STATE.currentUser.nome;
-      if(r==='ADM_UBS') return window.VerOSRequestVisibility?.unitMatches ? window.VerOSRequestVisibility.unitMatches(s, STATE.currentUser) : (s.unidadeId===STATE.currentUser.unidade_id || s.unidade===STATE.currentUser.unidade);
+      if(r==='ADM_UBS') return String(s.unidade_id || s.unidadeId || '').trim().toLowerCase() === String(STATE.currentUser.unidade_id || '').trim().toLowerCase();
       return ALL_ROLES.includes(r);
     },
     creditApproved, creditPending, creditRejected, admDone, productionReady, productionFinished, freightQuoted
@@ -60,7 +60,7 @@
       const sol=DB.solicitacoes.find(s=>s.id===id);
       if(!sol) return;
       if(ROLE()!=='ADM_UBS' && !ADMIN()){ App.toast('Ação bloqueada','Somente o ADM UBS da unidade pode avaliar o saldo.','err'); return; }
-      if(ROLE()==='ADM_UBS' && !(sol.unidade===STATE.currentUser.unidade || sol.unidadeId===STATE.currentUser.unidade_id)){ App.toast('Ação bloqueada','Este pedido pertence a outra UBS.','err'); return; }
+      if(ROLE()==='ADM_UBS' && String(sol.unidade_id || sol.unidadeId || '').trim().toLowerCase() !== String(STATE.currentUser.unidade_id || '').trim().toLowerCase()){ App.toast('Ação bloqueada','Este pedido pertence a outra UBS.','err'); return; }
       let tempo=null;
       if(disponivel){
         tempo=prompt('Informe o tempo estimado para produção (em dias):','');
