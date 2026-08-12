@@ -49,6 +49,126 @@
       };
       Data.__userModalPatched=true;
     }
+
+    /*
+      DISTRIBUIÇÃO DAS SOLICITAÇÕES
+      Regra: um único Pedido de Venda fica visível simultaneamente para
+      Financeiro, Logística e Operações desde a criação. O ADM UBS vê os
+      pedidos da sua própria UBS. O RC vê apenas os próprios pedidos.
+      A visibilidade não depende do status da solicitação.
+    */
+    if(!Data.__requestVisibilityPatched){
+      const norm=v=>String(v??'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const role=()=>{
+        const raw=norm(STATE?.currentUser?.perfil||STATE?.currentUser?.role||STATE?.currentProfile||'');
+        const map={
+          'RC':'RC','SOLICITANTE':'RC','REQUISITANTE':'RC',
+          'ADM_UBS':'ADM_UBS','ADM UBS':'ADM_UBS','ADMINISTRADOR UBS':'ADM_UBS','ADMINISTRADOR DA UBS':'ADM_UBS',
+          'COORD_FIN':'COORD_FIN','COORDENADOR FINANCEIRO':'COORD_FIN','COORDENADOR FINANCEIRO ADM':'COORD_FIN',
+          'COORD_LOG':'COORD_LOG','COORDENADOR LOGISTICA':'COORD_LOG','COORDENADOR LOGISTICA ADM':'COORD_LOG',
+          'OPERACOES':'OPERACOES','OPERACOES DE NEGOCIO':'OPERACOES','OPERACOES NEGOCIO':'OPERACOES',
+          'COMERCIAL_ADM':'COMERCIAL_ADM','COMERCIAL ADM':'COMERCIAL_ADM','ADMINISTRADOR':'COMERCIAL_ADM'
+        };
+        return map[raw]||raw.replace(/[\s-]+/g,'_');
+      };
+      const admin=()=>role()==='COMERCIAL_ADM';
+      const field=(obj,...keys)=>{
+        for(const k of keys){ const v=obj?.[k]; if(v!==undefined&&v!==null&&String(v).trim()!=='') return v; }
+        return null;
+      };
+      const unitKey=value=>norm(value);
+      const unitMatches=(sol,user)=>{
+        const solVals=[
+          field(sol,'unidadeId','unidade_id','unidadeID'),
+          typeof sol?.unidade==='object' ? field(sol.unidade,'id','codigo','nome') : sol?.unidade,
+          sol?.unidadeNome,
+          sol?.nomeUnidade
+        ].filter(v=>v!==null);
+        const userVals=[
+          field(user,'unidadeId','unidade_id','unidadeID'),
+          typeof user?.unidade==='object' ? field(user.unidade,'id','codigo','nome') : user?.unidade,
+          user?.unidadeNome,
+          user?.nomeUnidade
+        ].filter(v=>v!==null);
+        const a=new Set(solVals.map(unitKey));
+        const b=new Set(userVals.map(unitKey));
+        for(const x of a) if(b.has(x)) return true;
+        // Quando um lado traz UUID e o outro nome/código, tenta resolver pela tabela de unidades.
+        const unidades=Array.isArray(DB?.unidades)?DB.unidades:[];
+        const expand=v=>{
+          const k=unitKey(v), u=unidades.find(x=>[x?.id,x?.codigo,x?.nome].filter(Boolean).map(unitKey).includes(k));
+          return u?[u.id,u.codigo,u.nome].filter(Boolean).map(unitKey):[k];
+        };
+        const ea=new Set(solVals.flatMap(expand)), eb=new Set(userVals.flatMap(expand));
+        for(const x of ea) if(eb.has(x)) return true;
+        return false;
+      };
+      const canSee=sol=>{
+        if(!sol||!STATE?.currentUser) return false;
+        const r=role(), u=STATE.currentUser;
+        if(admin()) return true;
+        if(r==='RC'){
+          const uid=field(u,'id','user_id');
+          return field(sol,'rcUsuarioId','rc_usuario_id')===uid || norm(field(sol,'nomeRC','nome_rc'))===norm(u.nome);
+        }
+        if(r==='ADM_UBS') return unitMatches(sol,u);
+        // Financeiro, Logística e Operações: todos os pedidos, de todas as UBS,
+        // desde o momento da criação.
+        return ['COORD_FIN','COORD_LOG','OPERACOES'].includes(r);
+      };
+      const visible=()=> (Array.isArray(DB?.solicitacoes)?DB.solicitacoes:[]).filter(canSee);
+
+      window.VerOSRequestVisibility={version:'5.0',role,canSee,visible,unitMatches};
+      window.VEROS_FLOW_RULES=window.VEROS_FLOW_RULES||{};
+      window.VEROS_FLOW_RULES.canSee=canSee;
+      window.VEROS_FLOW_RULES.roles=role;
+
+      // O renderer original usa DB.solicitacoes diretamente. Durante a renderização
+      // da lista substituímos temporariamente pela visão permitida ao usuário.
+      const originalSolic=Render.solicitacoes?.bind(Render);
+      if(originalSolic){
+        Render.solicitacoes=function(){
+          const all=DB.solicitacoes;
+          DB.solicitacoes=visible();
+          try{
+            const result=originalSolic();
+            if(result&&typeof result.finally==='function') return result.finally(()=>{DB.solicitacoes=all;});
+            DB.solicitacoes=all;
+            return result;
+          }catch(e){ DB.solicitacoes=all; throw e; }
+        };
+      }
+
+      // Impede acesso direto a um pedido de outra UBS pelo ADM UBS.
+      const originalDetail=Render.detail?.bind(Render);
+      if(originalDetail){
+        Render.detail=function(){
+          const id=STATE?.detailId||STATE?.selectedSolicitacaoId;
+          const sol=Array.isArray(DB?.solicitacoes)?DB.solicitacoes.find(s=>s.id===id):null;
+          if(sol && !canSee(sol)){
+            App.toast('Acesso restrito','Este pedido não pertence à sua UBS.','warn');
+            if(typeof App?.navigate==='function') return App.navigate('solicitacoes');
+            if(typeof App?.go==='function') return App.go('solicitacoes');
+            return;
+          }
+          return originalDetail();
+        };
+      }
+
+      // Garante que toda atualização de dados redesenhe a fila correta.
+      if(typeof Data.loadSolicitacoes==='function' && !Data.__requestLoadWrapped){
+        const load=Data.loadSolicitacoes.bind(Data);
+        Data.loadSolicitacoes=async function(){
+          const result=await load();
+          DB.__allSolicitacoes=Array.isArray(DB.solicitacoes)?DB.solicitacoes.slice():[];
+          return result;
+        };
+        Data.__requestLoadWrapped=true;
+      }
+
+      console.info('[VerOS Flow] distribuição de solicitações v5 carregada:',role());
+    }
+
     return true;
   }
 
@@ -59,6 +179,7 @@
         if(typeof STATE!=='undefined' && STATE.currentUser){
           await Data.loadUsuarios();
           if(STATE.cadTab==='usuarios' && document.getElementById('cadContent')) Render.renderCadTable();
+          if(STATE.view==='solicitacoes' && window.Render?.solicitacoes) Render.solicitacoes();
         }
       }catch(err){console.warn('VerOS Flow: falha ao sincronizar usuários:',err);}
     },300);
