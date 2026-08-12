@@ -36,24 +36,12 @@
       STATE?.currentProfile || ''
     );
     const map = {
-      RC:'RC',
-      SOLICITANTE:'RC',
-      REQUISITANTE:'RC',
-      ADM_UBS:'ADM_UBS',
-      ADM_UBS_:'ADM_UBS',
-      ADMINISTRADOR_UBS:'ADM_UBS',
-      ADMINISTRADOR_DA_UBS:'ADM_UBS',
-      COORD_FIN:'COORD_FIN',
-      COORDENADOR_FINANCEIRO:'COORD_FIN',
-      COORDENADOR_FINANCEIRO_ADM:'COORD_FIN',
-      COORD_LOG:'COORD_LOG',
-      COORDENADOR_LOGISTICA:'COORD_LOG',
-      COORDENADOR_LOGISTICA_ADM:'COORD_LOG',
-      OPERACOES:'OPERACOES',
-      OPERACOES_DE_NEGOCIO:'OPERACOES',
-      OPERACOES_NEGOCIO:'OPERACOES',
-      COMERCIAL_ADM:'COMERCIAL_ADM',
-      ADMINISTRADOR:'COMERCIAL_ADM'
+      RC:'RC', SOLICITANTE:'RC', REQUISITANTE:'RC',
+      ADM_UBS:'ADM_UBS', ADM_UBS_:'ADM_UBS', ADMINISTRADOR_UBS:'ADM_UBS', ADMINISTRADOR_DA_UBS:'ADM_UBS',
+      COORD_FIN:'COORD_FIN', COORDENADOR_FINANCEIRO:'COORD_FIN', COORDENADOR_FINANCEIRO_ADM:'COORD_FIN',
+      COORD_LOG:'COORD_LOG', COORDENADOR_LOGISTICA:'COORD_LOG', COORDENADOR_LOGISTICA_ADM:'COORD_LOG',
+      OPERACOES:'OPERACOES', OPERACOES_DE_NEGOCIO:'OPERACOES', OPERACOES_NEGOCIO:'OPERACOES',
+      COMERCIAL_ADM:'COMERCIAL_ADM', ADMINISTRADOR:'COMERCIAL_ADM'
     };
     return map[raw] || raw;
   }
@@ -73,8 +61,6 @@
   }
 
   function unitMatches(sol,user){
-    // A distribuição do ADM UBS usa a UNIDADE DO PEDIDO.
-    // A unidade do RC nunca participa desta decisão.
     const pedido = field(sol,'unidade','unidade_id','unidadeId');
     const unidadeUser = field(user,'unidade','unidade_id','unidadeId');
     return !!pedido && !!unidadeUser && norm(pedido) === norm(unidadeUser);
@@ -84,26 +70,19 @@
     const u = currentUser();
     const uid = field(u,'id','user_id');
     if(!uid) return false;
-    return (
-      norm(field(sol,'rcUsuarioId','rc_usuario_id')) === norm(uid) ||
-      norm(field(sol,'criadoPor','criado_por')) === norm(uid) ||
-      norm(field(sol,'nomeRC','nome_rc')) === norm(u.nome)
-    );
+    return norm(field(sol,'rcUsuarioId','rc_usuario_id')) === norm(uid) ||
+           norm(field(sol,'criadoPor','criado_por')) === norm(uid) ||
+           norm(field(sol,'nomeRC','nome_rc')) === norm(u.nome);
   }
 
   function canSee(sol){
     const r = role();
     const u = currentUser();
     if(!sol) return false;
-
     if(r === 'COMERCIAL_ADM') return true;
     if(r === 'RC') return own(sol);
     if(r === 'ADM_UBS') return unitMatches(sol,u);
-
-    // REGRA GLOBAL APROVADA: estes perfis visualizam TODOS os pedidos.
-    // Não filtrar por unidade, RC, crédito ou status.
     if(r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
-
     return false;
   }
 
@@ -111,29 +90,33 @@
     return Array.isArray(DB?.solicitacoes) ? DB.solicitacoes.filter(canSee) : [];
   }
 
+  function loadFinalEnhancements(){
+    if(window.__vfFinalEnhancementsLoaded) return;
+    window.__vfFinalEnhancementsLoaded = true;
+    const s=document.createElement('script');
+    s.src='final-enhancements.js?v=1.0';
+    s.async=false;
+    s.onload=()=>console.info('[VerOS Flow] melhorias finais v1 carregadas');
+    s.onerror=e=>console.error('[VerOS Flow] erro ao carregar melhorias finais:',e);
+    document.head.appendChild(s);
+  }
+
   function install(){
-    // STATE, DB e Render são const declaradas pelo index.html.
-    // Elas não precisam e não devem ser acessadas via window.*.
     if(typeof STATE === 'undefined' || typeof DB === 'undefined' || typeof Render === 'undefined') return false;
     if(typeof Render.visibleSolicitacoes !== 'function') return false;
 
-    window.VerOSRequestVisibility = {
-      version:'10.0', role, canSee, visible, unitMatches, currentUser
-    };
+    window.VerOSRequestVisibility = {version:'10.0', role, canSee, visible, unitMatches, currentUser};
     window.VEROS_FLOW_RULES = window.VEROS_FLOW_RULES || {};
     window.VEROS_FLOW_RULES.version = '10.0';
     window.VEROS_FLOW_RULES.canSee = canSee;
     window.VEROS_FLOW_RULES.roles = role;
     window.VEROS_FLOW_RULES.visible = visible;
 
-    // Esta é a função efetivamente chamada pelo Dashboard e pela tela Solicitações.
     Render.visibleSolicitacoes = function(){
       const all = Array.isArray(DB.solicitacoes) ? DB.solicitacoes : [];
       const result = visible();
       console.info('[VerOS Flow] visibleSolicitacoes', {
-        perfil: role(),
-        totalPedidos: all.length,
-        pedidosVisiveis: result.length,
+        perfil: role(), totalPedidos: all.length, pedidosVisiveis: result.length,
         regra: role()==='COORD_FIN' ? 'FINANCEIRO — TODOS OS PEDIDOS' :
                role()==='COORD_LOG' ? 'LOGÍSTICA — TODOS OS PEDIDOS' :
                role()==='OPERACOES' ? 'OPERAÇÕES — TODOS OS PEDIDOS' :
@@ -144,20 +127,15 @@
       return result;
     };
 
+    loadFinalEnhancements();
     console.info('[VerOS Flow] controle de acesso v10 instalado:', {
-      perfil: role(),
-      usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
-      totalPedidos: DB.solicitacoes?.length || 0,
-      pedidosVisiveis: visible().length
+      perfil: role(), usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
+      totalPedidos: DB.solicitacoes?.length || 0, pedidosVisiveis: visible().length
     });
     return true;
   }
 
   let attempts = 0;
-  const timer = setInterval(() => {
-    attempts++;
-    if(install() || attempts >= 200) clearInterval(timer);
-  },100);
-
+  const timer = setInterval(() => { attempts++; if(install() || attempts >= 200) clearInterval(timer); },100);
   window.addEventListener('load', install);
 })();
