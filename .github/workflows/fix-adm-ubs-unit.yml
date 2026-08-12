@@ -1,0 +1,51 @@
+name: Fix ADM UBS unit rule
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch ADM UBS to use ONLY the order unit
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('access-control.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = "if(r==='ADM_UBS') return window.VerOSRequestVisibility?.unitMatches ? window.VerOSRequestVisibility.unitMatches(s, STATE.currentUser) : (s.unidadeId===STATE.currentUser.unidade_id || s.unidade===STATE.currentUser.unidade);"
+          new = "if(r==='ADM_UBS') return String(s.unidade_id || s.unidadeId || '').trim().toLowerCase() === String(STATE.currentUser.unidade_id || '').trim().toLowerCase();"
+
+          if old in s:
+              s = s.replace(old, new)
+          elif new not in s:
+              raise SystemExit('Target rule not found; refusing to modify the file.')
+
+          old2 = "if(ROLE()==='ADM_UBS' && !(sol.unidade===STATE.currentUser.unidade || sol.unidadeId===STATE.currentUser.unidade_id)){"
+          new2 = "if(ROLE()==='ADM_UBS' && String(sol.unidade_id || sol.unidadeId || '').trim().toLowerCase() !== String(STATE.currentUser.unidade_id || '').trim().toLowerCase()){"
+
+          if old2 in s:
+              s = s.replace(old2, new2)
+          elif new2 not in s:
+              raise SystemExit('ADM UBS action rule not found; refusing to modify the file.')
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit correction
+        run: |
+          if git diff --quiet -- access-control.js; then
+            echo 'No change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add access-control.js
+          git commit -m 'Corrigir ADM UBS pela unidade informada no pedido'
+          git push
