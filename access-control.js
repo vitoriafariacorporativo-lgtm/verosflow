@@ -1,131 +1,154 @@
-/* VerOS Flow — Controle de acesso e VISIBILIDADE v9
-   Regra aprovada do fluxo:
+/* VerOS Flow — Controle de acesso e VISIBILIDADE v10
+   REGRA APROVADA DO FLUXO
    - RC: somente seus próprios pedidos.
-   - ADM UBS: somente pedidos cuja UNIDADE DO PEDIDO seja igual à unidade do ADM UBS.
-     Pode existir N ADM UBS para a mesma unidade; todos visualizam.
-   - Financeiro: TODOS os pedidos, independentemente da unidade e do crédito.
-   - Logística: TODOS os pedidos, independentemente da unidade e do status.
-   - Operações de Negócio: TODOS os pedidos, independentemente da unidade e do status.
+   - ADM UBS: pedidos cuja UNIDADE DO PEDIDO seja igual à unidade do ADM UBS.
+     Pode existir mais de um ADM UBS para a mesma unidade; todos visualizam.
+   - Financeiro: TODOS os pedidos, independentemente da unidade, crédito ou status.
+   - Logística: TODOS os pedidos, independentemente da unidade ou status.
+   - Operações de Negócio: TODOS os pedidos, independentemente da unidade ou status.
    - Comercial ADM: TODOS os pedidos.
 
-   IMPORTANTE: visibilidade não libera ações. As ações continuam obedecendo ao
-   fluxo aprovado: produção/contratação/faturamento permanecem bloqueados até
-   seus respectivos pré-requisitos.
- */
+   IMPORTANTE: visibilidade não libera ação. As ações continuam obedecendo
+   ao fluxo aprovado e aos pré-requisitos de cada etapa.
+*/
 (function(){
   'use strict';
 
-  function norm(s){
-    return String(s || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g,'')
-      .replace(/[\s-]+/g,'_');
-  }
+  const norm = v => String(v ?? '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\s-]+/g,'_');
 
-  function profile(){
-    return norm(window.STATE?.currentProfile || window.STATE?.currentUser?.perfil || '');
-  }
-
-  function user(){ return window.STATE?.currentUser || {}; }
-
-  function isRC(){
-    return ['RC','SOLICITANTE','REQUISITANTE','SOLICITANTE_RC'].includes(profile());
-  }
-
-  function isAdmUbs(){
-    return ['ADM_UBS','ADMINISTRADOR_UBS','ADMINISTRADOR_DA_UBS'].includes(profile());
-  }
-
-  // Não usar unidade para esses perfis.
-  // Aceita as nomenclaturas usadas no cadastro atual do VerOS Flow.
-  function isFinanceiro(){
-    const p = profile();
-    return p === 'COORD_FIN' || p === 'COORDENADOR_FINANCEIRO' ||
-           p.includes('FINANCEIRO') || p.includes('COORD_FIN');
-  }
-
-  function isLogistica(){
-    const p = profile();
-    return p === 'COORD_LOG' || p === 'COORDENADOR_LOGISTICA' ||
-           p.includes('LOGISTICA') || p.includes('COORD_LOG');
-  }
-
-  function isOperacoes(){
-    const p = profile();
-    return p === 'OPERACOES' || p === 'OPERACOES_DE_NEGOCIO' ||
-           p === 'OPERACOES_NEGOCIO' || p.includes('OPERACOES') ||
-           p.includes('OPERACAO') || p.includes('NEGOCIO');
-  }
-
-  function isComercialAdm(){
-    return profile().includes('COMERCIAL_ADM') || profile().includes('COMERCIAL') && profile().includes('ADM');
-  }
-
-  function isGlobal(){
-    return isFinanceiro() || isLogistica() || isOperacoes() || isComercialAdm();
-  }
-
-  function allRequests(){
-    return Array.isArray(window.DB?.solicitacoes) ? window.DB.solicitacoes.slice() : [];
-  }
-
-  function same(a,b){
-    return String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
-  }
-
-  function visibleSolicitacoes(){
-    const all = allRequests();
-    const p = profile();
-    const u = user();
-
-    // 1. ÁREAS GLOBAIS: todos os pedidos desde a criação.
-    // A etapa/status NÃO pode esconder o pedido. Somente as ações são bloqueadas.
-    if(isGlobal()) return all;
-
-    // 2. RC: somente seus próprios pedidos.
-    if(isRC()){
-      const uid = String(u.id || '').toLowerCase();
-      const nome = norm(u.nome);
-      return all.filter(sol => {
-        const sid = String(sol.id_solicitante || '').toLowerCase();
-        return sid === uid || norm(sol.nome_solicitante) === nome;
-      });
+  const field = (obj,...keys) => {
+    for(const k of keys){
+      const v = obj?.[k];
+      if(v !== undefined && v !== null && String(v).trim() !== '') return v;
     }
+    return null;
+  };
 
-    // 3. ADM UBS: usa SOMENTE a unidade informada no pedido.
-    // A unidade cadastrada do RC jamais participa desta decisão.
-    if(isAdmUbs()){
-      const unidadeAdm = u.unidade ?? u.unidade_id;
-      if(!unidadeAdm) return [];
-      return all.filter(sol => same(sol.unidade_pedido, unidadeAdm));
+  function role(){
+    const raw = norm(
+      STATE?.currentUser?.perfil ||
+      STATE?.currentUser?.role ||
+      STATE?.currentProfile || ''
+    );
+    const map = {
+      RC:'RC',
+      SOLICITANTE:'RC',
+      REQUISITANTE:'RC',
+      ADM_UBS:'ADM_UBS',
+      ADM_UBS_:'ADM_UBS',
+      ADMINISTRADOR_UBS:'ADM_UBS',
+      ADMINISTRADOR_DA_UBS:'ADM_UBS',
+      COORD_FIN:'COORD_FIN',
+      COORDENADOR_FINANCEIRO:'COORD_FIN',
+      COORDENADOR_FINANCEIRO_ADM:'COORD_FIN',
+      COORD_LOG:'COORD_LOG',
+      COORDENADOR_LOGISTICA:'COORD_LOG',
+      COORDENADOR_LOGISTICA_ADM:'COORD_LOG',
+      OPERACOES:'OPERACOES',
+      OPERACOES_DE_NEGOCIO:'OPERACOES',
+      OPERACOES_NEGOCIO:'OPERACOES',
+      COMERCIAL_ADM:'COMERCIAL_ADM',
+      ADMINISTRADOR:'COMERCIAL_ADM'
+    };
+    return map[raw] || raw;
+  }
+
+  function currentUser(){
+    const u = STATE?.currentUser || {};
+    if(Array.isArray(DB?.usuarios)){
+      const uid = field(u,'id','user_id');
+      const email = field(u,'email');
+      const found = DB.usuarios.find(x =>
+        (uid && norm(field(x,'id','user_id')) === norm(uid)) ||
+        (email && norm(x.email) === norm(email))
+      );
+      if(found) return {...u,...found};
     }
+    return u;
+  }
 
-    return [];
+  function unitMatches(sol,user){
+    // A distribuição do ADM UBS usa a UNIDADE DO PEDIDO.
+    // A unidade do RC nunca participa desta decisão.
+    const pedido = field(sol,'unidade','unidade_id','unidadeId');
+    const unidadeUser = field(user,'unidade','unidade_id','unidadeId');
+    return !!pedido && !!unidadeUser && norm(pedido) === norm(unidadeUser);
+  }
+
+  function own(sol){
+    const u = currentUser();
+    const uid = field(u,'id','user_id');
+    if(!uid) return false;
+    return (
+      norm(field(sol,'rcUsuarioId','rc_usuario_id')) === norm(uid) ||
+      norm(field(sol,'criadoPor','criado_por')) === norm(uid) ||
+      norm(field(sol,'nomeRC','nome_rc')) === norm(u.nome)
+    );
+  }
+
+  function canSee(sol){
+    const r = role();
+    const u = currentUser();
+    if(!sol) return false;
+
+    if(r === 'COMERCIAL_ADM') return true;
+    if(r === 'RC') return own(sol);
+    if(r === 'ADM_UBS') return unitMatches(sol,u);
+
+    // REGRA GLOBAL APROVADA: estes perfis visualizam TODOS os pedidos.
+    // Não filtrar por unidade, RC, crédito ou status.
+    if(r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
+
+    return false;
+  }
+
+  function visible(){
+    return Array.isArray(DB?.solicitacoes) ? DB.solicitacoes.filter(canSee) : [];
   }
 
   function install(){
-    if(!window.Render || typeof window.Render.visibleSolicitacoes !== 'function') return false;
+    // STATE, DB e Render são const declaradas pelo index.html.
+    // Elas não precisam e não devem ser acessadas via window.*.
+    if(typeof STATE === 'undefined' || typeof DB === 'undefined' || typeof Render === 'undefined') return false;
+    if(typeof Render.visibleSolicitacoes !== 'function') return false;
 
-    // Esta é a função realmente consumida por Dashboard e Solicitações.
-    window.Render.visibleSolicitacoes = visibleSolicitacoes;
-
+    window.VerOSRequestVisibility = {
+      version:'10.0', role, canSee, visible, unitMatches, currentUser
+    };
     window.VEROS_FLOW_RULES = window.VEROS_FLOW_RULES || {};
-    window.VEROS_FLOW_RULES.version = '9.0';
-    window.VEROS_FLOW_RULES.roles = profile;
-    window.VEROS_FLOW_RULES.canSee = sol => visibleSolicitacoes().some(x => x.id === sol?.id);
-    window.VEROS_FLOW_RULES.visible = visibleSolicitacoes;
+    window.VEROS_FLOW_RULES.version = '10.0';
+    window.VEROS_FLOW_RULES.canSee = canSee;
+    window.VEROS_FLOW_RULES.roles = role;
+    window.VEROS_FLOW_RULES.visible = visible;
 
-    console.info('[VerOS Flow] controle de acesso v9 instalado:', {
-      perfil: profile(),
-      totalPedidos: all.length,
-      pedidosVisiveis: visibleSolicitacoes().length,
-      regra: isFinanceiro() ? 'FINANCEIRO — TODOS OS PEDIDOS' :
-             isLogistica() ? 'LOGÍSTICA — TODOS OS PEDIDOS' :
-             isOperacoes() ? 'OPERAÇÕES — TODOS OS PEDIDOS' :
-             isComercialAdm() ? 'COMERCIAL ADM — TODOS OS PEDIDOS' :
-             isAdmUbs() ? 'ADM UBS — PEDIDOS DA UNIDADE' :
-             isRC() ? 'RC — PEDIDOS PRÓPRIOS' : 'DESCONHECIDO'
+    // Esta é a função efetivamente chamada pelo Dashboard e pela tela Solicitações.
+    Render.visibleSolicitacoes = function(){
+      const all = Array.isArray(DB.solicitacoes) ? DB.solicitacoes : [];
+      const result = visible();
+      console.info('[VerOS Flow] visibleSolicitacoes', {
+        perfil: role(),
+        totalPedidos: all.length,
+        pedidosVisiveis: result.length,
+        regra: role()==='COORD_FIN' ? 'FINANCEIRO — TODOS OS PEDIDOS' :
+               role()==='COORD_LOG' ? 'LOGÍSTICA — TODOS OS PEDIDOS' :
+               role()==='OPERACOES' ? 'OPERAÇÕES — TODOS OS PEDIDOS' :
+               role()==='ADM_UBS' ? 'ADM UBS — UNIDADE DO PEDIDO' :
+               role()==='RC' ? 'RC — PRÓPRIOS' :
+               role()==='COMERCIAL_ADM' ? 'COMERCIAL ADM — TODOS' : 'SEM REGRA'
+      });
+      return result;
+    };
+
+    console.info('[VerOS Flow] controle de acesso v10 instalado:', {
+      perfil: role(),
+      usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
+      totalPedidos: DB.solicitacoes?.length || 0,
+      pedidosVisiveis: visible().length
     });
     return true;
   }
@@ -133,10 +156,8 @@
   let attempts = 0;
   const timer = setInterval(() => {
     attempts++;
-    install();
-    if(attempts >= 200) clearInterval(timer);
-  }, 100);
+    if(install() || attempts >= 200) clearInterval(timer);
+  },100);
 
-  // Também tenta após o carregamento inicial, caso Render seja definido depois.
   window.addEventListener('load', install);
 })();
