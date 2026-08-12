@@ -63,18 +63,5 @@
       }catch(err){console.warn('VerOS Flow: falha ao sincronizar usuários:',err);}
     },300);
   }
-
-  // Carrega o editor administrativo de pedidos sem alterar o bundle principal.
-  // O arquivo aguarda Data/Render e funciona tanto antes quanto depois do access-control.js.
-  function loadAdminEditor(){
-    if(document.getElementById('vfAdminEditorScript')) return;
-    const s=document.createElement('script');
-    s.id='vfAdminEditorScript';
-    s.src='admin-editor.js?v=20260812';
-    s.async=false;
-    document.head.appendChild(s);
-  }
-
   sync();
-  loadAdminEditor();
 })();
