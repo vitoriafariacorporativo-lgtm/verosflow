@@ -3,7 +3,7 @@
    2) Kanban: layout controlado exclusivamente por kanban-screen-fix.js.
    3) Estimativa de entrega por pedido.
    4) Breadcrumb do pedido: exibir número/nome do pedido em vez do UUID interno.
-   5) Análise de crédito: exibir caixa de texto obrigatória ao selecionar "Aprovar com ressalvas".
+   5) Análise de crédito: caixa de texto obrigatória ao selecionar "Aprovar com ressalvas".
 */
 (function(){
   'use strict';
@@ -27,10 +27,9 @@
       .vf-adm-production h4{font-family:var(--font-display);font-size:13px;margin-bottom:6px;}
       .vf-adm-production p{font-size:12px;color:var(--v-ink-500);margin-bottom:10px;line-height:1.45;}
       .vf-adm-production .btn{margin-right:7px;margin-top:5px;}
-      .vf-credit-remarks{margin:10px 0 16px;padding:14px 16px;border:1px solid var(--v-line);border-left:4px solid var(--v-amber);border-radius:10px;background:#fffdf8;box-shadow:var(--v-shadow-sm);}
-      .vf-credit-remarks label{display:block;margin-bottom:7px;font-size:12.5px;font-weight:700;color:var(--v-ink-700);}
-      .vf-credit-remarks .vf-credit-remarks-hint{font-size:11.5px;line-height:1.45;color:var(--v-ink-500);margin-bottom:8px;}
-      .vf-credit-remarks textarea{width:100%;min-height:92px;resize:vertical;padding:10px 12px;border:1.5px solid var(--v-line);border-radius:8px;background:#fff;color:var(--v-ink-900);font:14px var(--font-body);transition:border-color .15s,box-shadow .15s;}
+      .vf-credit-remarks{margin:10px 0 16px;padding:14px 16px;border:1px solid var(--v-line);border-left:4px solid var(--v-green-600);border-radius:10px;background:#fff;box-shadow:var(--v-shadow-sm);}
+      .vf-credit-remarks label{display:block;margin-bottom:7px;font-size:13px;font-weight:700;color:var(--v-ink-700);}
+      .vf-credit-remarks textarea{width:100%;min-height:130px;resize:vertical;padding:12px 13px;border:1.5px solid var(--v-line);border-radius:8px;background:#fff;color:var(--v-ink-900);font:14px var(--font-body);transition:border-color .15s,box-shadow .15s;}
       .vf-credit-remarks textarea:focus{outline:none;border-color:var(--v-green-600);box-shadow:0 0 0 3px var(--v-green-100);}
       .vf-credit-remarks textarea.vf-invalid{border-color:var(--v-red);box-shadow:0 0 0 3px var(--v-red-bg);}
       .vf-credit-remarks .vf-credit-remarks-required{margin-top:5px;font-size:11px;color:var(--v-red);display:none;}
@@ -41,47 +40,42 @@
   async function concluirProducao(){const s=currentSol();if(!s||!canAdmForSol(s))return;const status=norm(s.status);if(!status.includes('PRODUCAO'))return;if(!confirm('Confirmar produção finalizada para este pedido?'))return;const nextStatus='Faturamento disponível';const{error}=await window.supabaseClient.from('solicitacoes').update({status:nextStatus}).eq('id',s.id);if(error){console.error('[VerOS Flow] erro ao concluir produção:',error);if(window.App?.toast)App.toast('Erro ao concluir produção',error.message||'Tente novamente.','err');return;}s.status=nextStatus;if(window.Data?.refreshSolicitacoesData)await Data.refreshSolicitacoesData();if(window.Render?.detail)Render.detail();if(window.App?.toast)App.toast('Produção finalizada','O faturamento agora está disponível para Operações de Negócio.','ok');}
   function renderAdmProductionAction(){const old=document.getElementById('vfAdmProductionAction');if(old)old.remove();const s=currentSol();if(!s||!canAdmForSol(s))return;const st=norm(s.status);if(!st.includes('PRODUCAO')||st.includes('FATURAMENTO'))return;ensureStyles();const box=document.createElement('section');box.id='vfAdmProductionAction';box.className='vf-adm-production';box.innerHTML='<h4>Operação da produção</h4><p>O ADM UBS desta unidade também pode informar que a produção foi finalizada. Essa ação libera a etapa de faturamento conforme o fluxo aprovado.</p><button type="button" class="btn btn-primary" id="vfAdmFinishProduction">Informar produção finalizada →</button>';box.querySelector('#vfAdmFinishProduction').addEventListener('click',concluirProducao);const est=document.getElementById('vfDeliveryEstimate'),main=document.querySelector('#appShell .main-area');if(est&&est.parentNode)est.parentNode.insertBefore(box,est.nextSibling);else if(main)main.prepend(box);}
 
-  function isRemarksValue(v){const t=norm(v);return t.includes('APROVAR_COM_RESSALVAS')||t.includes('APROVACAO_COM_RESSALVAS')||t.includes('APROVACAO_RESSALVAS')||t.includes('RESSALVAS');}
-  function approvalIsRemarks(){
-    const selects=Array.from(document.querySelectorAll('select'));
-    if(selects.some(s=>isRemarksValue(s.value)||isRemarksValue(s.options?.[s.selectedIndex]?.textContent)))return true;
-    const checked=Array.from(document.querySelectorAll('input[type=radio]:checked,input[type=checkbox]:checked'));
-    if(checked.some(x=>isRemarksValue(x.value)||isRemarksValue(x.getAttribute('aria-label'))||isRemarksValue(x.parentElement?.textContent)))return true;
-    return false;
-  }
-  function approvalAnchor(){
-    const all=Array.from(document.querySelectorAll('select,input[type=radio],input[type=checkbox],button,label,[role=option]'));
-    return all.find(el=>isRemarksValue(el.value)||isRemarksValue(el.getAttribute('aria-label'))||isRemarksValue(el.getAttribute('data-value'))||isRemarksValue(el.textContent))||null;
-  }
-  function renderCreditRemarks(){
-    const old=document.getElementById('vfCreditRemarksBox');
-    if(!approvalIsRemarks()){if(old)old.remove();return;}
-    if(old)return;
-    const anchor=approvalAnchor();if(!anchor)return;
+  function abrirRessalvaCredito(id){
+    if(!window.Modal||!window.FLOW){console.error('[VerOS Flow] Modal/FLOW indisponível');return;}
+    const sol=window.DB?.solicitacoes?.find(s=>String(s.id)===String(id));
+    if(!sol)return;
     ensureStyles();
-    const box=document.createElement('div');box.id='vfCreditRemarksBox';box.className='vf-credit-remarks';
-    const textareaId='vfCreditRemarksText';
-    box.innerHTML=`<label for="${textareaId}">Justificativa das ressalvas <span aria-hidden="true">*</span></label><div class="vf-credit-remarks-hint">Descreva as condições, pendências ou motivos que justificam a aprovação com ressalvas.</div><textarea id="${textareaId}" name="ressalvas_credito" maxlength="2000" placeholder="Informe as ressalvas da análise de crédito..."></textarea><div class="vf-credit-remarks-required">A justificativa é obrigatória para aprovar com ressalvas.</div>`;
-    const parent=anchor.closest('.field,.form-group,.form-field,.approval-field,.card,form')||anchor.parentElement;
-    if(parent?.parentNode)parent.parentNode.insertBefore(box,parent.nextSibling);else anchor.insertAdjacentElement('afterend',box);
+    Modal.open('Informar ressalva', `
+      <div class="field full">
+        <label>Informe sua ressalva *</label>
+        <textarea id="vf_credito_ressalva" rows="5" maxlength="2000" placeholder="Descreva aqui a ressalva relacionada à análise de crédito..."></textarea>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Confirmar aprovação', cls:'btn-primary', onClick:async()=>{
+        const campo=document.getElementById('vf_credito_ressalva');
+        const motivo=campo?.value?.trim()||'';
+        if(!motivo){campo?.focus();App.toast('Campo obrigatório','Informe sua ressalva antes de confirmar a aprovação.','err');return;}
+        try{
+          await FLOW.decidirCredito(sol,'Aprovado com ressalvas',motivo);
+          Modal.close();
+          App.toast('Crédito aprovado com ressalvas','A ressalva foi registrada no processo.','ok');
+          Render.detail();
+        }catch(err){App.toast('Erro ao salvar',err.message||'Tente novamente.','err');}
+      }}
+    ]);
   }
-  function validateCreditRemarks(){
-    if(!approvalIsRemarks())return true;
-    const ta=document.getElementById('vfCreditRemarksText');
-    if(ta?.value.trim())return true;
-    if(ta){ta.classList.add('vf-invalid');ta.focus();}
-    document.querySelector('#vfCreditRemarksBox .vf-credit-remarks-required')?.classList.add('show');
-    return false;
+  function patchFinanceiroAction(){
+    if(!window.Render||typeof Render.financeiroAction!=='function'||window.__vfFinanceiroRemarksPatched)return;
+    window.__vfFinanceiroRemarksPatched=true;
+    const original=Render.financeiroAction;
+    Render.financeiroAction=function(id,decisao){
+      if(norm(decisao).includes('RESSALVAS')){abrirRessalvaCredito(id);return;}
+      return original.apply(this,arguments);
+    };
+    window.VerOSCreditRemarks={abrirRessalvaCredito};
   }
-  function bindCreditRemarks(){
-    if(window.__vfCreditRemarksBound)return;
-    window.__vfCreditRemarksBound=true;
-    document.addEventListener('change',event=>{if(event.target.matches('select,input[type=radio],input[type=checkbox]'))setTimeout(renderCreditRemarks,0);},true);
-    document.addEventListener('input',event=>{if(event.target.id==='vfCreditRemarksText'){event.target.classList.remove('vf-invalid');document.querySelector('#vfCreditRemarksBox .vf-credit-remarks-required')?.classList.remove('show');}},true);
-    document.addEventListener('click',event=>{const btn=event.target.closest('button,[role=button]');if(!btn)return;const label=norm(btn.textContent||btn.getAttribute('aria-label')||'');if((label.includes('APROVAR')||label.includes('SALVAR')||label.includes('CONCLUIR'))&&!validateCreditRemarks()){event.preventDefault();event.stopImmediatePropagation();}},true);
-    document.addEventListener('submit',event=>{if(!validateCreditRemarks())event.preventDefault();},true);
-  }
-  function refresh(){ensureStyles();renderFriendlyBreadcrumb();renderEstimate();renderAdmProductionAction();renderCreditRemarks();bindCreditRemarks();}
-  let timer=null;function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(refresh,500);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.6',estimate};
+  function refresh(){ensureStyles();renderFriendlyBreadcrumb();renderEstimate();renderAdmProductionAction();patchFinanceiroAction();}
+  let timer=null;function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(refresh,700);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();window.addEventListener('load',refresh);window.addEventListener('verosflow:render',refresh);window.VEROS_FINAL_ENHANCEMENTS={version:'1.7',estimate};
 })();
