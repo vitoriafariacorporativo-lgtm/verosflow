@@ -94,10 +94,10 @@
     if(window.__vfFinalEnhancementsLoaded) return;
     window.__vfFinalEnhancementsLoaded = true;
     const s=document.createElement('script');
-    s.src='final-enhancements.js?v=1.0';
+    s.src='final-enhancements.js?v=1.7';
     s.async=false;
     s.onload=()=>{
-      console.info('[VerOS Flow] melhorias finais v1 carregadas');
+      console.info('[VerOS Flow] melhorias finais v1.7 carregadas');
       loadKanbanScreenFix();
     };
     s.onerror=e=>console.error('[VerOS Flow] erro ao carregar melhorias finais:',e);
@@ -115,98 +115,32 @@
     document.head.appendChild(s);
   }
 
-  /* ----------------------------------------------------------------------
-     EXIBIÇÃO DE USUÁRIOS
-     Os UUIDs continuam no banco para rastreabilidade, mas a interface deve
-     mostrar o NOME cadastrado. Isso também cobre o cabeçalho do pedido e a
-     timeline, que podem ser renderizados depois do carregamento inicial.
-  ---------------------------------------------------------------------- */
   function installUserNameDisplay(){
     if(window.__vfUserNameDisplayInstalled) return;
     window.__vfUserNameDisplayInstalled = true;
-
     const uuidRe=/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
     const escRe=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-
     const buildMap=()=>{
       const map=new Map();
-      const add=(id,name)=>{
-        id=String(id||'').trim(); name=String(name||'').trim();
-        if(id && name && uuidRe.test(id)){ uuidRe.lastIndex=0; map.set(id.toLowerCase(),name); }
-        uuidRe.lastIndex=0;
-      };
-
-      if(Array.isArray(DB?.usuarios)){
-        for(const u of DB.usuarios){
-          add(field(u,'id','user_id','usuario_id'),field(u,'nome','nome_usuario','name'));
-        }
-      }
-
-      /* Fallback: o pedido já possui o nome do RC. */
-      if(Array.isArray(DB?.solicitacoes)){
-        for(const s of DB.solicitacoes){
-          const name=field(s,'nome_rc','nomeRC');
-          add(field(s,'rc_usuario_id','rcUsuarioId'),name);
-          add(field(s,'criado_por','criadoPor'),name);
-        }
-      }
-
-      const cu=currentUser();
-      add(field(cu,'id','user_id'),field(cu,'nome','name'));
-      return map;
+      const add=(id,name)=>{id=String(id||'').trim();name=String(name||'').trim();if(id&&name&&uuidRe.test(id)){uuidRe.lastIndex=0;map.set(id.toLowerCase(),name);}uuidRe.lastIndex=0;};
+      if(Array.isArray(DB?.usuarios))for(const u of DB.usuarios)add(field(u,'id','user_id','usuario_id'),field(u,'nome','nome_usuario','name'));
+      if(Array.isArray(DB?.solicitacoes))for(const s of DB.solicitacoes){const name=field(s,'nome_rc','nomeRC');add(field(s,'rc_usuario_id','rcUsuarioId'),name);add(field(s,'criado_por','criadoPor'),name);}
+      const cu=currentUser();add(field(cu,'id','user_id'),field(cu,'nome','name'));return map;
     };
-
-    const replaceVisibleUserIds=()=>{
-      if(!document.body) return;
-      const map=buildMap();
-      if(!map.size) return;
-
-      const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
-      const nodes=[]; let node;
-      while(node=walker.nextNode()) nodes.push(node);
-
-      for(const textNode of nodes){
-        let text=textNode.nodeValue||'';
-        if(!uuidRe.test(text)){uuidRe.lastIndex=0;continue;}
-        uuidRe.lastIndex=0;
-        let changed=false;
-        for(const [id,name] of map){
-          const re=new RegExp(escRe(id),'gi');
-          if(re.test(text)){
-            text=text.replace(re,name);
-            changed=true;
-          }
-        }
-        if(changed) textNode.nodeValue=text;
-      }
-    };
-
-    let timer=null;
-    const schedule=()=>{
-      clearTimeout(timer);
-      timer=setTimeout(replaceVisibleUserIds,60);
-    };
-
-    const observer=new MutationObserver(schedule);
-    observer.observe(document.body,{childList:true,subtree:true});
-    window.addEventListener('load',schedule);
-    window.addEventListener('verosflow:render',schedule);
-    window.addEventListener('popstate',schedule);
-    window.VerOSUserName=key=>buildMap().get(String(key||'').toLowerCase())||null;
-    schedule();
+    const replaceVisibleUserIds=()=>{if(!document.body)return;const map=buildMap();if(!map.size)return;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const nodes=[];let node;while(node=walker.nextNode())nodes.push(node);for(const textNode of nodes){let text=textNode.nodeValue||'';if(!uuidRe.test(text)){uuidRe.lastIndex=0;continue;}uuidRe.lastIndex=0;let changed=false;for(const [id,name] of map){const re=new RegExp(escRe(id),'gi');if(re.test(text)){text=text.replace(re,name);changed=true;}}if(changed)textNode.nodeValue=text;}};
+    let timer=null;const schedule=()=>{clearTimeout(timer);timer=setTimeout(replaceVisibleUserIds,60);};
+    const observer=new MutationObserver(schedule);observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('load',schedule);window.addEventListener('verosflow:render',schedule);window.addEventListener('popstate',schedule);window.VerOSUserName=key=>buildMap().get(String(key||'').toLowerCase())||null;schedule();
   }
 
   function install(){
     if(typeof STATE === 'undefined' || typeof DB === 'undefined' || typeof Render === 'undefined') return false;
     if(typeof Render.visibleSolicitacoes !== 'function') return false;
-
     window.VerOSRequestVisibility = {version:'10.0', role, canSee, visible, unitMatches, currentUser};
     window.VEROS_FLOW_RULES = window.VEROS_FLOW_RULES || {};
     window.VEROS_FLOW_RULES.version = '10.0';
     window.VEROS_FLOW_RULES.canSee = canSee;
     window.VEROS_FLOW_RULES.roles = role;
     window.VEROS_FLOW_RULES.visible = visible;
-
     Render.visibleSolicitacoes = function(){
       const all = Array.isArray(DB.solicitacoes) ? DB.solicitacoes : [];
       const result = visible();
@@ -221,7 +155,6 @@
       });
       return result;
     };
-
     installUserNameDisplay();
     loadFinalEnhancements();
     console.info('[VerOS Flow] controle de acesso v10 instalado:', {
