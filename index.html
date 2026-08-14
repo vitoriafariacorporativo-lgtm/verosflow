@@ -720,6 +720,31 @@ const U = {
   produtoLabel(id){ const p = DB.produtos.find(x=>x.id===id); return p? (p.cultura+' · '+p.variedade) : '—'; },
   perfilNome(id){ const p = DB.perfis.find(x=>x.id===id); return p? p.nome : id; },
   initials(name){ if(!name) return '--'; const parts = name.trim().split(' '); return (parts[0][0] + (parts[1]? parts[1][0]:'')).toUpperCase(); },
+  // Extrai o primeiro número de um texto livre tipo "10 dias úteis" → 10.
+  numDias(v){ if(v===null||v===undefined||v==='') return null; const m = String(v).replace(',','.').match(/\d+(?:\.\d+)?/); return m ? Number(m[0]) : null; },
+  addDias(dataBase, dias){ const d = new Date(dataBase); d.setDate(d.getDate()+Math.round(dias)); return d; },
+  // Estimativa de entrega: 1 dia fixo de análise de crédito + 1 dia fixo de
+  // folga do processo administrativo + prazo informado pela logística +
+  // tempo de produção informado pelo ADM UBS. Atualiza conforme cada etapa
+  // informa seu prazo.
+  estimativaEntrega(sol){
+    const producaoDias = U.numDias(sol.admUbs && sol.admUbs.tempoProducao);
+    const entregaDias = U.numDias(sol.logistica && sol.logistica.prazo);
+    const creditoDias = 1, folgaDias = 1;
+    const partes = [];
+    if(producaoDias!==null) partes.push({label:'Produção', dias:producaoDias});
+    if(entregaDias!==null) partes.push({label:'Entrega (logística)', dias:entregaDias});
+    partes.push({label:'Análise de crédito', dias:creditoDias});
+    partes.push({label:'Folga do processo', dias:folgaDias});
+    const total = (producaoDias||0) + (entregaDias||0) + creditoDias + folgaDias;
+    const completa = producaoDias!==null && entregaDias!==null;
+    const base = sol.criadoEm || new Date().toISOString();
+    const dataFinal = completa ? U.addDias(base, total) : null;
+    const faltando = [];
+    if(producaoDias===null) faltando.push('tempo de produção');
+    if(entregaDias===null) faltando.push('prazo de entrega da logística');
+    return { completa, total, dataFinal, partes, faltando };
+  },
 };
 
 /* ------------------------------------------------------------------------
@@ -828,9 +853,9 @@ const Data = {
       solicitaCredito: r.solicita_credito,
       credito: r.solicita_credito ? {
         limiteSolicitado: r.limite_solicitado, justificativa: r.justificativa, observacoes: r.observacoes,
-        anexos: meusAnexos.filter(a=>a.tipo==='documento').map(a=>a.nome_arquivo),
-        contrato: (meusAnexos.find(a=>a.tipo==='contrato')||{}).nome_arquivo || null,
-        docsFinanceiros: meusAnexos.filter(a=>a.tipo==='financeiro').map(a=>a.nome_arquivo),
+        anexos: meusAnexos.filter(a=>a.tipo==='documento').map(a=>({nome:a.nome_arquivo, path:a.storage_path})),
+        contrato: (meusAnexos.find(a=>a.tipo==='contrato')||{}).nome_arquivo ? {nome:meusAnexos.find(a=>a.tipo==='contrato').nome_arquivo, path:meusAnexos.find(a=>a.tipo==='contrato').storage_path} : null,
+        docsFinanceiros: meusAnexos.filter(a=>a.tipo==='financeiro').map(a=>({nome:a.nome_arquivo, path:a.storage_path})),
       } : null,
       status: r.status,
       admUbs: { saldoDisponivel: r.saldo_disponivel, tempoProducao: r.tempo_producao, avaliadoPorId: r.avaliado_por },
@@ -875,6 +900,17 @@ const Data = {
     const { error } = await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).upload(path, file, { upsert:true });
     if(error) throw error;
     return path;
+  },
+
+  // Gera um link temporário de download para um anexo do bucket privado.
+  // Qualquer perfil com acesso à etapa de crédito (Financeiro, ADM UBS,
+  // Comercial ADM) pode baixar — a permissão real é controlada pelas
+  // policies de Storage no Supabase.
+  async baixarAnexo(path){
+    if(!path) throw new Error('Arquivo sem caminho salvo no Storage.');
+    const { data, error } = await supabaseClient.storage.from(SUPABASE_STORAGE_BUCKET).createSignedUrl(path, 60);
+    if(error) throw error;
+    return data.signedUrl;
   },
 
   async logAcao(solicitacaoId, campo, de, para){
@@ -923,7 +959,14 @@ const Data = {
     if(disponivel) payload.tempo_producao = tempoProducao || null;
     const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert(payload);
     if(error) throw error;
-    const novoStatus = disponivel ? 'Aguardando Crédito e Logística' : 'Aguardando Aprovação Financeira';
+    // Produção só é liberada quando saldo E crédito estiverem OK. Se o
+    // crédito já tiver sido aprovado antes (fluxo desacoplado), o saldo
+    // disponível já libera direto para Produção.
+    const { data: fin } = await supabaseClient.from('financeiro_decisoes').select('decisao').eq('solicitacao_id', solId).maybeSingle();
+    const creditoAprovado = fin && (fin.decisao === 'Aprovado' || fin.decisao === 'Aprovado com ressalvas');
+    let novoStatus;
+    if(!disponivel) novoStatus = 'Aguardando Aprovação Financeira';
+    else novoStatus = creditoAprovado ? 'Produção' : 'Aguardando Crédito e Logística';
     await Data._setStatus(solId, novoStatus);
     await Data.addTimeline(solId, disponivel ? `Saldo analisado — disponível (produção estimada: ${tempoProducao})` : 'Saldo analisado — indisponível, aguardando crédito');
     await Data.logAcao(solId, 'Status', '—', novoStatus);
@@ -934,9 +977,18 @@ const Data = {
       solicitacao_id: solId, decisao, motivo_recusa: motivo||null, decidido_por: STATE.currentUser.id, decidido_em: new Date().toISOString(),
     });
     if(error) throw error;
-    const novoStatus = decisao === 'Recusado' ? 'Crédito recusado' : 'Produção';
+    let novoStatus;
+    if(decisao === 'Recusado'){
+      novoStatus = 'Crédito recusado';
+    } else {
+      // Crédito aprovado ainda depende do saldo confirmado pelo ADM UBS
+      // para liberar a Produção — o financeiro não precisa mais esperar
+      // o ADM UBS agir primeiro, mas a Produção só libera com os dois OK.
+      const { data: adm } = await supabaseClient.from('adm_ubs_avaliacoes').select('saldo_disponivel').eq('solicitacao_id', solId).maybeSingle();
+      novoStatus = (adm && adm.saldo_disponivel === true) ? 'Produção' : 'Aguardando Saldo';
+    }
     await Data._setStatus(solId, novoStatus);
-    await Data.addTimeline(solId, decisao==='Recusado' ? 'Crédito recusado' : ('Crédito aprovado'+(decisao==='Aprovado com ressalvas'?' (com ressalvas)':'')), decisao==='Recusado');
+    await Data.addTimeline(solId, decisao==='Recusado' ? 'Crédito recusado' : ('Crédito aprovado'+(decisao==='Aprovado com ressalvas'?' (com ressalvas)':'')+(novoStatus==='Aguardando Saldo' ? ' — aguardando confirmação de saldo do ADM UBS' : '')), decisao==='Recusado');
     await Data.logAcao(solId, 'Decisão financeira', '—', decisao);
   },
 
@@ -1499,7 +1551,7 @@ const Render = {
   kanbanHtml(list){
     if(!list.length) return `<div class="card card-pad"><div class="table-empty"><div class="ic">${Ic('search',30)}</div><b>Nenhuma solicitação encontrada</b><br>Ajuste os filtros ou crie uma nova solicitação.</div></div>`;
     const CLS_COLOR = { 'badge-novo':'var(--v-blue)', 'badge-analise':'var(--v-amber)', 'badge-aguardando':'var(--v-gold-700)', 'badge-producao':'var(--v-blue)', 'badge-recusado':'var(--v-red)', 'badge-frete':'#8A6420', 'badge-faturado':'var(--v-green-700)', 'badge-transporte':'var(--v-blue)', 'badge-entregue':'var(--v-green-800)', 'badge-cancelado':'var(--v-ink-500)' };
-    const columns = Object.keys(STATUS_META).filter(s=>s!=='Aguardando Saldo');
+    const columns = Object.keys(STATUS_META);
     const byStatus = {};
     columns.forEach(c=>byStatus[c]=[]);
     list.forEach(s=>{ if(!byStatus[s.status]) byStatus[s.status]=[]; byStatus[s.status].push(s); });
@@ -1719,9 +1771,9 @@ const Render = {
               <div class="it full" style="grid-column:1/-1;"><b>Justificativa</b><span style="font-weight:500;">${U.esc(sol.credito.justificativa)}</span></div>
             </div>
             <div style="margin-top:10px;">
-              ${(sol.credito.anexos||[]).map(a=>`<span class="upload-tag">${Ic('paperclip',11)} ${a}</span>`).join('')}
-              ${sol.credito.contrato?`<span class="upload-tag">${Ic('fileText',11)} ${sol.credito.contrato}</span>`:''}
-              ${(sol.credito.docsFinanceiros||[]).map(a=>`<span class="upload-tag">${Ic('card',11)} ${a}</span>`).join('')}
+              ${(sol.credito.anexos||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('paperclip',11)} ${U.esc(a.nome)}</span>`).join('')}
+              ${sol.credito.contrato?`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${sol.credito.contrato.path}')">${Ic('fileText',11)} ${U.esc(sol.credito.contrato.nome)}</span>`:''}
+              ${(sol.credito.docsFinanceiros||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('card',11)} ${U.esc(a.nome)}</span>`).join('')}
             </div>
           </div>` : ''}
 
@@ -1753,23 +1805,25 @@ const Render = {
                 ${sol.financeiro.motivoRecusa?`<div class="it" style="grid-column:1/-1;"><b>${sol.financeiro.decisao==='Recusado'?'Motivo da recusa':'Ressalva'}</b><span>${U.esc(sol.financeiro.motivoRecusa)}</span></div>`:''}
               </div>
             ` : canFin ? (
-              (sol.status==='Aguardando Aprovação Financeira' || sol.status==='Aguardando Crédito e Logística') ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Analise os anexos e defina a decisão de crédito.</p>
+              !['Crédito recusado','Cancelado'].includes(sol.status) ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Analise os anexos e defina a decisão de crédito. Não é necessário aguardar a avaliação de saldo do ADM UBS.</p>
               <div class="mini-actions">
                 <button class="btn btn-primary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado')">Aprovar</button>
                 <button class="btn btn-secondary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado com ressalvas')">Aprovar com ressalvas</button>
                 <button class="btn btn-danger btn-sm" onclick="Render.financeiroReprovar('${sol.id}')">Recusar</button>
-              </div>` : `<span class="lock-note">Aguardando avaliação de saldo pelo ADM UBS.</span>`
+              </div>` : `<span class="lock-note">Pedido não está mais disponível para decisão de crédito.</span>`
             ) : `<span class="lock-note">Aguardando decisão do Financeiro.</span>`}
           </div>
 
-          <!-- PRODUÇÃO / OPERAÇÕES -->
-          <div class="stage-block ${(!canOps)?'locked':''}">
-            <h4>${Ic('settings',15)} Operações · Produção</h4>
-            ${sol.status==='Produção' && canOps ? `
+          <!-- PRODUÇÃO (ADM UBS conclui) -->
+          <div class="stage-block ${(!canAdmUbs)?'locked':''}">
+            <h4>${Ic('settings',15)} ADM UBS · Produção</h4>
+            ${sol.status==='Produção' && canAdmUbs ? `
               <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Marque como concluída quando a produção estiver pronta para expedição.</p>
               <button class="btn btn-primary btn-sm" onclick="Render.concluirProducao('${sol.id}')">Marcar produção concluída</button>
-            ` : FLOW.ORDER.indexOf(sol.status) > FLOW.ORDER.indexOf('Produção') ? `<span class="lock-note">Produção concluída.</span>` : `<span class="lock-note">Aguardando liberação de crédito.</span>`}
+            ` : FLOW.ORDER.indexOf(sol.status) > FLOW.ORDER.indexOf('Produção') ? `<span class="lock-note">Produção concluída.</span>`
+              : sol.financeiro && sol.financeiro.decisao && sol.financeiro.decisao!=='Recusado' && !(sol.admUbs && sol.admUbs.saldoDisponivel) ? `<span class="lock-note">Crédito aprovado — aguardando confirmação de saldo pelo ADM UBS.</span>`
+              : `<span class="lock-note">Aguardando saldo confirmado e crédito aprovado.</span>`}
           </div>
 
           <!-- LOGÍSTICA -->
@@ -1830,6 +1884,23 @@ const Render = {
                 </div>`).join('')}
             </div>
           </div>
+
+          ${(()=>{ const est = U.estimativaEntrega(sol); return `
+          <div class="card card-pad" style="margin-top:16px;border-left:4px solid var(--v-green-600);">
+            <div class="section-title">Estimativa de entrega</div>
+            ${est.completa ? `
+              <div style="font-size:13px;color:var(--v-ink-700);"><b style="color:var(--v-green-700);">${est.total} dias</b> · previsão até <b>${U.fmtDate(est.dataFinal)}</b></div>
+              <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;">
+                ${est.partes.map(p=>`<span class="upload-tag">${U.esc(p.label)}: ${p.dias} dia${p.dias===1?'':'s'}</span>`).join('')}
+              </div>
+            ` : `
+              <div style="font-size:12.5px;color:var(--v-ink-500);">Aguardando <b>${U.esc(est.faltando.join(' e '))}</b> para calcular a data final.</div>
+              <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;">
+                <span class="upload-tag">Análise de crédito: 1 dia</span>
+                <span class="upload-tag">Folga do processo: 1 dia</span>
+              </div>
+            `}
+          </div>`; })()}
         </div>
       </div>
     `;
@@ -1871,13 +1942,22 @@ const Render = {
     ]);
   },
 
+  async baixarAnexoAction(path){
+    try{
+      const url = await Data.baixarAnexo(path);
+      window.open(url, '_blank');
+    }catch(err){
+      App.toast('Não foi possível baixar', err.message || 'Verifique as permissões no Supabase.', 'err');
+    }
+  },
+
   async financeiroAction(id, decisao){
-    // "Aprovado com ressalvas" exige justificativa por escrito antes de confirmar.
     if(decisao === 'Aprovado com ressalvas'){ Render.abrirRessalvaCreditoModal(id); return; }
     const sol = DB.solicitacoes.find(s=>s.id===id);
     try{
       await FLOW.decidirCredito(sol, decisao);
-      App.toast('Crédito aprovado','Pedido liberado para produção.','ok');
+      const atualizado = DB.solicitacoes.find(s=>s.id===id);
+      App.toast('Crédito aprovado', atualizado && atualizado.status==='Produção' ? 'Pedido liberado para produção.' : 'Aguardando confirmação de saldo pelo ADM UBS para liberar a produção.', 'ok');
       Render.detail();
     } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
   },

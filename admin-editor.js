@@ -244,7 +244,7 @@
     const root=document.getElementById('view-detail');
     if(!root) return false;
     if(root.querySelector('[data-vf-admin-edit]')) return true;
-    const head=root.querySelector('.page-head');
+    const head=root.querySelector('.detail-head > div:last-child') || root.querySelector('.detail-head');
     if(!head) return false;
     const btn=document.createElement('button');
     btn.className='btn btn-primary btn-sm vf-admin-edit-btn';
