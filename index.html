@@ -861,20 +861,40 @@ const Data = {
     const { data: rows, error } = await supabaseClient.from('vw_solicitacoes_completas').select('*').order('created_at', {ascending:false});
     if(error) throw error;
     const ids = (rows||[]).map(r=>r.id);
-    let anexos = [], timeline = [];
+    let anexos = [], timeline = [], admUbsRows = [], financeiroRows = [], logisticaRows = [];
     if(ids.length){
-      const [{data: aData, error: aErr}, {data: tData, error: tErr}] = await Promise.all([
+      // Busca os dados de cada etapa direto das tabelas de origem (não da
+      // view) — evita depender de quais colunas a view expõe e garante que
+      // o que foi realmente salvo apareça na tela.
+      const [
+        {data: aData, error: aErr}, {data: tData, error: tErr},
+        {data: admData, error: admErr}, {data: finData, error: finErr}, {data: logData, error: logErr},
+      ] = await Promise.all([
         supabaseClient.from('anexos_credito').select('*').in('solicitacao_id', ids),
         supabaseClient.from('timeline_eventos').select('*').in('solicitacao_id', ids).order('criado_em', {ascending:true}),
+        supabaseClient.from('adm_ubs_avaliacoes').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('financeiro_decisoes').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('logistica_fretes').select('*').in('solicitacao_id', ids),
       ]);
-      if(aErr) throw aErr; if(tErr) throw tErr;
-      anexos = aData||[]; timeline = tData||[];
+      if(aErr) throw aErr; if(tErr) throw tErr; if(admErr) throw admErr; if(finErr) throw finErr; if(logErr) throw logErr;
+      anexos = aData||[]; timeline = tData||[]; admUbsRows = admData||[]; financeiroRows = finData||[]; logisticaRows = logData||[];
     }
-    DB.solicitacoes = (rows||[]).map(r=>Data._mapSolicitacao(r, anexos, timeline));
+    DB.solicitacoes = (rows||[]).map(r=>Data._mapSolicitacao(r, anexos, timeline, admUbsRows, financeiroRows, logisticaRows));
   },
 
-  _mapSolicitacao(r, anexos, timeline){
+  _mapSolicitacao(r, anexos, timeline, admUbsRows, financeiroRows, logisticaRows){
     const meusAnexos = anexos.filter(a=>a.solicitacao_id===r.id);
+    // Como cada etapa pode ter recebido mais de um upsert ao longo do
+    // fluxo, pega sempre o registro mais recente (avaliado_em/decidido_em)
+    // para não exibir uma tentativa antiga sem os dados preenchidos.
+    const pickLatest = (rowsArr, campoData) => {
+      const meus = (rowsArr||[]).filter(x=>x.solicitacao_id===r.id);
+      if(!meus.length) return {};
+      return meus.reduce((a,b)=> (new Date(b[campoData]||0) >= new Date(a[campoData]||0) ? b : a));
+    };
+    const admUbsRow = pickLatest(admUbsRows, 'avaliado_em');
+    const financeiroRow = pickLatest(financeiroRows, 'decidido_em');
+    const logisticaRow = pickLatest(logisticaRows, 'contratado_em') || {};
     return {
       id: r.id,
       numeroPedidoMobi: r.numero_pedido_mobi,
@@ -895,9 +915,9 @@ const Data = {
         docsFinanceiros: meusAnexos.filter(a=>a.tipo==='financeiro').map(a=>({nome:a.nome_arquivo, path:a.storage_path})),
       } : null,
       status: r.status,
-      admUbs: { saldoDisponivel: r.saldo_disponivel, tempoProducao: r.tempo_producao, avaliadoPorId: r.avaliado_por },
-      financeiro: { decisao: r.decisao_financeira, motivoRecusa: r.motivo_recusa, decididoPorId: r.decidido_por },
-      logistica: { transportadora: r.transportadora, valorFrete: r.valor_frete, contratado: r.contratado, statusEntrega: r.status_entrega },
+      admUbs: { saldoDisponivel: admUbsRow.saldo_disponivel, tempoProducao: admUbsRow.tempo_producao, avaliadoPorId: admUbsRow.avaliado_por },
+      financeiro: { decisao: financeiroRow.decisao, motivoRecusa: financeiroRow.motivo_recusa, decididoPorId: financeiroRow.decidido_por },
+      logistica: { transportadora: logisticaRow.transportadora, valorFrete: logisticaRow.valor_frete, prazo: logisticaRow.prazo, dataPrevista: logisticaRow.data_prevista, contratado: logisticaRow.contratado, statusEntrega: logisticaRow.status_entrega, dataEntrega: logisticaRow.data_entrega, ocorrencias: logisticaRow.ocorrencias },
       faturamento: { numeroNF: r.numero_nf, dataNF: r.data_nf, concluido: !!r.numero_nf },
       timeline: timeline.filter(t=>t.solicitacao_id===r.id).map(t=>({
         etapa: t.etapa, data: U.fmtDate(t.criado_em), hora: U.fmtTime(t.criado_em), usuarioId: t.usuario_id, done:true, bad: t.ruim,
@@ -994,7 +1014,7 @@ const Data = {
   async definirSaldo(solId, disponivel, tempoProducao){
     const payload = { solicitacao_id: solId, saldo_disponivel: disponivel, avaliado_por: STATE.currentUser.id, avaliado_em: new Date().toISOString() };
     if(disponivel) payload.tempo_producao = tempoProducao || null;
-    const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert(payload);
+    const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert(payload, { onConflict: 'solicitacao_id' });
     if(error) throw error;
     // Produção só é liberada quando saldo E crédito estiverem OK. Se o
     // crédito já tiver sido aprovado antes (fluxo desacoplado), o saldo
@@ -1012,7 +1032,7 @@ const Data = {
   async decidirCredito(solId, decisao, motivo){
     const { error } = await supabaseClient.from('financeiro_decisoes').upsert({
       solicitacao_id: solId, decisao, motivo_recusa: motivo||null, decidido_por: STATE.currentUser.id, decidido_em: new Date().toISOString(),
-    });
+    }, { onConflict: 'solicitacao_id' });
     if(error) throw error;
     let novoStatus;
     if(decisao === 'Recusado'){
@@ -1039,7 +1059,7 @@ const Data = {
     const { error } = await supabaseClient.from('logistica_fretes').upsert({
       solicitacao_id: solId, transportadora: dados.transportadora, valor_frete: dados.valorFrete,
       prazo: dados.prazo, data_prevista: dados.dataPrevista,
-    });
+    }, { onConflict: 'solicitacao_id' });
     if(error) throw error;
     await Data.logAcao(solId, 'Cotação de frete', '—', dados.transportadora+' / '+U.brl(dados.valorFrete));
   },
@@ -1058,7 +1078,7 @@ const Data = {
     const { error } = await supabaseClient.from('faturamentos').upsert({
       solicitacao_id: solId, numero_nf: dados.numeroNF, data_nf: dados.dataNF, observacoes: dados.observacoes,
       anexo_danfe_path: path, concluido:true, concluido_em: new Date().toISOString(),
-    });
+    }, { onConflict: 'solicitacao_id' });
     if(error) throw error;
     await Data._setStatus(solId, 'Faturado');
     await Data.addTimeline(solId, 'Faturamento concluído — NF '+dados.numeroNF);

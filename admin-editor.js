@@ -188,20 +188,20 @@
 
     const limite=q('ae_limite').value; const justificativa=q('ae_justificativa').value.trim(); const obsFin=q('ae_obs_fin').value.trim();
     if(novo.solicita_credito){
-      const {error}=await supabaseClient.from('credito_solicitacoes').upsert({solicitacao_id:old.id,limite_solicitado:limite?Number(limite):null,justificativa:justificativa||null,observacoes:obsFin||null});
+      const {error}=await supabaseClient.from('credito_solicitacoes').upsert({solicitacao_id:old.id,limite_solicitado:limite?Number(limite):null,justificativa:justificativa||null,observacoes:obsFin||null}, {onConflict:'solicitacao_id'});
       if(error) throw error;
     }
 
     const saldoVal=q('ae_saldo').value;
     if(saldoVal!==''){
       const saldo=saldoVal==='true'; const tempo=q('ae_tempo').value.trim()||null;
-      const {error}=await supabaseClient.from('adm_ubs_avaliacoes').upsert({solicitacao_id:old.id,saldo_disponivel:saldo,tempo_producao:tempo,avaliado_por:STATE.currentUser.id,avaliado_em:new Date().toISOString()});
+      const {error}=await supabaseClient.from('adm_ubs_avaliacoes').upsert({solicitacao_id:old.id,saldo_disponivel:saldo,tempo_producao:tempo,avaliado_por:STATE.currentUser.id,avaliado_em:new Date().toISOString()}, {onConflict:'solicitacao_id'});
       if(error) throw error;
     }
 
     const decisao=q('ae_decisao').value; const motivo=q('ae_motivo').value.trim();
     if(decisao){
-      const {error}=await supabaseClient.from('financeiro_decisoes').upsert({solicitacao_id:old.id,decisao,motivo_recusa:motivo||null,decidido_por:STATE.currentUser.id,decidido_em:new Date().toISOString()});
+      const {error}=await supabaseClient.from('financeiro_decisoes').upsert({solicitacao_id:old.id,decisao,motivo_recusa:motivo||null,decidido_por:STATE.currentUser.id,decidido_em:new Date().toISOString()}, {onConflict:'solicitacao_id'});
       if(error) throw error;
     }
 
@@ -213,12 +213,12 @@
       data_entrega:q('ae_data_entrega').value||null,ocorrencias:q('ae_ocorrencias').value.trim()||null
     };
     if(logPayload.transportadora||logPayload.valor_frete!==null||logPayload.prazo||logPayload.data_prevista||logPayload.contratado||logPayload.status_entrega||logPayload.data_entrega||logPayload.ocorrencias){
-      const {error}=await supabaseClient.from('logistica_fretes').upsert(logPayload); if(error) throw error;
+      const {error}=await supabaseClient.from('logistica_fretes').upsert(logPayload, {onConflict:'solicitacao_id'}); if(error) throw error;
     }
 
     const nf=q('ae_nf').value.trim(); const dataNF=q('ae_data_nf').value||null; const obsFat=q('ae_obs_fat').value.trim(); const fatConcl=q('ae_fat_concluido').checked;
     if(nf||dataNF||obsFat||fatConcl){
-      const {error}=await supabaseClient.from('faturamentos').upsert({solicitacao_id:old.id,numero_nf:nf||null,data_nf:dataNF,observacoes:obsFat||null,concluido:fatConcl,concluido_em:fatConcl?new Date().toISOString():null});
+      const {error}=await supabaseClient.from('faturamentos').upsert({solicitacao_id:old.id,numero_nf:nf||null,data_nf:dataNF,observacoes:obsFat||null,concluido:fatConcl,concluido_em:fatConcl?new Date().toISOString():null}, {onConflict:'solicitacao_id'});
       if(error) throw error;
     }
 
