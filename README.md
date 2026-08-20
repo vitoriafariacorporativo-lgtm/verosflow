@@ -21,6 +21,7 @@ ferramenta — e mesmo essa etapa é gerada e registrada dentro do VerOS Flow.
 | `admin-editor.js` | Edição administrativa de qualquer etapa (Comercial ADM) |
 | `kanban-screen-fix.js` | Correção de rolagem do Kanban |
 | `veros_flow_schema_v2.sql` | **Migração do banco** — rode antes de publicar |
+| `veros_flow_ajuste_remocao_aprovacao_rc.sql` | Rode só se você já tinha pedidos parados em "Aguardando aprovação do RC" |
 
 ---
 
@@ -39,10 +40,10 @@ O script é **aditivo e idempotente**: não apaga, não renomeia e não altera a
 
 | Perfil | Responsabilidade no fluxo |
 |---|---|
-| **RC · Comercial** | Traz o pedido do Mobi e aprova faturamento + cotação de frete |
+| **RC · Comercial** | Traz o pedido do Mobi e reencaminha para outra unidade se faltar estoque |
 | **UBS** | Consulta estoque, informa prazos, conclui tratamento e registra os lotes |
 | **Financeiro** | Analisa crédito e conduz o pós-venda (pagamento e renegociação) |
-| **Logística** | Cota frete, aciona a transportadora, controla carregamento e entrega |
+| **Logística** | Cota e contrata frete, aciona a transportadora, controla carregamento e entrega |
 | **Comercial ADM** | Imputa no SAP, fatura e vincula a NF aos lotes |
 | **Administrador** | Acesso total, cadastros, auditoria e edição de qualquer etapa |
 
@@ -78,8 +79,15 @@ O script é **aditivo e idempotente**: não apaga, não renomeia e não altera a
 ## Status do pedido
 
 `Novo` → `Consulta de estoque` → `Sem estoque` / `Em tratamento` →
-`Aguardando crédito` → `Aguardando aprovação do RC` → `Aguardando faturamento` → `Aguardando transportadora` → `Em carregamento` → `Faturado` →
+`Aguardando crédito` → `Aguardando faturamento` → `Aguardando transportadora` → `Em carregamento` → `Faturado` →
 `Em transporte` → `Finalizado` → `Pago` / `Em renegociação`
+
+Não existe mais etapa de aprovação do RC entre o crédito e o faturamento: assim que o crédito é
+aprovado (e o estoque está pronto), SAP e frete seguem **em paralelo** — o Comercial ADM já pode
+imputar no SAP e a Logística já pode contratar o frete, sem esperar um pelo outro.
+
+Se a UBS responde **sem estoque**, o pedido não é encerrado: ele volta para o RC escolher outra
+unidade. A consulta de estoque é reaberta do zero na unidade nova.
 
 Ao confirmar a entrega, o pedido é dado como **finalizado** e passa ao **pós-venda**, onde só
 resta o acompanhamento do pagamento.
@@ -90,8 +98,9 @@ Os status antigos continuam reconhecidos, para que pedidos criados antes da v2 n
 
 ## Travas automáticas
 
-- A **aprovação do RC** só habilita com estoque/tratamento, crédito e cotação de frete prontos.
-- O **e-mail à transportadora** só habilita depois do pedido imputado no SAP.
-- A **NF** só habilita depois da aprovação do RC.
+- **Sem estoque** não encerra o pedido: o RC pode reencaminhá-lo para outra unidade, que reabre a consulta de estoque do zero.
+- A **contratação do frete** e a **imputação no SAP** só habilitam com o crédito aprovado (e o estoque pronto) — em paralelo, sem depender uma da outra.
+- O **e-mail à transportadora** só habilita depois do frete **contratado** (não mais do SAP).
+- A **NF** só habilita depois do pedido imputado no SAP.
 - A **liberação do caminhão** só habilita depois da NF emitida.
 - O **pagamento** só habilita depois da entrega e é ação exclusiva do Financeiro e do Administrador.

@@ -71,7 +71,10 @@ alter table public.solicitacoes
   add column if not exists data_entrega_negociada date,
   add column if not exists observacoes_pedido    text,
   add column if not exists pedido_sap            text,                      -- nº do pedido imputado no SAP
-  add column if not exists aprovado_rc           boolean default false,     -- RC aprovou faturamento + frete
+  -- OBSOLETO: a etapa de aprovação do RC foi removida do fluxo (o crédito
+  -- aprovado já libera SAP e frete em paralelo). As 3 colunas abaixo ficam
+  -- aqui só por compatibilidade com pedidos antigos — o app não as lê mais.
+  add column if not exists aprovado_rc           boolean default false,
   add column if not exists aprovado_rc_em        timestamptz,
   add column if not exists aprovado_rc_por       uuid references public.usuarios(id);
 

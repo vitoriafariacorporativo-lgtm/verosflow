@@ -892,9 +892,7 @@ const STATUS_META = {
   'Em tratamento':                 { cls:'badge-producao' },
   'Aguardando crédito':            { cls:'badge-aguardando' },
   'Crédito recusado':              { cls:'badge-recusado' },
-  'Aguardando aprovação do RC':    { cls:'badge-analise' },
   'Aguardando faturamento':        { cls:'badge-analise' },
-  'Aguardando frete':              { cls:'badge-analise' },
   'Aguardando transportadora':     { cls:'badge-aguardando' },
   'Em carregamento':               { cls:'badge-producao' },
   'Faturado':                      { cls:'badge-faturado' },
@@ -1156,8 +1154,6 @@ const Data = {
       dataEntregaNegociada: ex.data_entrega_negociada || null,
       observacoesPedido: ex.observacoes_pedido || '',
       pedidoSap: ex.pedido_sap || null,
-      aprovadoRc: !!ex.aprovado_rc,
-      aprovadoRcEm: ex.aprovado_rc_em || null,
       lotes: (V2.lotes||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
         id:x.id, lote:x.lote, quantidade:x.quantidade_sc, tratamento:x.tratamento,
         dataTratamento:x.data_tratamento, germinacao:x.germinacao_pct, observacoes:x.observacoes,
@@ -1277,14 +1273,16 @@ const Data = {
     if(fat && fat.concluido) return 'Faturado';
     if(car && (car.chegada_em || car.carregado_em)) return 'Em carregamento';
 
-    if(s.aprovado_rc) return s.pedido_sap ? 'Aguardando transportadora' : 'Aguardando faturamento';
-
     if(!adm || !adm.resultado_estoque) return 'Consulta de estoque';
     if(adm.resultado_estoque === 'Sem estoque') return 'Sem estoque';
     if(adm.resultado_estoque === 'Com estoque para produção' && !adm.tratamento_concluido) return 'Em tratamento';
     if(!(fin && ['Aprovado','Aprovado com ressalvas'].includes(fin.decisao))) return 'Aguardando crédito';
-    if(!(log && log.transportadora)) return 'Aguardando frete';
-    return 'Aguardando aprovação do RC';
+
+    // Crédito aprovado (e estoque pronto): SAP e frete seguem em paralelo,
+    // sem aprovação do RC — a Logística aciona a transportadora assim que
+    // contrata o frete, independente do SAP.
+    if(log && log.email_enviado_em) return 'Aguardando transportadora';
+    return 'Aguardando faturamento';
   },
 
   async _sincronizarStatus(solId){
@@ -1434,18 +1432,38 @@ const Data = {
     return novo;
   },
 
-  /* ---------------------------------------- 5. RC — APROVAÇÃO FINAL ------ */
-  async aprovarRc(solId){
-    const { error } = await supabaseClient.from('solicitacoes').update({
-      aprovado_rc:true, aprovado_rc_em:new Date().toISOString(), aprovado_rc_por:STATE.currentUser.id,
-    }).eq('id', solId);
+  /* ------------------------------- 5. RC — TROCA DE UNIDADE (sem estoque) - */
+  // Quando a UBS responde "Sem estoque", o pedido não é encerrado: ele volta
+  // para o RC escolher outra unidade que talvez tenha o produto.
+  async trocarUnidade(solId, novaUnidadeId){
+    const solAntes = DB.solicitacoes.find(s=>s.id===solId) || {};
+    const unidadeAnterior = solAntes.unidade;
+    const { error } = await supabaseClient.from('solicitacoes').update({ unidade_id: novaUnidadeId }).eq('id', solId);
+    if(error) throw error;
+    // Reabre a consulta de estoque do zero na unidade nova.
+    const { error: e2 } = await supabaseClient.from('adm_ubs_avaliacoes').delete().eq('solicitacao_id', solId);
+    if(e2) throw e2;
+    const novo = await Data._sincronizarStatus(solId);
+    const nomeNova = U.unidadeNome(novaUnidadeId);
+    await Data.addTimeline(solId, `Pedido reencaminhado para outra unidade — ${U.unidadeNome(unidadeAnterior)} → ${nomeNova}`);
+    await Data.logAcao(solId, 'Unidade', U.unidadeNome(unidadeAnterior), nomeNova);
+    await Data.notificar(solId, 'ADM_UBS', 'Novo pedido para consulta de estoque',
+      `${Data.ref(solAntes)} — reencaminhado de outra unidade, sem estoque lá.`);
+    return novo;
+  },
+
+  /* ------------------------- 5b. LOGÍSTICA — CONTRATAÇÃO DO FRETE -------- */
+  // Liberada assim que o crédito é aprovado (e o estoque está pronto) — não
+  // existe mais aprovação do RC entre o crédito e o faturamento/frete.
+  async contratarFrete(solId){
+    const { error } = await supabaseClient.from('logistica_fretes').update({
+      contratado:true, contratado_em:new Date().toISOString(),
+    }).eq('solicitacao_id', solId);
     if(error) throw error;
     const novo = await Data._sincronizarStatus(solId);
     const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
-    await Data.addTimeline(solId, 'Faturamento e cotação de frete aprovados pelo RC');
-    await Data.logAcao(solId, 'Aprovação do RC', 'Pendente', 'Aprovado');
-    await Data.notificar(solId, 'OPERACOES', 'Pedido aprovado — imputar no SAP', Data.ref(sol));
-    await Data.notificar(solId, 'COORD_LOG', 'Pedido aprovado — acionar transportadora', Data.ref(sol));
+    await Data.addTimeline(solId, `Frete contratado — ${(sol.logistica||{}).transportadora||''}`);
+    await Data.logAcao(solId, 'Frete', 'Cotado', 'Contratado');
     return novo;
   },
 
@@ -1495,8 +1513,8 @@ const Data = {
     const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
     await Data.addTimeline(solId, `Cotação de frete — ${dados.transportadora} · ${U.brl(dados.valorFrete)}`);
     await Data.logAcao(solId, 'Cotação de frete', '—', dados.transportadora+' / '+U.brl(dados.valorFrete));
-    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Cotação de frete disponível',
-      `${Data.ref(sol)} — ${dados.transportadora}, ${U.brl(dados.valorFrete)}, prazo ${dados.prazo}. Aprove para seguir.`);
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Cotação de frete registrada',
+      `${Data.ref(sol)} — ${dados.transportadora}, ${U.brl(dados.valorFrete)}, prazo ${dados.prazo}.`);
     return novo;
   },
 
@@ -1693,15 +1711,15 @@ const FLOW = {
      Os status legados continuam aceitos, mas não fazem parte da ordem. */
   ORDER: [
     'Novo','Consulta de estoque','Sem estoque','Em tratamento',
-    'Aguardando crédito','Aguardando aprovação do RC',
-    'Aguardando faturamento','Aguardando frete','Aguardando transportadora',
+    'Aguardando crédito',
+    'Aguardando faturamento','Aguardando transportadora',
     'Em carregamento','Faturado','Em transporte','Finalizado','Pago'
   ],
 
   /* Quem age em cada etapa. Usado para rotear notificações e travar botões. */
   DONO_ETAPA: {
     pedido:'RC', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
-    financeiro:'COORD_FIN', aprovacaoRc:'RC',
+    financeiro:'COORD_FIN',
     faturamento:'OPERACOES', logistica:'COORD_LOG', transportadora:'COORD_LOG',
     carregamento:'COORD_LOG', entrega:'COORD_LOG', pagamento:'COORD_FIN',
   },
@@ -1722,8 +1740,12 @@ const FLOW = {
     await Data.decidirCredito(sol.id, decisao, motivo);
     await Data.refreshSolicitacoesData();
   },
-  async aprovarRc(sol){
-    await Data.aprovarRc(sol.id);
+  async contratarFrete(sol){
+    await Data.contratarFrete(sol.id);
+    await Data.refreshSolicitacoesData();
+  },
+  async trocarUnidade(sol, novaUnidadeId){
+    await Data.trocarUnidade(sol.id, novaUnidadeId);
     await Data.refreshSolicitacoesData();
   },
   async imputarSap(sol, pedidoSap){
@@ -1768,23 +1790,17 @@ const FLOW = {
     await Data.refreshSolicitacoesData();
   },
 
-  /* Pré-requisitos para o RC aprovar faturamento e frete. */
-  prontoParaAprovacaoRc(sol){
-    const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
-                      (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
-    const creditoOk = sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao);
-    const freteOk   = sol.logistica && sol.logistica.transportadora;
-    return !!(estoqueOk && creditoOk && freteOk);
+  // Estoque pronto para seguir (com saldo ou tratamento concluído).
+  estoquePronto(sol){
+    return !!(sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
+      (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido)));
   },
 
-  pendenciasParaAprovacao(sol){
-    const p = [];
-    const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
-                      (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
-    if(!estoqueOk) p.push('estoque/tratamento da UBS');
-    if(!(sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao))) p.push('aprovação de crédito');
-    if(!(sol.logistica && sol.logistica.transportadora)) p.push('cotação de frete');
-    return p;
+  // Crédito aprovado + estoque pronto: SAP e frete liberados em paralelo,
+  // sem etapa de aprovação do RC.
+  creditoLiberado(sol){
+    const creditoOk = sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao);
+    return !!(creditoOk && FLOW.estoquePronto(sol));
   },
 
   // permissão de edição por etapa
@@ -1792,7 +1808,7 @@ const FLOW = {
     if(STATE.currentProfile === 'COMERCIAL_ADM') return true;
     const map = {
       admUbs:'ADM_UBS', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
-      financeiro:'COORD_FIN', aprovacaoRc:'RC',
+      financeiro:'COORD_FIN',
       logistica:'COORD_LOG', transportadora:'COORD_LOG', carregamento:'COORD_LOG',
       faturamento:'OPERACOES', pedido:'RC',
       // Pagamento (pós-venda): só Financeiro e Administrador.
@@ -2499,8 +2515,8 @@ const Render = {
       { l:'Estoque UBS',   ok:!!(sol.admUbs && sol.admUbs.resultado) },
       { l:'Tratamento',    ok:!!(sol.admUbs && sol.admUbs.tratamentoConcluido) },
       { l:'Crédito',       ok:!!(sol.financeiro && sol.financeiro.decisao) },
-      { l:'Frete',         ok:!!(sol.logistica && sol.logistica.transportadora) },
-      { l:'Aprovação RC',  ok:!!sol.aprovadoRc },
+      { l:'Frete cotado',  ok:!!(sol.logistica && sol.logistica.transportadora) },
+      { l:'Frete contratado', ok:!!(sol.logistica && sol.logistica.contratado) },
       { l:'SAP',           ok:!!sol.pedidoSap },
       { l:'Transportadora',ok:!!(sol.logistica && sol.logistica.emailEnviadoEm) },
       { l:'Carregamento',  ok:!!(sol.carregamento && sol.carregamento.carregadoEm) },
@@ -2518,7 +2534,6 @@ const Render = {
     const can = k => FLOW.podeEditarEtapa(k);
     const dono = (...perfis) => `<span class="stage-owner">${U.esc(perfis.map(U.perfilCurto).join(' · '))}</span>`;
     const est = sol.admUbs || {};
-    const pend = FLOW.pendenciasParaAprovacao(sol);
 
     return `
       <div class="detail-grid">
@@ -2548,7 +2563,14 @@ const Render = {
                 ${est.prazoDisponibilidade?`<div class="it"><b>Previsão de disponibilidade</b><span>${U.esc(est.prazoDisponibilidade)}</span></div>`:''}
                 ${est.prazoTratamento?`<div class="it"><b>Prazo de tratamento</b><span>${U.esc(est.prazoTratamento)}</span></div>`:''}
               </div>
-              ${can('estoque') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Revisar resposta</button></div>`:''}
+              ${est.resultado === 'Sem estoque' ? `
+                <div style="margin-top:10px;border-top:1px dashed var(--v-line);padding-top:10px;">
+                  <p style="font-size:12.5px;color:var(--v-ink-700);margin-bottom:8px;">
+                    Sem estoque nesta unidade. ${can('pedido') ? 'Escolha outra unidade para tentar novamente.' : 'Aguardando o RC escolher outra unidade.'}
+                  </p>
+                  ${can('pedido') ? `<button class="btn btn-primary btn-sm" onclick="Render.abrirTrocarUnidadeModal('${sol.id}')">Selecionar outra unidade</button>` : ''}
+                </div>
+              ` : can('estoque') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Revisar resposta</button></div>`:''}
             ` : can('estoque') ? `
               <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Informe a situação do estoque. A resposta chega ao RC pelo VerOS Flow — sem WhatsApp e sem e-mail.</p>
               <button class="btn btn-primary btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Responder consulta de estoque</button>
@@ -2599,44 +2621,35 @@ const Render = {
               </div>`:''}
           </div>
 
-          <!-- 5. LOGÍSTICA — COTAÇÃO -->
-          <div class="stage-block ${(sol.logistica&&sol.logistica.transportadora)?'done':''} ${(!can('logistica'))?'locked':''}">
-            <h4>${Ic('truck',15)} Logística · Cotação de frete ${dono('COORD_LOG')}</h4>
+          <!-- 5. LOGÍSTICA — COTAÇÃO E CONTRATAÇÃO DE FRETE -->
+          <div class="stage-block ${(sol.logistica&&sol.logistica.contratado)?'done':''} ${(!can('logistica'))?'locked':''}">
+            <h4>${Ic('truck',15)} Logística · Frete ${dono('COORD_LOG')}</h4>
             ${sol.logistica && sol.logistica.transportadora ? `
               <div class="info-list">
                 <div class="it"><b>Transportadora</b><span>${U.esc(sol.logistica.transportadora)}</span></div>
                 <div class="it"><b>Valor do frete</b><span>${U.brl(sol.logistica.valorFrete)}</span></div>
                 <div class="it"><b>Prazo</b><span>${U.esc(sol.logistica.prazo)}</span></div>
                 <div class="it"><b>E-mail da transportadora</b><span>${U.esc(sol.logistica.transportadoraEmail)||'—'}</span></div>
+                <div class="it"><b>Situação</b><span>${sol.logistica.contratado?'Contratado':'Cotado — aguardando crédito para contratar'}</span></div>
               </div>
-              ${can('logistica') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Editar cotação</button></div>`:''}
+              ${can('logistica') ? `
+              <div class="mini-actions">
+                ${!sol.logistica.contratado?`<button class="btn btn-ghost btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Editar cotação</button>`:''}
+                ${!sol.logistica.contratado && FLOW.creditoLiberado(sol) ? `<button class="btn btn-primary btn-sm" onclick="Render.contratarFreteAction('${sol.id}')">Contratar frete</button>` : ''}
+                ${!sol.logistica.contratado && !FLOW.creditoLiberado(sol) ? `<span class="lock-note">Contratação libera assim que o crédito for aprovado.</span>` : ''}
+              </div>` : ''}
             ` : can('logistica') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Pode cotar em paralelo, antes mesmo do crédito sair. A contratação libera assim que o crédito for aprovado.</p>
               <button class="btn btn-primary btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Registrar cotação</button>
             ` : `<span class="lock-note">Aguardando cotação da Logística.</span>`}
           </div>
 
-          <!-- 6. RC — APROVAÇÃO -->
-          <div class="stage-block ${sol.aprovadoRc?'done':''} ${(!can('aprovacaoRc'))?'locked':''}">
-            <h4>${Ic('check',15)} RC · Aprovar faturamento e frete ${dono('RC')}</h4>
-            ${sol.aprovadoRc ? `
-              <div class="info-list">
-                <div class="it"><b>Aprovado em</b><span>${U.fmtDateTime(sol.aprovadoRcEm)}</span></div>
-                <div class="it"><b>Situação</b><span>Liberado para faturamento</span></div>
-              </div>
-            ` : can('aprovacaoRc') ? (
-              FLOW.prontoParaAprovacaoRc(sol) ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Estoque, cadastro, crédito e frete concluídos. Aprove para liberar o faturamento.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.aprovarRcAction('${sol.id}')">Aprovar faturamento e frete</button>`
-              : `<span class="lock-note">Faltam: ${U.esc(pend.join(', '))}.</span>`
-            ) : `<span class="lock-note">Aguardando aprovação do RC responsável.</span>`}
-          </div>
-
-          <!-- 7. COMERCIAL ADM — SAP -->
+          <!-- 6. COMERCIAL ADM — SAP -->
           <div class="stage-block ${sol.pedidoSap?'done':''} ${(!can('faturamento'))?'locked':''}">
             <h4>${Ic('fileText',15)} Comercial ADM · Pedido no SAP ${dono('OPERACOES')}</h4>
             ${sol.pedidoSap ? `
               <div class="info-list"><div class="it"><b>Pedido SAP</b><span>${U.esc(sol.pedidoSap)}</span></div></div>
-            ` : !sol.aprovadoRc ? `<span class="lock-note">Disponível após a aprovação do RC.</span>`
+            ` : !FLOW.creditoLiberado(sol) ? `<span class="lock-note">Disponível assim que o crédito for aprovado — segue em paralelo com o frete, sem aprovação do RC.</span>`
               : can('faturamento') ? `
               <button class="btn btn-primary btn-sm" onclick="Render.abrirSapModal('${sol.id}')">Imputar pedido no SAP</button>
             ` : `<span class="lock-note">Aguardando o Comercial ADM imputar no SAP.</span>`}
@@ -2658,7 +2671,7 @@ const Render = {
             ${can('transportadora') ? `
               <div class="mini-actions">
                 <button class="btn ${sol.logistica&&sol.logistica.emailEnviadoEm?'btn-secondary':'btn-primary'} btn-sm"
-                  ${(!sol.pedidoSap)?'disabled title="Disponível após o pedido ser imputado no SAP"':''}
+                  ${(!(sol.logistica&&sol.logistica.contratado))?'disabled title="Contrate o frete antes de acionar a transportadora"':''}
                   onclick="Render.abrirEmailTransportadoraModal('${sol.id}')">
                   ${sol.logistica&&sol.logistica.emailEnviadoEm?'Reenviar / novo e-mail':'Gerar e-mail para a transportadora'}
                 </button>
@@ -2696,7 +2709,7 @@ const Render = {
               </div>
             ` : can('faturamento') ? `
               <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">A NF e os lotes ficam anexados ao pedido — substitui o encaminhamento da NF por e-mail.</p>
-              <button class="btn btn-primary btn-sm" ${(!sol.aprovadoRc)?'disabled title="Disponível após aprovação do RC"':''} onclick="Render.abrirFaturamentoModal('${sol.id}')">Emitir NF</button>
+              <button class="btn btn-primary btn-sm" ${(!sol.pedidoSap)?'disabled title="Disponível após o pedido ser imputado no SAP"':''} onclick="Render.abrirFaturamentoModal('${sol.id}')">Emitir NF</button>
             ` : `<span class="lock-note">Aguardando faturamento.</span>`}
           </div>
 
@@ -3084,14 +3097,39 @@ const Render = {
     if(el) el.style.display = v==='Aprovado' ? 'none':'block';
   },
 
-  async aprovarRcAction(id){
-    App.confirmAction('Aprovar faturamento e frete',
-      'Confirma a aprovação? O Comercial ADM e a Logística serão notificados para imputar o pedido no SAP e acionar a transportadora.',
+  abrirTrocarUnidadeModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    const opcoes = (DB.unidades||[]).filter(u=>u.status==='Ativo' && u.id!==sol.unidade);
+    Modal.open('Selecionar outra unidade', `
+      <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:12px;">
+        A unidade atual (<b>${U.esc(U.unidadeNome(sol.unidade))}</b>) respondeu sem estoque. Escolha outra
+        unidade para reabrir a consulta de estoque — o pedido volta para a UBS dessa unidade.
+      </p>
+      <div class="field"><label>Nova unidade *</label>
+        <select id="tu_unidade">${opcoes.map(u=>`<option value="${u.id}">${U.esc(u.nome)} — ${U.esc(u.cidade)}/${U.esc(u.uf)}</option>`).join('')}</select>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Reencaminhar pedido', cls:'btn-primary', onClick: async ()=>{
+        const novaUnidade = document.getElementById('tu_unidade').value;
+        if(!novaUnidade){ App.toast('Selecione uma unidade','Escolha para onde reencaminhar o pedido.','err'); return; }
+        try{
+          await FLOW.trocarUnidade(sol, novaUnidade);
+          Modal.close(); App.toast('Pedido reencaminhado','A nova UBS foi notificada no VerOS Flow.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao reencaminhar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  async contratarFreteAction(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id);
+    App.confirmAction('Contratar frete',
+      `Confirma a contratação com ${U.esc((sol.logistica||{}).transportadora||'a transportadora cotada')}? Depois disso, é só acionar a transportadora por e-mail.`,
       async ()=>{
         try{
-          await FLOW.aprovarRc(DB.solicitacoes.find(s=>s.id===id));
-          App.toast('Pedido aprovado','Comercial ADM e Logística notificados.','ok'); Render.detail();
-        }catch(err){ App.toast('Erro ao aprovar', err.message||'Tente novamente.','err'); }
+          await FLOW.contratarFrete(sol);
+          App.toast('Frete contratado','Você já pode acionar a transportadora.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao contratar', err.message||'Tente novamente.','err'); }
       });
   },
 
@@ -3498,7 +3536,7 @@ Produtiva Sementes`;
       const est = s.admUbs||{};
       const add = acao => out.push({ sol:s, acao });
       if(perfil==='RC' || perfil==='COMERCIAL_ADM'){
-        if(!s.aprovadoRc && FLOW.prontoParaAprovacaoRc(s)) add('Aprovar faturamento e frete');
+        if(est.resultado === 'Sem estoque') add('Selecionar outra unidade');
       }
       if(perfil==='ADM_UBS' || perfil==='COMERCIAL_ADM'){
         if(!est.resultado) add('Responder consulta de estoque');
@@ -3511,14 +3549,15 @@ Produtiva Sementes`;
       }
       if(perfil==='COORD_LOG' || perfil==='COMERCIAL_ADM'){
         if(!(s.logistica && s.logistica.transportadora)) add('Registrar cotação de frete');
-        else if(s.pedidoSap && !(s.logistica && s.logistica.emailEnviadoEm)) add('Acionar transportadora por e-mail');
+        else if(FLOW.creditoLiberado(s) && !s.logistica.contratado) add('Contratar frete');
+        else if(s.logistica.contratado && !(s.logistica && s.logistica.emailEnviadoEm)) add('Acionar transportadora por e-mail');
         else if(s.logistica && s.logistica.liberacaoConfirmada && !(s.carregamento && s.carregamento.chegadaEm)) add('Registrar chegada do caminhão');
         else if(s.carregamento && s.carregamento.chegadaEm && !s.carregamento.carregadoEm) add('Confirmar carregamento');
         else if(s.faturamento && s.faturamento.concluido && !(s.carregamento && s.carregamento.liberadoEm)) add('Liberar caminhão');
         else if(s.carregamento && s.carregamento.liberadoEm && s.logistica.statusEntrega!=='Entregue') add('Confirmar entrega');
       }
       if(perfil==='OPERACOES' || perfil==='COMERCIAL_ADM'){
-        if(s.aprovadoRc && !s.pedidoSap) add('Imputar pedido no SAP');
+        if(FLOW.creditoLiberado(s) && !s.pedidoSap) add('Imputar pedido no SAP');
         else if(s.carregamento && s.carregamento.carregadoEm && !(s.faturamento && s.faturamento.concluido)) add('Emitir NF');
       }
     });
@@ -3548,7 +3587,7 @@ Produtiva Sementes`;
   transportadora(){
     const lista = Render.visibleSolicitacoes().filter(s=>
       (s.logistica && s.logistica.transportadora) && !['Cancelado'].includes(s.status));
-    const aEnviar = lista.filter(s=>s.pedidoSap && !(s.logistica.emailEnviadoEm));
+    const aEnviar = lista.filter(s=>s.logistica.contratado && !(s.logistica.emailEnviadoEm));
     const aguardando = lista.filter(s=>s.logistica.emailEnviadoEm && !s.logistica.liberacaoConfirmada);
     const confirmados = lista.filter(s=>s.logistica.liberacaoConfirmada);
 

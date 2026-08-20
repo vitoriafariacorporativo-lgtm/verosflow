@@ -6,13 +6,14 @@
   'use strict';
 
   const STATUS_OPTIONS = [
-    /* Processo redesenhado (v2 — sem e-mail) */
-    'Novo','Documentos pendentes','Consulta de estoque','Sem estoque','Em tratamento',
-    'Aguardando cadastro','Aguardando crédito','Crédito recusado',
-    'Aguardando aprovação do RC','Aguardando faturamento','Aguardando frete',
+    /* Processo redesenhado (v2 — sem e-mail, sem aprovação do RC) */
+    'Novo','Consulta de estoque','Sem estoque','Em tratamento',
+    'Aguardando crédito','Crédito recusado',
+    'Aguardando faturamento',
     'Aguardando transportadora','Em carregamento','Faturado','Em transporte',
     'Finalizado','Pago','Em renegociação','Cancelado',
-    /* legado */ 'Entregue','Aguardando pagamento',
+    /* legado */ 'Entregue','Aguardando pagamento','Documentos pendentes','Aguardando cadastro',
+    'Aguardando aprovação do RC','Aguardando frete',
     /* Status legados — pedidos criados antes da v2 */
     'Aguardando Saldo','Aguardando Aprovação Financeira',
     'Aguardando Crédito e Logística','Produção','Aguardando Frete','Frete contratado'
