@@ -6,10 +6,15 @@
   'use strict';
 
   const STATUS_OPTIONS = [
-    'Novo','Aguardando Saldo','Aguardando Aprovação Financeira',
-    'Aguardando Crédito e Logística','Crédito recusado','Produção',
-    'Aguardando Frete','Frete contratado','Faturado','Em transporte',
-    'Entregue','Cancelado'
+    /* Processo redesenhado (v2 — sem e-mail) */
+    'Novo','Documentos pendentes','Consulta de estoque','Sem estoque','Em tratamento',
+    'Aguardando cadastro','Aguardando crédito','Crédito recusado',
+    'Aguardando aprovação do RC','Aguardando faturamento','Aguardando frete',
+    'Aguardando transportadora','Em carregamento','Faturado','Em transporte',
+    'Entregue','Aguardando pagamento','Pago','Em renegociação','Cancelado',
+    /* Status legados — pedidos criados antes da v2 */
+    'Aguardando Saldo','Aguardando Aprovação Financeira',
+    'Aguardando Crédito e Logística','Produção','Aguardando Frete','Frete contratado'
   ];
 
   function admin(){ return typeof STATE!=='undefined' && STATE.currentProfile==='COMERCIAL_ADM'; }
@@ -195,7 +200,11 @@
     const saldoVal=q('ae_saldo').value;
     if(saldoVal!==''){
       const saldo=saldoVal==='true'; const tempo=q('ae_tempo').value.trim()||null;
-      const {error}=await supabaseClient.from('adm_ubs_avaliacoes').upsert({solicitacao_id:old.id,saldo_disponivel:saldo,tempo_producao:tempo,avaliado_por:STATE.currentUser.id,avaliado_em:new Date().toISOString()}, {onConflict:'solicitacao_id'});
+      // v2: mantém `resultado_estoque` coerente com o ajuste administrativo,
+      // para que os cartões de etapa do pedido não voltem ao estado "pendente".
+      const atual=(old.admUbs&&old.admUbs.resultado)||null;
+      const resultado=atual||(saldo?'Com estoque':'Sem estoque');
+      const {error}=await supabaseClient.from('adm_ubs_avaliacoes').upsert({solicitacao_id:old.id,saldo_disponivel:saldo,tempo_producao:tempo,resultado_estoque:resultado,tratamento_concluido:resultado==='Com estoque'?true:!!(old.admUbs&&old.admUbs.tratamentoConcluido),avaliado_por:STATE.currentUser.id,avaliado_em:new Date().toISOString()}, {onConflict:'solicitacao_id'});
       if(error) throw error;
     }
 

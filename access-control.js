@@ -1,8 +1,9 @@
-/* VerOS Flow — Controle de acesso e VISIBILIDADE v10
+/* VerOS Flow — Controle de acesso e VISIBILIDADE v11 (processo sem e-mail)
    REGRA APROVADA DO FLUXO
    - RC: somente seus próprios pedidos.
-   - ADM UBS: pedidos cuja UNIDADE DO PEDIDO seja igual à unidade do ADM UBS.
-     Pode existir mais de um ADM UBS para a mesma unidade; todos visualizam.
+   - UBS (ADM_UBS): pedidos cuja UNIDADE DO PEDIDO seja igual à unidade da UBS.
+     Pode existir mais de um usuário UBS para a mesma unidade; todos visualizam.
+   - Fiscal: TODOS os pedidos (o cadastro do cliente é corporativo, não por unidade).
    - Financeiro: TODOS os pedidos, independentemente da unidade, crédito ou status.
    - Logística: TODOS os pedidos, independentemente da unidade ou status.
    - Operações de Negócio: TODOS os pedidos, independentemente da unidade ou status.
@@ -38,6 +39,8 @@
     const map = {
       RC:'RC', SOLICITANTE:'RC', REQUISITANTE:'RC',
       ADM_UBS:'ADM_UBS', ADM_UBS_:'ADM_UBS', ADMINISTRADOR_UBS:'ADM_UBS', ADMINISTRADOR_DA_UBS:'ADM_UBS',
+      UBS:'ADM_UBS', UNIDADE_DE_BENEFICIAMENTO:'ADM_UBS',
+      FISCAL:'FISCAL', ANALISTA_FISCAL:'FISCAL', SETOR_FISCAL:'FISCAL', CADASTRO:'FISCAL',
       COORD_FIN:'COORD_FIN', COORDENADOR_FINANCEIRO:'COORD_FIN', COORDENADOR_FINANCEIRO_ADM:'COORD_FIN',
       COORD_LOG:'COORD_LOG', COORDENADOR_LOGISTICA:'COORD_LOG', COORDENADOR_LOGISTICA_ADM:'COORD_LOG',
       OPERACOES:'OPERACOES', OPERACOES_DE_NEGOCIO:'OPERACOES', OPERACOES_NEGOCIO:'OPERACOES',
@@ -82,7 +85,7 @@
     if(r === 'COMERCIAL_ADM') return true;
     if(r === 'RC') return own(sol);
     if(r === 'ADM_UBS') return unitMatches(sol,u);
-    if(r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
+    if(r === 'FISCAL' || r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
     return false;
   }
 
@@ -100,7 +103,10 @@
       console.info('[VerOS Flow] melhorias finais v1.7 carregadas');
       loadKanbanScreenFix();
     };
-    s.onerror=e=>console.error('[VerOS Flow] erro ao carregar melhorias finais:',e);
+    // final-enhancements.js é opcional e pode não existir no repositório.
+    // Sem ele, seguimos direto para a correção de rolagem do Kanban em vez de
+    // deixar um 404 barulhento no console.
+    s.onerror=()=>{ console.info('[VerOS Flow] melhorias finais não encontradas — seguindo sem elas'); loadKanbanScreenFix(); };
     document.head.appendChild(s);
   }
 
@@ -135,9 +141,9 @@
   function install(){
     if(typeof STATE === 'undefined' || typeof DB === 'undefined' || typeof Render === 'undefined') return false;
     if(typeof Render.visibleSolicitacoes !== 'function') return false;
-    window.VerOSRequestVisibility = {version:'10.0', role, canSee, visible, unitMatches, currentUser};
+    window.VerOSRequestVisibility = {version:'11.0', role, canSee, visible, unitMatches, currentUser};
     window.VEROS_FLOW_RULES = window.VEROS_FLOW_RULES || {};
-    window.VEROS_FLOW_RULES.version = '10.0';
+    window.VEROS_FLOW_RULES.version = '11.0';
     window.VEROS_FLOW_RULES.canSee = canSee;
     window.VEROS_FLOW_RULES.roles = role;
     window.VEROS_FLOW_RULES.visible = visible;
@@ -149,7 +155,8 @@
         regra: role()==='COORD_FIN' ? 'FINANCEIRO — TODOS OS PEDIDOS' :
                role()==='COORD_LOG' ? 'LOGÍSTICA — TODOS OS PEDIDOS' :
                role()==='OPERACOES' ? 'OPERAÇÕES — TODOS OS PEDIDOS' :
-               role()==='ADM_UBS' ? 'ADM UBS — UNIDADE DO PEDIDO' :
+               role()==='FISCAL' ? 'FISCAL — TODOS OS PEDIDOS' :
+               role()==='ADM_UBS' ? 'UBS — UNIDADE DO PEDIDO' :
                role()==='RC' ? 'RC — PRÓPRIOS' :
                role()==='COMERCIAL_ADM' ? 'COMERCIAL ADM — TODOS' : 'SEM REGRA'
       });
@@ -157,7 +164,7 @@
     };
     installUserNameDisplay();
     loadFinalEnhancements();
-    console.info('[VerOS Flow] controle de acesso v10 instalado:', {
+    console.info('[VerOS Flow] controle de acesso v11 instalado:', {
       perfil: STATE.currentUser?.email || STATE.currentUser?.nome || '',
       usuario: STATE.currentUser?.email || STATE.currentUser?.nome || '',
       totalPedidos: DB.solicitacoes?.length || 0, pedidosVisiveis: visible().length

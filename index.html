@@ -533,6 +533,93 @@ body.theme-dark .kpi-card, body.theme-dark .card{border-color:var(--v-line);}
 body.theme-dark .badge{filter:brightness(1.25);}
 body.theme-dark input, body.theme-dark select, body.theme-dark textarea{color:var(--v-ink-900);}
 body.theme-dark input::placeholder, body.theme-dark textarea::placeholder{color:var(--v-ink-500);}
+
+/* ==========================================================================
+   V2 — PROCESSO SEM E-MAIL: notificações, mensagens, lotes, transportadora
+   ========================================================================== */
+.nav-badge{margin-left:auto; min-width:19px; height:19px; padding:0 5px; border-radius:10px;
+  background:var(--v-red); color:#fff; font-size:10.5px; font-weight:800;
+  display:inline-flex; align-items:center; justify-content:center;}
+.topbar-bell{position:relative;}
+.topbar-bell .dot{position:absolute; top:5px; right:5px; min-width:15px; height:15px; padding:0 4px;
+  border-radius:8px; background:var(--v-red); color:#fff; font-size:9.5px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;}
+
+.detail-tabs{display:flex; gap:4px; border-bottom:1px solid var(--v-line); margin-bottom:16px; flex-wrap:wrap;}
+.detail-tab{background:none; border:none; padding:9px 14px; font-size:12.5px; font-weight:700;
+  color:var(--v-ink-500); border-bottom:2px solid transparent; margin-bottom:-1px;}
+.detail-tab.active{color:var(--v-green-700); border-bottom-color:var(--v-green-600);}
+.detail-tab .cnt{display:inline-block; margin-left:6px; background:var(--v-green-100);
+  color:var(--v-green-700); border-radius:9px; padding:1px 6px; font-size:10px;}
+
+.stage-block.done{border-left:3px solid var(--v-green-600);}
+.stage-block.blocked{border-left:3px solid var(--v-red); background:var(--v-red-bg);}
+.stage-block.email{border-left:3px solid var(--v-amber); background:var(--v-amber-bg);}
+.stage-owner{margin-left:auto; font-size:10px; font-weight:700; letter-spacing:.3px;
+  color:var(--v-ink-500); background:var(--v-bg); border:1px solid var(--v-line);
+  padding:2px 8px; border-radius:20px; text-transform:none;}
+
+.msg-thread{display:flex; flex-direction:column; gap:12px; max-height:520px; overflow-y:auto; padding-right:4px;}
+.msg{display:flex; gap:10px;}
+.msg .av{width:32px; height:32px; border-radius:50%; background:var(--v-green-100);
+  color:var(--v-green-700); font-size:11px; font-weight:800; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;}
+.msg-body{background:var(--v-bg); border:1px solid var(--v-line); border-radius:10px; padding:10px 12px; flex:1;}
+.msg.mine .msg-body{background:var(--v-green-050); border-color:var(--v-green-100);}
+.msg-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:4px;}
+.msg-head b{font-size:12.5px;}
+.msg-head .role{font-size:10px; font-weight:700; color:var(--v-green-700);
+  background:var(--v-green-100); padding:1px 7px; border-radius:20px;}
+.msg-head .time{font-size:10.5px; color:var(--v-ink-300); margin-left:auto;}
+.msg-text{font-size:13px; line-height:1.55; color:var(--v-ink-900); white-space:pre-wrap;}
+.msg-composer{margin-top:14px; border-top:1px solid var(--v-line); padding-top:14px;}
+.msg-composer textarea{width:100%; border:1px solid var(--v-line); border-radius:8px;
+  padding:10px 12px; resize:vertical; min-height:74px; background:var(--v-card); color:var(--v-ink-900);}
+.msg-composer-row{display:flex; gap:8px; align-items:center; margin-top:9px; flex-wrap:wrap;}
+.msg-composer-row select{border:1px solid var(--v-line); border-radius:8px; padding:7px 10px;
+  background:var(--v-card); color:var(--v-ink-900);}
+
+.notif{display:flex; gap:12px; padding:13px 14px; border:1px solid var(--v-line);
+  border-radius:10px; background:var(--v-card); margin-bottom:9px; align-items:flex-start;}
+.notif.unread{border-left:3px solid var(--v-green-600); background:var(--v-green-050);}
+.notif .ni{width:30px; height:30px; border-radius:8px; display:flex; align-items:center;
+  justify-content:center; flex-shrink:0; background:var(--v-green-100); color:var(--v-green-700);}
+.notif.warn .ni{background:var(--v-amber-bg); color:var(--v-amber);}
+.notif.err .ni{background:var(--v-red-bg); color:var(--v-red);}
+.notif-main{flex:1; min-width:0;}
+.notif-main b{display:block; font-size:13px; margin-bottom:2px;}
+.notif-main p{font-size:12.5px; color:var(--v-ink-500); line-height:1.5;}
+.notif-meta{font-size:10.5px; color:var(--v-ink-300); margin-top:5px;}
+
+.lote-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.lote-table th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px;
+  color:var(--v-ink-300); padding:7px 9px; border-bottom:1px solid var(--v-line);}
+.lote-table td{padding:9px; border-bottom:1px solid var(--v-line); color:var(--v-ink-900);}
+
+.email-preview{background:var(--v-bg); border:1px solid var(--v-line); border-radius:10px;
+  padding:14px; font-family:var(--font-body); font-size:12.5px; line-height:1.6;
+  white-space:pre-wrap; color:var(--v-ink-700); max-height:300px; overflow:auto;}
+.email-tag{display:inline-flex; align-items:center; gap:6px; background:var(--v-amber-bg);
+  color:var(--v-amber); padding:4px 10px; border-radius:20px; font-size:10.5px; font-weight:800;}
+
+.pend-card{display:flex; gap:14px; align-items:center; padding:14px; border:1px solid var(--v-line);
+  border-radius:10px; background:var(--v-card); margin-bottom:10px; cursor:pointer;}
+.pend-card:hover{border-color:var(--v-green-300); box-shadow:var(--v-shadow-sm);}
+.pend-card .pc-main{flex:1; min-width:0;}
+.pend-card .pc-main b{font-size:13.5px; display:block;}
+.pend-card .pc-main span{font-size:12px; color:var(--v-ink-500);}
+.pend-acao{font-size:11px; font-weight:800; color:var(--v-green-700); background:var(--v-green-100);
+  padding:5px 11px; border-radius:20px; white-space:nowrap;}
+
+.flow-rail{display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 18px;}
+.flow-step{font-size:10.5px; font-weight:700; padding:5px 10px; border-radius:20px;
+  background:var(--v-bg); color:var(--v-ink-300); border:1px solid var(--v-line);}
+.flow-step.done{background:var(--v-green-100); color:var(--v-green-700); border-color:var(--v-green-100);}
+.flow-step.current{background:var(--v-green-600); color:#fff; border-color:var(--v-green-600);}
+
+.theme-dark .msg-body{background:#1d241f;}
+.theme-dark .msg.mine .msg-body{background:#1a2a1d;}
+.theme-dark .email-preview{background:#1d241f;}
 </style>
 </head>
 <body>
@@ -621,7 +708,7 @@ body.theme-dark input::placeholder, body.theme-dark textarea::placeholder{color:
         <input type="text" id="globalSearch" placeholder="Buscar pedido, cliente, RC..." oninput="App.globalSearch(this.value)">
       </div>
       <div class="topbar-right">
-        <button class="icon-btn" title="Notificações" onclick="App.toast('Notificações','Você está em dia com suas pendências.','info')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.5 21a1.5 1.5 0 0 0 3 0"/></svg><span class="dot" id="notifDot"></span></button>
+        <button class="icon-btn topbar-bell" title="Notificações" onclick="App.navigate('notificacoes')"><span class="dot" id="topbarNotifDot" style="display:none;">0</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.5 21a1.5 1.5 0 0 0 3 0"/></svg><span class="dot" id="notifDot"></span></button>
         <button class="icon-btn" id="btnNovaTopbar" title="Nova solicitação" onclick="App.navigate('nova')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
       </div>
     </header>
@@ -669,17 +756,20 @@ const supabaseClient = SUPABASE_CONFIGURED
    ------------------------------------------------------------------------ */
 const DB = {
   perfis: [
-    { id:'RC', nome:'RC (Solicitante)', descricao:'Cria solicitações de pedido e acompanha o andamento.', permissoes:['Criar solicitação','Visualizar próprias solicitações','Acompanhar timeline'] },
-    { id:'COORD_FIN', nome:'Coordenador Financeiro', descricao:'Analisa crédito e aprova/recusa solicitações financeiras.', permissoes:['Visualizar todas as solicitações','Aprovar / Recusar crédito','Anexos financeiros'] },
-    { id:'COORD_LOG', nome:'Coordenador Logística', descricao:'Realiza cotação de frete, contratação e controle de entrega.', permissoes:['Cotar frete','Contratar frete','Atualizar status de entrega'] },
-    { id:'ADM_UBS', nome:'ADM UBS', descricao:'Verifica saldo disponível da unidade antes da produção.', permissoes:['Verificar saldo','Liberar produção'] },
-    { id:'OPERACOES', nome:'Operações de Negócio', descricao:'Executa faturamento e emissão de nota fiscal.', permissoes:['Emitir NF','Concluir faturamento','Marcar produção concluída'] },
-    { id:'COMERCIAL_ADM', nome:'Comercial ADM (Administrador)', descricao:'Acesso total ao sistema — cadastros, indicadores e configurações.', permissoes:['Acesso total','Gerenciar cadastros','Editar qualquer etapa','Gerenciar usuários'] },
+    { id:'RC', nome:'RC · Comercial (Solicitante)', descricao:'Registra o pedido no VerOS Flow, acompanha o andamento e aprova faturamento e cotação de frete.', permissoes:['Registrar pedido','Anexar documentos do cliente','Aprovar faturamento e frete','Conversar com todas as áreas','Acompanhar timeline'] },
+    { id:'ADM_UBS', nome:'UBS · Estoque e Tratamento', descricao:'Consulta estoque, informa prazos de disponibilidade e tratamento e registra os lotes tratados.', permissoes:['Consultar estoque','Informar prazo de disponibilidade','Informar prazo de tratamento','Registrar lotes tratados'] },
+    { id:'FISCAL', nome:'Fiscal · Cadastro do Cliente', descricao:'Verifica se o cliente possui cadastro, cadastra quando necessário e devolve o código do cliente ao pedido.', permissoes:['Verificar cadastro','Cadastrar cliente','Informar código do cliente'] },
+    { id:'COORD_FIN', nome:'Financeiro · Análise de Crédito', descricao:'Analisa crédito, aprova ou reprova com justificativa registrada no pedido.', permissoes:['Visualizar todos os pedidos','Aprovar / Recusar crédito','Registrar justificativa'] },
+    { id:'COORD_LOG', nome:'Logística · Frete e Carregamento', descricao:'Cota frete, comunica a transportadora por e-mail, valida a saída e controla o carregamento.', permissoes:['Cotar frete','Comunicar transportadora (e-mail)','Registrar carregamento','Liberar caminhão','Atualizar entrega'] },
+    { id:'OPERACOES', nome:'Comercial ADM · Faturamento', descricao:'Imputa o pedido no SAP, fatura, anexa a NF e vincula os lotes tratados.', permissoes:['Imputar pedido no SAP','Emitir NF','Anexar NF e lotes','Registrar documentos fiscais'] },
+    { id:'COMERCIAL_ADM', nome:'Administrador do Sistema', descricao:'Acesso total — cadastros, indicadores, edição de qualquer etapa e configurações.', permissoes:['Acesso total','Gerenciar cadastros','Editar qualquer etapa','Visualizar auditoria'] },
   ],
   unidades: [],
   produtos: [],
   usuarios: [],
+  clientes: [],
   solicitacoes: [],
+  notificacoes: [],
   logs: [],
 };
 
@@ -704,6 +794,7 @@ const ICON_PATHS = {
   coin: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.3 9.6c0-1.3 1.2-2.1 2.7-2.1s2.7.8 2.7 2c0 1.3-1.2 1.7-2.7 2.1s-2.7.8-2.7 2.1c0 1.2 1.2 2 2.7 2s2.7-.8 2.7-2.1"/>',
   tag: '<path d="M20.6 12.6 12 21.2 2.8 12 11.4 3.4H20a1 1 0 0 1 1 1v8.2z"/><circle cx="15.5" cy="7.5" r="1.3"/>',
   box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><line x1="12" y1="13" x2="12" y2="21"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   alert: '<path d="M10.3 3.6 1.8 18a1.5 1.5 0 0 0 1.3 2.3h17.8a1.5 1.5 0 0 0 1.3-2.3L13.7 3.6a1.5 1.5 0 0 0-2.6 0z"/><line x1="12" y1="9" x2="12" y2="13.5"/><circle cx="12" cy="17" r=".15" fill="currentColor" stroke="none"/>',
   kanban: '<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="5" height="13" rx="1"/>',
   download: '<path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 19h14"/>',
@@ -740,6 +831,8 @@ const STATE = {
   pageSize: 8,
   cadTab: 'usuarios',
   viewMode: 'list',
+  detailTab: 'etapas',      // etapas | mensagens | lotes | documentos
+  notifFilter: 'nao_lidas', // nao_lidas | todas
 };
 
 /* ------------------------------------------------------------------------
@@ -788,19 +881,35 @@ const U = {
    4. STATUS / BADGES
    ------------------------------------------------------------------------ */
 const STATUS_META = {
-  'Novo':               { cls:'badge-novo' },
-  'Aguardando Saldo':   { cls:'badge-analise' },
+  'Novo':                          { cls:'badge-novo' },
+  'Documentos pendentes':          { cls:'badge-recusado' },
+  'Consulta de estoque':           { cls:'badge-analise' },
+  'Sem estoque':                   { cls:'badge-aguardando' },
+  'Em tratamento':                 { cls:'badge-producao' },
+  'Aguardando cadastro':           { cls:'badge-aguardando' },
+  'Aguardando crédito':            { cls:'badge-aguardando' },
+  'Crédito recusado':              { cls:'badge-recusado' },
+  'Aguardando aprovação do RC':    { cls:'badge-analise' },
+  'Aguardando faturamento':        { cls:'badge-analise' },
+  'Aguardando frete':              { cls:'badge-analise' },
+  'Aguardando transportadora':     { cls:'badge-aguardando' },
+  'Em carregamento':               { cls:'badge-producao' },
+  'Faturado':                      { cls:'badge-faturado' },
+  'Em transporte':                 { cls:'badge-transporte' },
+  'Entregue':                      { cls:'badge-entregue' },
+  'Aguardando pagamento':          { cls:'badge-aguardando' },
+  'Pago':                          { cls:'badge-entregue' },
+  'Em renegociação':               { cls:'badge-analise' },
+  'Cancelado':                     { cls:'badge-cancelado' },
+  /* --- status legados (pedidos criados antes da v2) --- */
+  'Aguardando Saldo':                { cls:'badge-analise' },
   'Aguardando Aprovação Financeira': { cls:'badge-aguardando' },
-  'Aguardando Crédito e Logística': { cls:'badge-aguardando' },
-  'Crédito recusado':   { cls:'badge-recusado' },
-  'Produção':           { cls:'badge-producao' },
-  'Aguardando Frete':   { cls:'badge-analise' },
-  'Frete contratado':   { cls:'badge-frete' },
-  'Faturado':           { cls:'badge-faturado' },
-  'Em transporte':      { cls:'badge-transporte' },
-  'Entregue':           { cls:'badge-entregue' },
-  'Cancelado':          { cls:'badge-cancelado' },
+  'Aguardando Crédito e Logística':  { cls:'badge-aguardando' },
+  'Produção':                        { cls:'badge-producao' },
+  'Aguardando Frete':                { cls:'badge-analise' },
+  'Frete contratado':                { cls:'badge-frete' },
 };
+
 function badgeHtml(status){
   const m = STATUS_META[status] || { cls:'badge-novo' };
   return `<span class="badge ${m.cls}">${U.esc(status)}</span>`;
@@ -823,11 +932,18 @@ const Data = {
 
   async loadCadastros(){
     Data.requireConfig();
-    const [{data: unidades, error: e1}, {data: produtos, error: e2}] = await Promise.all([
+    const [{data: unidades, error: e1}, {data: produtos, error: e2}, {data: clientes, error: e3}] = await Promise.all([
       supabaseClient.from('unidades').select('*').order('nome'),
       supabaseClient.from('produtos').select('*').order('cultura'),
+      supabaseClient.from('clientes').select('*').order('razao_social'),
     ]);
     if(e1) throw e1; if(e2) throw e2;
+    if(e3) console.warn('[VerOS Flow] Tabela clientes indisponível — rode veros_flow_schema_v2.sql.', e3);
+    DB.clientes = (clientes||[]).map(c=>({
+      id:c.id, codigo:c.codigo, razaoSocial:c.razao_social, nomeFantasia:c.nome_fantasia,
+      cnpjCpf:c.cnpj_cpf, cidade:c.cidade, uf:c.uf, email:c.email, telefone:c.telefone,
+      tipo:c.tipo, status:c.status,
+    }));
     DB.unidades = (unidades||[]).map(u=>({ id:u.id, codigo:u.codigo, nome:u.nome, cidade:u.cidade, uf:u.uf, status:u.status }));
     DB.produtos = (produtos||[]).map(p=>({ id:p.id, codigo:p.codigo, cultura:p.cultura, variedade:p.variedade, tratamento:p.tratamento, tamanhoSc:p.tamanho_sc, peso:p.peso_kg, status:p.status }));
     // Usuários carregam junto com os demais cadastros: garante que os nomes
@@ -861,6 +977,17 @@ const Data = {
     const { data: rows, error } = await supabaseClient.from('vw_solicitacoes_completas').select('*').order('created_at', {ascending:false});
     if(error) throw error;
     const ids = (rows||[]).map(r=>r.id);
+
+    // Colunas novas da v2 vêm direto da tabela `solicitacoes` — assim a view
+    // vw_solicitacoes_completas continua exatamente como está no seu banco.
+    let extras = {};
+    if(ids.length){
+      const { data: raw, error: rawErr } = await supabaseClient.from('solicitacoes').select('*').in('id', ids);
+      if(rawErr) console.warn('[VerOS Flow] Falha ao ler colunas v2 de solicitacoes:', rawErr);
+      (raw||[]).forEach(r=>{ extras[r.id] = r; });
+    }
+    Data._extras = extras;
+
     let anexos = [], timeline = [], admUbsRows = [], financeiroRows = [], logisticaRows = [];
     if(ids.length){
       // Busca os dados de cada etapa direto das tabelas de origem (não da
@@ -878,8 +1005,102 @@ const Data = {
       ]);
       if(aErr) throw aErr; if(tErr) throw tErr; if(admErr) throw admErr; if(finErr) throw finErr; if(logErr) throw logErr;
       anexos = aData||[]; timeline = tData||[]; admUbsRows = admData||[]; financeiroRows = finData||[]; logisticaRows = logData||[];
+
+      // ------- tabelas novas da v2 (falham em silêncio se a migração ainda
+      // não tiver sido rodada, para não derrubar a tela) -------
+      const v2 = await Promise.all([
+        supabaseClient.from('fiscal_cadastros').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('pedido_lotes').select('*').in('solicitacao_id', ids).order('created_at'),
+        supabaseClient.from('carregamentos').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('comunicacoes_transportadora').select('*').in('solicitacao_id', ids).order('registrado_em'),
+        supabaseClient.from('documentos_fiscais').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('pagamentos').select('*').in('solicitacao_id', ids),
+        supabaseClient.from('mensagens').select('*').in('solicitacao_id', ids).order('created_at'),
+      ]);
+      const pick = i => (v2[i] && !v2[i].error && v2[i].data) ? v2[i].data : [];
+      if(v2.some(x=>x && x.error)) console.warn('[VerOS Flow] Tabelas da v2 ausentes — rode veros_flow_schema_v2.sql.');
+      Data._v2 = {
+        fiscal: pick(0), lotes: pick(1), carregamentos: pick(2),
+        comunicacoes: pick(3), docsFiscais: pick(4), pagamentos: pick(5), mensagens: pick(6),
+      };
+    } else {
+      Data._v2 = { fiscal:[], lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
     }
     DB.solicitacoes = (rows||[]).map(r=>Data._mapSolicitacao(r, anexos, timeline, admUbsRows, financeiroRows, logisticaRows));
+  },
+
+  /* ---------------- NOTIFICAÇÕES — substituem o e-mail entre etapas -------- */
+  async loadNotificacoes(){
+    Data.requireConfig();
+    if(!STATE.currentUser) return;
+    const { data, error } = await supabaseClient
+      .from('notificacoes')
+      .select('*')
+      .or(`destino_usuario.eq.${STATE.currentUser.id},destino_perfil.eq.${STATE.currentProfile}`)
+      .order('created_at', {ascending:false})
+      .limit(300);
+    if(error){ console.warn('[VerOS Flow] Notificações indisponíveis:', error); DB.notificacoes = []; return; }
+    DB.notificacoes = (data||[]).map(n=>({
+      id:n.id, solicitacaoId:n.solicitacao_id, titulo:n.titulo, texto:n.texto,
+      tipo:n.tipo||'info', lida:!!n.lida, criadoEm:n.created_at,
+      origemUsuario:n.origem_usuario, destinoPerfil:n.destino_perfil,
+    }));
+  },
+
+  naoLidas(){ return (DB.notificacoes||[]).filter(n=>!n.lida).length; },
+
+  // Cria a notificação in-app. É esta função que substitui o "avisar por
+  // e-mail / mandar no grupo do WhatsApp" de cada etapa do fluxo original.
+  async notificar(solicitacaoId, destinoPerfil, titulo, texto, tipo){
+    try{
+      await supabaseClient.from('notificacoes').insert({
+        solicitacao_id: solicitacaoId,
+        destino_perfil: destinoPerfil || null,
+        titulo, texto: texto || null, tipo: tipo || 'info',
+        origem_perfil: STATE.currentProfile, origem_usuario: STATE.currentUser ? STATE.currentUser.id : null,
+      });
+    }catch(e){ console.warn('[VerOS Flow] Falha ao notificar:', e); }
+  },
+
+  async notificarUsuario(solicitacaoId, usuarioId, titulo, texto, tipo){
+    if(!usuarioId) return;
+    try{
+      await supabaseClient.from('notificacoes').insert({
+        solicitacao_id: solicitacaoId, destino_usuario: usuarioId,
+        titulo, texto: texto || null, tipo: tipo || 'info',
+        origem_perfil: STATE.currentProfile, origem_usuario: STATE.currentUser ? STATE.currentUser.id : null,
+      });
+    }catch(e){ console.warn('[VerOS Flow] Falha ao notificar usuário:', e); }
+  },
+
+  async marcarNotificacaoLida(id){
+    await supabaseClient.from('notificacoes').update({ lida:true, lida_em:new Date().toISOString() }).eq('id', id);
+    const n = DB.notificacoes.find(x=>x.id===id); if(n) n.lida = true;
+  },
+
+  async marcarTodasLidas(){
+    const ids = DB.notificacoes.filter(n=>!n.lida).map(n=>n.id);
+    if(!ids.length) return;
+    await supabaseClient.from('notificacoes').update({ lida:true, lida_em:new Date().toISOString() }).in('id', ids);
+    DB.notificacoes.forEach(n=>n.lida=true);
+  },
+
+  /* ---------------- MENSAGENS — substituem o WhatsApp entre as áreas ------ */
+  async enviarMensagem(solId, texto, destinoPerfil, arquivo){
+    let path = null, nome = null;
+    if(arquivo){ path = await Data.uploadFile(`${solId}/mensagens`, arquivo); nome = arquivo.name; }
+    const { error } = await supabaseClient.from('mensagens').insert({
+      solicitacao_id: solId, autor_id: STATE.currentUser.id, autor_perfil: STATE.currentProfile,
+      destino_perfil: destinoPerfil || null, texto, anexo_path: path, anexo_nome: nome,
+    });
+    if(error) throw error;
+    const sol = DB.solicitacoes.find(s=>s.id===solId);
+    const ref = sol ? `Pedido ${sol.numeroPedidoMobi} · ${sol.cliente}` : 'Pedido';
+    if(destinoPerfil){
+      await Data.notificar(solId, destinoPerfil, 'Nova mensagem no pedido', `${ref} — ${STATE.currentUser.nome}: ${texto.slice(0,120)}`);
+    } else if(sol && sol.rcUsuarioId && sol.rcUsuarioId !== STATE.currentUser.id){
+      await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Nova mensagem no pedido', `${ref} — ${STATE.currentUser.nome}: ${texto.slice(0,120)}`);
+    }
   },
 
   _mapSolicitacao(r, anexos, timeline, admUbsRows, financeiroRows, logisticaRows){
@@ -895,6 +1116,11 @@ const Data = {
     const admUbsRow = pickLatest(admUbsRows, 'avaliado_em');
     const financeiroRow = pickLatest(financeiroRows, 'decidido_em');
     const logisticaRow = pickLatest(logisticaRows, 'contratado_em') || {};
+    const V2 = Data._v2 || { fiscal:[], lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
+    const ex = (Data._extras || {})[r.id] || {};
+    const fiscalRow = (V2.fiscal||[]).find(x=>x.solicitacao_id===r.id) || {};
+    const cargaRow  = (V2.carregamentos||[]).find(x=>x.solicitacao_id===r.id) || {};
+    const pagRow    = (V2.pagamentos||[]).find(x=>x.solicitacao_id===r.id) || {};
     return {
       id: r.id,
       numeroPedidoMobi: r.numero_pedido_mobi,
@@ -915,10 +1141,60 @@ const Data = {
         docsFinanceiros: meusAnexos.filter(a=>a.tipo==='financeiro').map(a=>({nome:a.nome_arquivo, path:a.storage_path})),
       } : null,
       status: r.status,
-      admUbs: { saldoDisponivel: admUbsRow.saldo_disponivel, tempoProducao: admUbsRow.tempo_producao, avaliadoPorId: admUbsRow.avaliado_por },
+      admUbs: {
+        saldoDisponivel: admUbsRow.saldo_disponivel, tempoProducao: admUbsRow.tempo_producao,
+        avaliadoPorId: admUbsRow.avaliado_por,
+        resultado: admUbsRow.resultado_estoque,
+        prazoDisponibilidade: admUbsRow.prazo_disponibilidade,
+        prazoTratamento: admUbsRow.prazo_tratamento,
+        tratamentoConcluido: !!admUbsRow.tratamento_concluido,
+        tratamentoConcluidoEm: admUbsRow.tratamento_concluido_em,
+      },
       financeiro: { decisao: financeiroRow.decisao, motivoRecusa: financeiroRow.motivo_recusa, decididoPorId: financeiroRow.decidido_por },
-      logistica: { transportadora: logisticaRow.transportadora, valorFrete: logisticaRow.valor_frete, prazo: logisticaRow.prazo, dataPrevista: logisticaRow.data_prevista, contratado: logisticaRow.contratado, statusEntrega: logisticaRow.status_entrega, dataEntrega: logisticaRow.data_entrega, ocorrencias: logisticaRow.ocorrencias },
+      logistica: { transportadora: logisticaRow.transportadora, valorFrete: logisticaRow.valor_frete, prazo: logisticaRow.prazo, dataPrevista: logisticaRow.data_prevista, contratado: logisticaRow.contratado, statusEntrega: logisticaRow.status_entrega, dataEntrega: logisticaRow.data_entrega, ocorrencias: logisticaRow.ocorrencias,
+        transportadoraEmail: logisticaRow.transportadora_email, emailEnviadoEm: logisticaRow.email_enviado_em,
+        liberacaoConfirmada: !!logisticaRow.liberacao_confirmada, liberacaoConfirmadaEm: logisticaRow.liberacao_confirmada_em },
       faturamento: { numeroNF: r.numero_nf, dataNF: r.data_nf, concluido: !!r.numero_nf },
+      // ---------------- campos e etapas introduzidos na v2 ----------------
+      clienteId: ex.cliente_id || null,
+      tipoCliente: ex.tipo_cliente || 'Recompra',
+      documentosOk: ex.documentos_ok === undefined ? true : !!ex.documentos_ok,
+      dataEntregaNegociada: ex.data_entrega_negociada || null,
+      observacoesPedido: ex.observacoes_pedido || '',
+      pedidoSap: ex.pedido_sap || null,
+      aprovadoRc: !!ex.aprovado_rc,
+      aprovadoRcEm: ex.aprovado_rc_em || null,
+      fiscal: {
+        possuiCadastro: fiscalRow.possui_cadastro,
+        clienteId: fiscalRow.cliente_id,
+        codigoCliente: fiscalRow.codigo_cliente,
+        observacoes: fiscalRow.observacoes,
+        verificadoPorId: fiscalRow.verificado_por,
+      },
+      lotes: (V2.lotes||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
+        id:x.id, lote:x.lote, quantidade:x.quantidade_sc, tratamento:x.tratamento,
+        dataTratamento:x.data_tratamento, germinacao:x.germinacao_pct, observacoes:x.observacoes,
+      })),
+      carregamento: {
+        placa: cargaRow.placa, motorista: cargaRow.motorista,
+        chegadaEm: cargaRow.chegada_em, carregadoEm: cargaRow.carregado_em,
+        liberadoEm: cargaRow.liberado_em, observacoes: cargaRow.observacoes,
+      },
+      comunicacoes: (V2.comunicacoes||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
+        id:x.id, direcao:x.direcao, transportadora:x.transportadora, destinatario:x.destinatario,
+        assunto:x.assunto, corpo:x.corpo, registradoPorId:x.registrado_por, registradoEm:x.registrado_em,
+      })),
+      docsFiscais: (V2.docsFiscais||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
+        id:x.id, tipo:x.tipo, numero:x.numero, chave:x.chave, emitidoEm:x.emitido_em, path:x.anexo_path,
+      })),
+      pagamento: {
+        vencimento: pagRow.vencimento, valor: pagRow.valor, status: pagRow.status,
+        pagoEm: pagRow.pago_em, renegociacaoObs: pagRow.renegociacao_obs,
+      },
+      mensagens: (V2.mensagens||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
+        id:x.id, autorId:x.autor_id, autorPerfil:x.autor_perfil, destinoPerfil:x.destino_perfil,
+        texto:x.texto, anexoPath:x.anexo_path, anexoNome:x.anexo_nome, criadoEm:x.created_at,
+      })),
       timeline: timeline.filter(t=>t.solicitacao_id===r.id).map(t=>({
         etapa: t.etapa, data: U.fmtDate(t.criado_em), hora: U.fmtTime(t.criado_em), usuarioId: t.usuario_id, done:true, bad: t.ruim,
       })),
@@ -939,7 +1215,8 @@ const Data = {
   },
 
   async refreshSolicitacoesData(){
-    await Promise.all([Data.loadSolicitacoes(), Data.loadLogs()]);
+    await Promise.all([Data.loadSolicitacoes(), Data.loadLogs(), Data.loadNotificacoes()]);
+    if(typeof App !== 'undefined' && App.updateNotifBadge) App.updateNotifBadge();
   },
 
   async uploadFile(pastaPrefixo, file){
@@ -980,15 +1257,72 @@ const Data = {
     await supabaseClient.from('timeline_eventos').insert({ solicitacao_id: solicitacaoId, etapa, usuario_id: STATE.currentUser.id, ruim: !!ruim });
   },
 
+  /* ======================================================================
+     REGRAS DO PROCESSO — versão "sem e-mail"
+     Cada etapa grava seu registro, recalcula o status macro do pedido e
+     dispara a NOTIFICAÇÃO in-app para a próxima área. É esse par
+     (registro + notificação) que substitui o e-mail e o WhatsApp.
+     ====================================================================== */
+
+  ref(sol){ return `Pedido ${sol.numeroPedidoMobi||sol.numero_pedido_mobi||''} · ${sol.cliente||''}`; },
+
+  // Lê o estado atual de todas as etapas e devolve o status macro correto.
+  async _proximoStatus(solId){
+    const q = (t, col) => supabaseClient.from(t).select('*').eq(col||'solicitacao_id', solId).maybeSingle();
+    const [sRes, admRes, fisRes, finRes, logRes, carRes, fatRes, pagRes] = await Promise.all([
+      supabaseClient.from('solicitacoes').select('*').eq('id', solId).single(),
+      q('adm_ubs_avaliacoes'), q('fiscal_cadastros'), q('financeiro_decisoes'),
+      q('logistica_fretes'), q('carregamentos'), q('faturamentos'), q('pagamentos'),
+    ]);
+    const s = sRes.data || {};
+    const adm = admRes.data, fis = fisRes.data, fin = finRes.data;
+    const log = logRes.data, car = carRes.data, fat = fatRes.data, pag = pagRes.data;
+
+    if(s.status === 'Cancelado') return 'Cancelado';
+    if(fin && fin.decisao === 'Recusado') return 'Crédito recusado';
+    if(s.tipo_cliente === 'Novo' && !s.documentos_ok) return 'Documentos pendentes';
+
+    if(pag && pag.status === 'Pago') return 'Pago';
+    if(pag && pag.status === 'Em renegociação') return 'Em renegociação';
+    if(log && log.status_entrega === 'Entregue') return 'Aguardando pagamento';
+    if(log && log.status_entrega === 'Em transporte') return 'Em transporte';
+    if(fat && fat.concluido) return 'Faturado';
+    if(car && (car.chegada_em || car.carregado_em)) return 'Em carregamento';
+
+    if(s.aprovado_rc) return s.pedido_sap ? 'Aguardando transportadora' : 'Aguardando faturamento';
+
+    if(!adm || !adm.resultado_estoque) return 'Consulta de estoque';
+    if(adm.resultado_estoque === 'Sem estoque') return 'Sem estoque';
+    if(adm.resultado_estoque === 'Com estoque para produção' && !adm.tratamento_concluido) return 'Em tratamento';
+    if(!(fis && fis.codigo_cliente)) return 'Aguardando cadastro';
+    if(!(fin && ['Aprovado','Aprovado com ressalvas'].includes(fin.decisao))) return 'Aguardando crédito';
+    if(!(log && log.transportadora)) return 'Aguardando frete';
+    return 'Aguardando aprovação do RC';
+  },
+
+  async _sincronizarStatus(solId){
+    const novo = await Data._proximoStatus(solId);
+    await Data._setStatus(solId, novo);
+    return novo;
+  },
+
+  /* ---------------------------------------------------- 1. PEDIDO (RC) --- */
   async createSolicitacao(payload, arquivos){
     Data.requireConfig();
+    const travado = payload.tipoCliente === 'Novo' && !payload.documentosOk;
     const { data: sol, error } = await supabaseClient.from('solicitacoes').insert({
       numero_pedido_mobi: payload.numeroPedidoMobi, cliente: payload.cliente,
+      cliente_id: payload.clienteId || null,
       rc_usuario_id: STATE.currentUser.id, nome_rc: payload.nomeRC,
       unidade_id: payload.unidade, produto_id: payload.produto,
       quantidade: payload.quantidade, desconto_pct: payload.desconto, valor_total: payload.valorTotal,
       forma_pagamento: payload.formaPagamento, solicita_credito: payload.solicitaCredito,
-      status: 'Novo', criado_por: STATE.currentUser.id,
+      tipo_cliente: payload.tipoCliente || 'Recompra',
+      documentos_ok: !!payload.documentosOk,
+      data_entrega_negociada: payload.dataEntregaNegociada || null,
+      observacoes_pedido: payload.observacoes || null,
+      status: travado ? 'Documentos pendentes' : 'Consulta de estoque',
+      criado_por: STATE.currentUser.id,
     }).select().single();
     if(error) throw error;
 
@@ -998,78 +1332,223 @@ const Data = {
         justificativa: payload.credito.justificativa, observacoes: payload.credito.observacoes,
       });
       if(cErr) throw cErr;
-
-      const anexoRows = [];
-      for(const f of (arquivos.docs||[])){ const p = await Data.uploadFile(`${sol.id}/documentos`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'documento', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
-      if(arquivos.contrato && arquivos.contrato[0]){ const f=arquivos.contrato[0]; const p = await Data.uploadFile(`${sol.id}/contrato`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'contrato', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
-      for(const f of (arquivos.fin||[])){ const p = await Data.uploadFile(`${sol.id}/financeiro`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'financeiro', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
-      if(anexoRows.length){ const { error: axErr } = await supabaseClient.from('anexos_credito').insert(anexoRows); if(axErr) throw axErr; }
     }
 
-    await Data.addTimeline(sol.id, 'Pedido criado');
+    const anexoRows = [];
+    for(const f of (arquivos.docs||[])){ const p = await Data.uploadFile(`${sol.id}/documentos`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'documento', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
+    if(arquivos.contrato && arquivos.contrato[0]){ const f=arquivos.contrato[0]; const p = await Data.uploadFile(`${sol.id}/contrato`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'contrato', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
+    for(const f of (arquivos.fin||[])){ const p = await Data.uploadFile(`${sol.id}/financeiro`, f); anexoRows.push({solicitacao_id:sol.id, tipo:'financeiro', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id}); }
+    if(anexoRows.length){ const { error: axErr } = await supabaseClient.from('anexos_credito').insert(anexoRows); if(axErr) throw axErr; }
+
+    const ref = `Pedido ${payload.numeroPedidoMobi} · ${payload.cliente}`;
+    await Data.addTimeline(sol.id, 'Pedido registrado no VerOS Flow');
     await Data.logAcao(sol.id, 'Solicitação criada', '—', payload.cliente);
+
+    if(travado){
+      await Data.addTimeline(sol.id, 'Pedido travado — cliente novo sem documentação anexada', true);
+      await Data.notificarUsuario(sol.id, STATE.currentUser.id, 'Pedido travado por falta de documentos',
+        `${ref} — anexe a documentação do cliente novo para o pedido seguir para a UBS.`, 'warn');
+    } else {
+      // Substitui o "Comunicar UBS" que antes era feito por e-mail.
+      await Data.notificar(sol.id, 'ADM_UBS', 'Novo pedido para consulta de estoque',
+        `${ref} — ${payload.quantidade} sc. Informe estoque e prazos.`);
+      await Data.notificar(sol.id, 'FISCAL', 'Verificar cadastro do cliente',
+        `${ref} — confirme o cadastro e devolva o código do cliente.`);
+      if(payload.solicitaCredito){
+        await Data.notificar(sol.id, 'COORD_FIN', 'Nova análise de crédito',
+          `${ref} — ${U.brl(payload.valorTotal)}.`);
+      }
+    }
     return sol.id;
   },
 
-  async definirSaldo(solId, disponivel, tempoProducao){
-    const payload = { solicitacao_id: solId, saldo_disponivel: disponivel, avaliado_por: STATE.currentUser.id, avaliado_em: new Date().toISOString() };
-    if(disponivel) payload.tempo_producao = tempoProducao || null;
-    const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert(payload, { onConflict: 'solicitacao_id' });
+  async confirmarDocumentos(solId, arquivos){
+    const rows = [];
+    for(const f of (arquivos||[])){
+      const p = await Data.uploadFile(`${solId}/documentos`, f);
+      rows.push({solicitacao_id:solId, tipo:'documento', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id});
+    }
+    if(rows.length) await supabaseClient.from('anexos_credito').insert(rows);
+    const { error } = await supabaseClient.from('solicitacoes').update({ documentos_ok:true }).eq('id', solId);
     if(error) throw error;
-    // Produção só é liberada quando saldo E crédito estiverem OK. Se o
-    // crédito já tiver sido aprovado antes (fluxo desacoplado), o saldo
-    // disponível já libera direto para Produção.
-    const { data: fin } = await supabaseClient.from('financeiro_decisoes').select('decisao').eq('solicitacao_id', solId).maybeSingle();
-    const creditoAprovado = fin && (fin.decisao === 'Aprovado' || fin.decisao === 'Aprovado com ressalvas');
-    let novoStatus;
-    if(!disponivel) novoStatus = 'Aguardando Aprovação Financeira';
-    else novoStatus = creditoAprovado ? 'Produção' : 'Aguardando Crédito e Logística';
-    await Data._setStatus(solId, novoStatus);
-    await Data.addTimeline(solId, disponivel ? `Saldo analisado — disponível (produção estimada: ${tempoProducao})` : 'Saldo analisado — indisponível, aguardando crédito');
-    await Data.logAcao(solId, 'Status', '—', novoStatus);
+    const novo = await Data._sincronizarStatus(solId);
+    await Data.addTimeline(solId, 'Documentação do cliente anexada — pedido liberado');
+    await Data.logAcao(solId, 'Documentos', 'Pendente', 'OK');
+    await Data.notificar(solId, 'ADM_UBS', 'Pedido liberado para consulta de estoque',
+      'A documentação do cliente novo foi anexada. Informe estoque e prazos.');
+    await Data.notificar(solId, 'FISCAL', 'Verificar cadastro do cliente',
+      'Pedido liberado — confirme o cadastro e devolva o código do cliente.');
+    return novo;
   },
 
+  /* ------------------------------------------------ 2. UBS — ESTOQUE ----- */
+  async definirEstoque(solId, resultado, prazos){
+    prazos = prazos || {};
+    const payload = {
+      solicitacao_id: solId,
+      resultado_estoque: resultado,
+      saldo_disponivel: resultado !== 'Sem estoque',
+      prazo_disponibilidade: resultado === 'Sem estoque' ? (prazos.disponibilidade||null) : null,
+      prazo_tratamento: resultado === 'Com estoque para produção' ? (prazos.tratamento||null) : null,
+      tempo_producao: prazos.tratamento || prazos.disponibilidade || null,
+      tratamento_concluido: resultado === 'Com estoque',
+      tratamento_concluido_em: resultado === 'Com estoque' ? new Date().toISOString() : null,
+      avaliado_por: STATE.currentUser.id, avaliado_em: new Date().toISOString(),
+    };
+    const { error } = await supabaseClient.from('adm_ubs_avaliacoes').upsert(payload, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    const ref = Data.ref(sol);
+
+    let msg;
+    if(resultado === 'Sem estoque') msg = `Sem estoque — previsão de disponibilidade: ${prazos.disponibilidade||'a informar'}`;
+    else if(resultado === 'Com estoque para produção') msg = `Estoque disponível para tratamento — prazo: ${prazos.tratamento||'a informar'}`;
+    else msg = 'Estoque disponível — semente pronta para faturamento';
+
+    await Data.addTimeline(solId, 'Consulta de estoque — ' + msg, resultado === 'Sem estoque');
+    await Data.logAcao(solId, 'Consulta de estoque', '—', resultado);
+    // Substitui a resposta que antes ia para o WhatsApp/e-mail do RC.
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Resposta da UBS sobre estoque',
+      `${ref} — ${msg}`, resultado === 'Sem estoque' ? 'warn' : 'ok');
+    if(resultado === 'Sem estoque') await Data.notificar(solId, 'COORD_FIN', 'Pedido sem estoque', `${ref} — ${msg}`, 'warn');
+    return novo;
+  },
+
+  async concluirTratamento(solId){
+    const { error } = await supabaseClient.from('adm_ubs_avaliacoes')
+      .update({ tratamento_concluido:true, tratamento_concluido_em:new Date().toISOString() })
+      .eq('solicitacao_id', solId);
+    if(error) throw error;
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, 'Tratamento das sementes concluído');
+    await Data.logAcao(solId, 'Tratamento', 'Em tratamento', 'Concluído');
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Sementes tratadas', `${Data.ref(sol)} — tratamento concluído.`, 'ok');
+    await Data.notificar(solId, 'OPERACOES', 'Sementes tratadas', `${Data.ref(sol)} — registre o faturamento quando aprovado.`);
+    return novo;
+  },
+
+  /* ---- LOTES: substitui o "envio obrigatório do e-mail com os lotes" ---- */
+  async registrarLote(solId, lote){
+    const { error } = await supabaseClient.from('pedido_lotes').insert({
+      solicitacao_id: solId, lote: lote.lote, quantidade_sc: lote.quantidade||null,
+      tratamento: lote.tratamento||null, data_tratamento: lote.dataTratamento||null,
+      germinacao_pct: lote.germinacao||null, observacoes: lote.observacoes||null,
+      registrado_por: STATE.currentUser.id,
+    });
+    if(error) throw error;
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, `Lote registrado — ${lote.lote}`);
+    await Data.logAcao(solId, 'Lote tratado', '—', lote.lote);
+    await Data.notificar(solId, 'OPERACOES', 'Lotes tratados registrados',
+      `${Data.ref(sol)} — lote ${lote.lote} disponível no pedido para vincular à NF.`);
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Lotes do pedido disponíveis',
+      `${Data.ref(sol)} — lote ${lote.lote} registrado pela UBS.`);
+  },
+
+  async excluirLote(loteId){
+    const { error } = await supabaseClient.from('pedido_lotes').delete().eq('id', loteId);
+    if(error) throw error;
+  },
+
+  /* ------------------------------------------------ 3. FISCAL — CADASTRO - */
+  async salvarCliente(id, data){
+    const payload = {
+      codigo:data.codigo||null, razao_social:data.razaoSocial, nome_fantasia:data.nomeFantasia||null,
+      cnpj_cpf:data.cnpjCpf||null, cidade:data.cidade||null, uf:data.uf||null,
+      email:data.email||null, telefone:data.telefone||null,
+      tipo:data.tipo||'Novo', status:data.status||'Ativo',
+    };
+    if(!id) payload.cadastrado_por = STATE.currentUser.id;
+    const q = id ? supabaseClient.from('clientes').update(payload).eq('id', id).select().single()
+                 : supabaseClient.from('clientes').insert(payload).select().single();
+    const { data: row, error } = await q;
+    if(error) throw error;
+    return row;
+  },
+
+  async salvarFiscal(solId, dados){
+    let clienteId = dados.clienteId || null;
+    if(!dados.possuiCadastro && dados.novoCliente){
+      const novo = await Data.salvarCliente(null, dados.novoCliente);
+      clienteId = novo.id;
+      dados.codigoCliente = dados.codigoCliente || novo.codigo;
+    }
+    const { error } = await supabaseClient.from('fiscal_cadastros').upsert({
+      solicitacao_id: solId, possui_cadastro: dados.possuiCadastro,
+      cliente_id: clienteId, codigo_cliente: dados.codigoCliente,
+      observacoes: dados.observacoes||null,
+      verificado_por: STATE.currentUser.id, verificado_em: new Date().toISOString(),
+    }, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+    if(clienteId) await supabaseClient.from('solicitacoes').update({ cliente_id: clienteId }).eq('id', solId);
+
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, dados.possuiCadastro
+      ? `Cadastro confirmado — código ${dados.codigoCliente}`
+      : `Cliente cadastrado — código ${dados.codigoCliente}`);
+    await Data.logAcao(solId, 'Código do cliente', '—', dados.codigoCliente);
+    // Substitui o "responder no WhatsApp + código do cliente".
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Código do cliente disponível',
+      `${Data.ref(sol)} — código ${dados.codigoCliente}.`, 'ok');
+    await Data.notificar(solId, 'OPERACOES', 'Cliente pronto para faturamento',
+      `${Data.ref(sol)} — código ${dados.codigoCliente}.`);
+    return novo;
+  },
+
+  /* --------------------------------------------- 4. FINANCEIRO — CRÉDITO - */
   async decidirCredito(solId, decisao, motivo){
     const { error } = await supabaseClient.from('financeiro_decisoes').upsert({
-      solicitacao_id: solId, decisao, motivo_recusa: motivo||null, decidido_por: STATE.currentUser.id, decidido_em: new Date().toISOString(),
-    }, { onConflict: 'solicitacao_id' });
+      solicitacao_id: solId, decisao, motivo_recusa: motivo||null,
+      decidido_por: STATE.currentUser.id, decidido_em: new Date().toISOString(),
+    }, { onConflict:'solicitacao_id' });
     if(error) throw error;
-    let novoStatus;
-    if(decisao === 'Recusado'){
-      novoStatus = 'Crédito recusado';
-    } else {
-      // Crédito aprovado ainda depende do saldo confirmado pelo ADM UBS
-      // para liberar a Produção — o financeiro não precisa mais esperar
-      // o ADM UBS agir primeiro, mas a Produção só libera com os dois OK.
-      const { data: adm } = await supabaseClient.from('adm_ubs_avaliacoes').select('saldo_disponivel').eq('solicitacao_id', solId).maybeSingle();
-      novoStatus = (adm && adm.saldo_disponivel === true) ? 'Produção' : 'Aguardando Saldo';
-    }
-    await Data._setStatus(solId, novoStatus);
-    await Data.addTimeline(solId, decisao==='Recusado' ? 'Crédito recusado' : ('Crédito aprovado'+(decisao==='Aprovado com ressalvas'?' (com ressalvas)':'')+(novoStatus==='Aguardando Saldo' ? ' — aguardando confirmação de saldo do ADM UBS' : '')), decisao==='Recusado');
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId,
+      decisao === 'Recusado' ? `Crédito reprovado — ${motivo||'sem justificativa'}`
+                             : 'Crédito aprovado' + (decisao==='Aprovado com ressalvas' ? ' (com ressalvas)' : ''),
+      decisao === 'Recusado');
     await Data.logAcao(solId, 'Decisão financeira', '—', decisao);
+    // Substitui o "retornar no Wpp + e-mail com aprovação / justificativa".
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId,
+      decisao === 'Recusado' ? 'Crédito reprovado' : 'Crédito aprovado',
+      `${Data.ref(sol)}${motivo ? ' — ' + motivo : ''}`,
+      decisao === 'Recusado' ? 'err' : 'ok');
+    if(decisao !== 'Recusado') await Data.notificar(solId, 'COORD_LOG', 'Crédito aprovado — cotar frete', Data.ref(sol));
+    return novo;
   },
 
-  async concluirProducao(solId){
-    await Data._setStatus(solId, 'Aguardando Frete');
-    await Data.addTimeline(solId, 'Produção concluída');
-    await Data.logAcao(solId, 'Status', 'Produção', 'Aguardando Frete');
-  },
-
-  async salvarCotacao(solId, dados){
-    const { error } = await supabaseClient.from('logistica_fretes').upsert({
-      solicitacao_id: solId, transportadora: dados.transportadora, valor_frete: dados.valorFrete,
-      prazo: dados.prazo, data_prevista: dados.dataPrevista,
-    }, { onConflict: 'solicitacao_id' });
+  /* ---------------------------------------- 5. RC — APROVAÇÃO FINAL ------ */
+  async aprovarRc(solId){
+    const { error } = await supabaseClient.from('solicitacoes').update({
+      aprovado_rc:true, aprovado_rc_em:new Date().toISOString(), aprovado_rc_por:STATE.currentUser.id,
+    }).eq('id', solId);
     if(error) throw error;
-    await Data.logAcao(solId, 'Cotação de frete', '—', dados.transportadora+' / '+U.brl(dados.valorFrete));
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, 'Faturamento e cotação de frete aprovados pelo RC');
+    await Data.logAcao(solId, 'Aprovação do RC', 'Pendente', 'Aprovado');
+    await Data.notificar(solId, 'OPERACOES', 'Pedido aprovado — imputar no SAP', Data.ref(sol));
+    await Data.notificar(solId, 'COORD_LOG', 'Pedido aprovado — acionar transportadora', Data.ref(sol));
+    return novo;
   },
 
-  async contratarFrete(solId){
-    const { error } = await supabaseClient.from('logistica_fretes').update({ contratado:true, contratado_em:new Date().toISOString() }).eq('solicitacao_id', solId);
+  /* --------------------------------- 6. COMERCIAL ADM — SAP / NF --------- */
+  async imputarSap(solId, pedidoSap){
+    const { error } = await supabaseClient.from('solicitacoes').update({ pedido_sap: pedidoSap }).eq('id', solId);
     if(error) throw error;
-    await Data._setStatus(solId, 'Frete contratado');
-    await Data.addTimeline(solId, 'Frete contratado');
-    await Data.logAcao(solId, 'Status', '—', 'Frete contratado');
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, `Pedido imputado no SAP — ${pedidoSap}`);
+    await Data.logAcao(solId, 'Pedido SAP', '—', pedidoSap);
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido imputado no SAP',
+      `${Data.ref(sol)} — SAP ${pedidoSap}.`, 'ok');
+    await Data.notificar(solId, 'COORD_LOG', 'Pedido no SAP — encaminhar à transportadora', Data.ref(sol));
+    return novo;
   },
 
   async emitirNF(solId, dados, arquivo){
@@ -1077,16 +1556,124 @@ const Data = {
     if(arquivo) path = await Data.uploadFile(`${solId}/danfe`, arquivo);
     const { error } = await supabaseClient.from('faturamentos').upsert({
       solicitacao_id: solId, numero_nf: dados.numeroNF, data_nf: dados.dataNF, observacoes: dados.observacoes,
-      anexo_danfe_path: path, concluido:true, concluido_em: new Date().toISOString(),
-    }, { onConflict: 'solicitacao_id' });
+      anexo_danfe_path: path, concluido:true, concluido_em:new Date().toISOString(),
+    }, { onConflict:'solicitacao_id' });
     if(error) throw error;
-    await Data._setStatus(solId, 'Faturado');
-    await Data.addTimeline(solId, 'Faturamento concluído — NF '+dados.numeroNF);
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    const lotes = (sol.lotes||[]).map(l=>l.lote).join(', ');
+    await Data.addTimeline(solId, `Pedido faturado — NF ${dados.numeroNF}${lotes ? ' · lotes ' + lotes : ''}`);
     await Data.logAcao(solId, 'Status', '—', 'Faturado');
+    // Substitui o "encaminhar NF no e-mail dos lotes tratados".
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido faturado',
+      `${Data.ref(sol)} — NF ${dados.numeroNF}${lotes ? ' · lotes ' + lotes : ''}. A NF está anexada ao pedido.`, 'ok');
+    await Data.notificar(solId, 'COORD_LOG', 'NF emitida — liberar caminhão',
+      `${Data.ref(sol)} — NF ${dados.numeroNF}.`);
+    return novo;
+  },
+
+  /* ------------------------------------------- 7. LOGÍSTICA — FRETE ------ */
+  async salvarCotacao(solId, dados){
+    const { error } = await supabaseClient.from('logistica_fretes').upsert({
+      solicitacao_id: solId, transportadora: dados.transportadora, valor_frete: dados.valorFrete,
+      prazo: dados.prazo, data_prevista: dados.dataPrevista, transportadora_email: dados.email||null,
+    }, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, `Cotação de frete — ${dados.transportadora} · ${U.brl(dados.valorFrete)}`);
+    await Data.logAcao(solId, 'Cotação de frete', '—', dados.transportadora+' / '+U.brl(dados.valorFrete));
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Cotação de frete disponível',
+      `${Data.ref(sol)} — ${dados.transportadora}, ${U.brl(dados.valorFrete)}, prazo ${dados.prazo}. Aprove para seguir.`);
+    return novo;
+  },
+
+  /* --- ÚNICO PONTO DE E-MAIL DO PROCESSO: logística → transportadora ---- */
+  async registrarEmailTransportadora(solId, dados){
+    const { error } = await supabaseClient.from('comunicacoes_transportadora').insert({
+      solicitacao_id: solId, direcao:'Enviado', transportadora: dados.transportadora,
+      destinatario: dados.destinatario, assunto: dados.assunto, corpo: dados.corpo,
+      registrado_por: STATE.currentUser.id,
+    });
+    if(error) throw error;
+    await supabaseClient.from('logistica_fretes').update({
+      transportadora_email: dados.destinatario, email_enviado_em: new Date().toISOString(),
+    }).eq('solicitacao_id', solId);
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, `E-mail enviado à transportadora ${dados.transportadora} (${dados.destinatario})`);
+    await Data.logAcao(solId, 'E-mail transportadora', '—', dados.destinatario);
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Transportadora acionada',
+      `${Data.ref(sol)} — pedido encaminhado para ${dados.transportadora}.`);
+    return novo;
+  },
+
+  async registrarRespostaTransportadora(solId, dados){
+    const { error } = await supabaseClient.from('comunicacoes_transportadora').insert({
+      solicitacao_id: solId, direcao:'Recebido', transportadora: dados.transportadora,
+      destinatario: dados.remetente||null, assunto: dados.assunto||'Resposta da transportadora',
+      corpo: dados.corpo, registrado_por: STATE.currentUser.id,
+    });
+    if(error) throw error;
+    if(dados.liberado){
+      await supabaseClient.from('logistica_fretes').update({
+        contratado:true, contratado_em:new Date().toISOString(),
+        liberacao_confirmada:true, liberacao_confirmada_em:new Date().toISOString(),
+      }).eq('solicitacao_id', solId);
+    }
+    if(dados.docs && dados.docs.length){
+      await supabaseClient.from('documentos_fiscais').insert(dados.docs.map(d=>({
+        solicitacao_id: solId, tipo: d.tipo, numero: d.numero||null, chave: d.chave||null,
+        emitido_em: d.emitidoEm||null, registrado_por: STATE.currentUser.id,
+      })));
+    }
+    const novo = await Data._sincronizarStatus(solId);
+    await Data.addTimeline(solId, dados.liberado
+      ? 'Transportadora confirmou a liberação do caminhão'
+      : 'Resposta da transportadora registrada');
+    await Data.logAcao(solId, 'Resposta transportadora', '—', dados.liberado ? 'Caminhão liberado' : 'Registrada');
+    await Data.notificar(solId, 'OPERACOES', 'Transportadora respondeu', Data.ref(DB.solicitacoes.find(s=>s.id===solId)||{}));
+    return novo;
+  },
+
+  /* ------------------------------------------- 8. CARREGAMENTO ----------- */
+  async salvarCarregamento(solId, dados){
+    const payload = { solicitacao_id: solId };
+    if(dados.placa !== undefined) payload.placa = dados.placa;
+    if(dados.motorista !== undefined) payload.motorista = dados.motorista;
+    if(dados.observacoes !== undefined) payload.observacoes = dados.observacoes;
+    if(dados.chegada) payload.chegada_em = new Date().toISOString();
+    if(dados.carregado) payload.carregado_em = new Date().toISOString();
+    const { error } = await supabaseClient.from('carregamentos').upsert(payload, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    if(dados.chegada) await Data.addTimeline(solId, `Caminhão recebido — placa ${dados.placa||'—'}`);
+    if(dados.carregado){
+      await Data.addTimeline(solId, 'Caminhão carregado — faturamento solicitado');
+      // Substitui o "solicitar faturamento do caminhão carregado" por WhatsApp.
+      await Data.notificar(solId, 'OPERACOES', 'Solicitação de faturamento',
+        `${Data.ref(sol)} — caminhão carregado, emitir NF.`, 'warn');
+    }
+    return novo;
+  },
+
+  async liberarCaminhao(solId){
+    const { error } = await supabaseClient.from('carregamentos')
+      .upsert({ solicitacao_id: solId, liberado_em:new Date().toISOString(), liberado_por:STATE.currentUser.id }, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+    await supabaseClient.from('logistica_fretes').update({ status_entrega:'Em transporte' }).eq('solicitacao_id', solId);
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, 'Caminhão liberado — pedido em transporte');
+    await Data.logAcao(solId, 'Status', '—', 'Em transporte');
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Caminhão liberado',
+      `${Data.ref(sol)} — pedido saiu para entrega.`, 'ok');
+    return novo;
   },
 
   async atualizarEntrega(solId, dados, arquivo){
-    let comprovantePath = undefined;
+    let comprovantePath;
     if(arquivo) comprovantePath = await Data.uploadFile(`${solId}/comprovante`, arquivo);
     const update = { status_entrega: dados.statusEntrega };
     if(dados.dataEntrega) update.data_entrega = dados.dataEntrega;
@@ -1094,15 +1681,60 @@ const Data = {
     if(comprovantePath) update.comprovante_path = comprovantePath;
     const { error } = await supabaseClient.from('logistica_fretes').update(update).eq('solicitacao_id', solId);
     if(error) throw error;
-    await Data._setStatus(solId, dados.statusEntrega);
-    await Data.addTimeline(solId, dados.statusEntrega==='Entregue' ? 'Pedido entregue' : 'Pedido em transporte');
+
+    if(dados.statusEntrega === 'Entregue'){
+      const sol0 = DB.solicitacoes.find(s=>s.id===solId) || {};
+      await supabaseClient.from('pagamentos').upsert({
+        solicitacao_id: solId, vencimento: dados.vencimento||null, valor: sol0.valorTotal||null,
+        status:'Pendente', atualizado_por: STATE.currentUser.id, atualizado_em:new Date().toISOString(),
+      }, { onConflict:'solicitacao_id' });
+    }
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, dados.statusEntrega==='Entregue' ? 'Cliente recebeu as sementes' : 'Pedido em transporte');
     await Data.logAcao(solId, 'Status', '—', dados.statusEntrega);
+    if(dados.statusEntrega === 'Entregue'){
+      if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido entregue', Data.ref(sol), 'ok');
+      await Data.notificar(solId, 'COORD_FIN', 'Pedido entregue — acompanhar pagamento',
+        `${Data.ref(sol)}${dados.vencimento ? ' — vencimento ' + U.fmtDate(dados.vencimento) : ''}`);
+    }
+    return novo;
+  },
+
+  /* ------------------------------------------- 9. PAGAMENTO -------------- */
+  async atualizarPagamento(solId, dados){
+    const { error } = await supabaseClient.from('pagamentos').upsert({
+      solicitacao_id: solId, vencimento: dados.vencimento||null, valor: dados.valor||null,
+      status: dados.status, pago_em: dados.pagoEm||null, renegociacao_obs: dados.renegociacaoObs||null,
+      atualizado_por: STATE.currentUser.id, atualizado_em:new Date().toISOString(),
+    }, { onConflict:'solicitacao_id' });
+    if(error) throw error;
+    const novo = await Data._sincronizarStatus(solId);
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    await Data.addTimeline(solId, dados.status === 'Pago' ? 'Pagamento realizado'
+      : dados.status === 'Em renegociação' ? `Renegociação aberta — ${dados.renegociacaoObs||''}` : 'Pagamento pendente registrado');
+    await Data.logAcao(solId, 'Pagamento', '—', dados.status);
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId,
+      dados.status === 'Pago' ? 'Pagamento confirmado' : 'Pagamento em renegociação',
+      Data.ref(sol), dados.status === 'Pago' ? 'ok' : 'warn');
+    return novo;
+  },
+
+  async registrarDocFiscal(solId, doc){
+    const { error } = await supabaseClient.from('documentos_fiscais').insert({
+      solicitacao_id: solId, tipo: doc.tipo, numero: doc.numero||null, chave: doc.chave||null,
+      emitido_em: doc.emitidoEm||null, registrado_por: STATE.currentUser.id,
+    });
+    if(error) throw error;
+    await Data.addTimeline(solId, `Documento fiscal registrado — ${doc.tipo} ${doc.numero||''}`);
   },
 
   async cancelar(solId, motivo){
     await Data._setStatus(solId, 'Cancelado');
-    await Data.addTimeline(solId, 'Solicitação cancelada — '+motivo, true);
+    await Data.addTimeline(solId, 'Pedido cancelado — '+motivo, true);
     await Data.logAcao(solId, 'Status', '—', 'Cancelado');
+    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
+    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido cancelado', `${Data.ref(sol)} — ${motivo}`, 'err');
   },
 
   async _setStatus(solId, status){
@@ -1145,74 +1777,139 @@ const Data = {
    6. REGRAS DE NEGÓCIO / WORKFLOW
    ------------------------------------------------------------------------ */
 const FLOW = {
-  ORDER: ['Novo','Aguardando Saldo','Aguardando Aprovação Financeira','Aguardando Crédito e Logística','Produção','Aguardando Frete','Frete contratado','Faturado','Em transporte','Entregue'],
+  /* Ordem macro do processo redesenhado (fluxograma "sem e-mail").
+     Os status legados continuam aceitos, mas não fazem parte da ordem. */
+  ORDER: [
+    'Novo','Documentos pendentes','Consulta de estoque','Sem estoque','Em tratamento',
+    'Aguardando cadastro','Aguardando crédito','Aguardando aprovação do RC',
+    'Aguardando faturamento','Aguardando frete','Aguardando transportadora',
+    'Em carregamento','Faturado','Em transporte','Entregue','Aguardando pagamento','Pago'
+  ],
 
-  // ADM UBS define saldo
-  async definirSaldo(sol, disponivel, tempoProducao){
-    await Data.definirSaldo(sol.id, disponivel, tempoProducao);
-    await Data.refreshSolicitacoesData();
+  /* Quem age em cada etapa. Usado para rotear notificações e travar botões. */
+  DONO_ETAPA: {
+    pedido:'RC', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
+    fiscal:'FISCAL', financeiro:'COORD_FIN', aprovacaoRc:'RC',
+    faturamento:'OPERACOES', logistica:'COORD_LOG', transportadora:'COORD_LOG',
+    carregamento:'COORD_LOG', entrega:'COORD_LOG', pagamento:'COORD_FIN',
   },
 
-  // Financeiro decide
+  async definirEstoque(sol, resultado, prazos){
+    await Data.definirEstoque(sol.id, resultado, prazos);
+    await Data.refreshSolicitacoesData();
+  },
+  async concluirTratamento(sol){
+    await Data.concluirTratamento(sol.id);
+    await Data.refreshSolicitacoesData();
+  },
+  async registrarLote(sol, lote){
+    await Data.registrarLote(sol.id, lote);
+    await Data.refreshSolicitacoesData();
+  },
+  async salvarFiscal(sol, dados){
+    await Data.salvarFiscal(sol.id, dados);
+    await Data.refreshSolicitacoesData();
+  },
   async decidirCredito(sol, decisao, motivo){
     await Data.decidirCredito(sol.id, decisao, motivo);
     await Data.refreshSolicitacoesData();
   },
-
-  // Operações conclui produção
-  async concluirProducao(sol){
-    await Data.concluirProducao(sol.id);
+  async aprovarRc(sol){
+    await Data.aprovarRc(sol.id);
     await Data.refreshSolicitacoesData();
   },
-
-  // Logística cota frete
+  async imputarSap(sol, pedidoSap){
+    await Data.imputarSap(sol.id, pedidoSap);
+    await Data.refreshSolicitacoesData();
+  },
   async salvarCotacao(sol, dados){
     await Data.salvarCotacao(sol.id, dados);
     await Data.refreshSolicitacoesData();
-    App.toast('Cotação salva','Dados de frete registrados com sucesso.','ok');
+    App.toast('Cotação salva','Dados de frete registrados no pedido.','ok');
   },
-
-  // Logística contrata frete — só se crédito aprovado
-  async contratarFrete(sol){
-    if(sol.financeiro.decisao === 'Recusado' || !['Aguardando Frete','Produção'].includes(sol.status)){
-      App.toast('Ação bloqueada','O frete só pode ser contratado após o crédito aprovado e produção concluída.','err'); return;
-    }
-    await Data.contratarFrete(sol.id);
+  async registrarEmailTransportadora(sol, dados){
+    await Data.registrarEmailTransportadora(sol.id, dados);
     await Data.refreshSolicitacoesData();
   },
-
-  // Operações emite NF
+  async registrarRespostaTransportadora(sol, dados){
+    await Data.registrarRespostaTransportadora(sol.id, dados);
+    await Data.refreshSolicitacoesData();
+  },
+  async salvarCarregamento(sol, dados){
+    await Data.salvarCarregamento(sol.id, dados);
+    await Data.refreshSolicitacoesData();
+  },
   async emitirNF(sol, dados, arquivo){
     await Data.emitirNF(sol.id, dados, arquivo);
     await Data.refreshSolicitacoesData();
   },
-
-  // Logística atualiza entrega
+  async liberarCaminhao(sol){
+    await Data.liberarCaminhao(sol.id);
+    await Data.refreshSolicitacoesData();
+  },
   async atualizarEntrega(sol, dados, arquivo){
     await Data.atualizarEntrega(sol.id, dados, arquivo);
     await Data.refreshSolicitacoesData();
   },
-
+  async atualizarPagamento(sol, dados){
+    await Data.atualizarPagamento(sol.id, dados);
+    await Data.refreshSolicitacoesData();
+  },
   async cancelar(sol, motivo){
     await Data.cancelar(sol.id, motivo);
     await Data.refreshSolicitacoesData();
   },
 
+  /* Bloqueio do fluxograma: pedido de cliente NOVO sem documentação é travado. */
+  travadoPorDocumentos(sol){
+    return sol.tipoCliente === 'Novo' && !sol.documentosOk;
+  },
+
+  /* Pré-requisitos para o RC aprovar faturamento e frete. */
+  prontoParaAprovacaoRc(sol){
+    const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
+                      (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
+    const fiscalOk  = sol.fiscal && sol.fiscal.codigoCliente;
+    const creditoOk = sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao);
+    const freteOk   = sol.logistica && sol.logistica.transportadora;
+    return !!(estoqueOk && fiscalOk && creditoOk && freteOk);
+  },
+
+  pendenciasParaAprovacao(sol){
+    const p = [];
+    const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
+                      (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
+    if(!estoqueOk) p.push('estoque/tratamento da UBS');
+    if(!(sol.fiscal && sol.fiscal.codigoCliente)) p.push('código do cliente (Fiscal)');
+    if(!(sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao))) p.push('aprovação de crédito');
+    if(!(sol.logistica && sol.logistica.transportadora)) p.push('cotação de frete');
+    return p;
+  },
+
   // permissão de edição por etapa
   podeEditarEtapa(etapa){
     if(STATE.currentProfile === 'COMERCIAL_ADM') return true;
-    const map = { admUbs:'ADM_UBS', financeiro:'COORD_FIN', logistica:'COORD_LOG', faturamento:'OPERACOES' };
+    const map = {
+      admUbs:'ADM_UBS', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
+      fiscal:'FISCAL', financeiro:'COORD_FIN', aprovacaoRc:'RC',
+      logistica:'COORD_LOG', transportadora:'COORD_LOG', carregamento:'COORD_LOG',
+      faturamento:'OPERACOES', pagamento:'COORD_FIN', pedido:'RC',
+    };
     return map[etapa] === STATE.currentProfile;
   },
 };
+
 
 /* ------------------------------------------------------------------------
    7. APP — navegação, autenticação, render dispatcher
    ------------------------------------------------------------------------ */
 const NAV_ITEMS = [
   { id:'dashboard', label:'Dashboard', icon:'grid' },
-  { id:'solicitacoes', label:'Solicitações', icon:'list' },
-  { id:'nova', label:'Nova Solicitação', icon:'plus', restrictTo:['RC','COMERCIAL_ADM'] },
+  { id:'minhasPendencias', label:'Minhas pendências', icon:'check' },
+  { id:'notificacoes', label:'Notificações', icon:'bell' },
+  { id:'solicitacoes', label:'Pedidos', icon:'list' },
+  { id:'nova', label:'Novo Pedido', icon:'plus', restrictTo:['RC','COMERCIAL_ADM'] },
+  { id:'transportadora', label:'Transportadora', icon:'truck', restrictTo:['COORD_LOG','COMERCIAL_ADM'] },
   { id:'cadastros', label:'Cadastros', icon:'folder', adminOnly:true },
   { id:'indicadores', label:'Indicadores', icon:'barChart' },
   { id:'relatorios', label:'Relatórios', icon:'fileText' },
@@ -1295,6 +1992,7 @@ const App = {
       STATE.currentProfile = user.perfil;
 
       await Promise.all([ Data.loadCadastros(), Data.refreshSolicitacoesData() ]);
+      try{ await Data.loadNotificacoes(); }catch(e){ console.warn('[VerOS Flow] Notificações:', e); }
 
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').classList.add('show');
@@ -1323,13 +2021,39 @@ const App = {
     NAV_ITEMS.forEach(it=>{
       if(it.adminOnly && STATE.currentProfile !== 'COMERCIAL_ADM') return;
       if(it.restrictTo && !it.restrictTo.includes(STATE.currentProfile)) return;
-      html += `<div class="nav-item" data-view="${it.id}" onclick="App.navigate('${it.id}')"><span class="nic">${Ic(it.icon,16)}</span><span>${it.label}</span></div>`;
+      const badge = it.id==='notificacoes' ? '<span class="nav-badge" id="navNotifBadge" style="display:none;">0</span>'
+                  : it.id==='minhasPendencias' ? '<span class="nav-badge" id="navPendBadge" style="display:none;">0</span>' : '';
+      html += `<div class="nav-item" data-view="${it.id}" onclick="App.navigate('${it.id}')"><span class="nic">${Ic(it.icon,16)}</span><span>${it.label}</span>${badge}</div>`;
     });
     nav.innerHTML = html;
     document.getElementById('sideAvatar').textContent = U.initials(STATE.currentUser.nome);
     document.getElementById('sideUserName').textContent = STATE.currentUser.nome;
     document.getElementById('sideUserRole').textContent = U.perfilNome(STATE.currentProfile);
     document.getElementById('btnNovaTopbar').style.display = podeSolicitar() ? 'flex' : 'none';
+    App.updateNotifBadge();
+  },
+
+  // Contadores do menu: notificações não lidas e pendências do perfil.
+  updateNotifBadge(){
+    const nb = document.getElementById('navNotifBadge');
+    if(nb){
+      const n = Data.naoLidas ? Data.naoLidas() : 0;
+      nb.textContent = n > 99 ? '99+' : n;
+      nb.style.display = n ? 'inline-flex' : 'none';
+    }
+    const pb = document.getElementById('navPendBadge');
+    if(pb && typeof Render !== 'undefined' && Render.pendenciasDoPerfil){
+      let p = 0;
+      try{ p = Render.pendenciasDoPerfil().length; }catch(e){ p = 0; }
+      pb.textContent = p > 99 ? '99+' : p;
+      pb.style.display = p ? 'inline-flex' : 'none';
+    }
+    const tb = document.getElementById('topbarNotifDot');
+    if(tb){
+      const n = Data.naoLidas ? Data.naoLidas() : 0;
+      tb.textContent = n > 9 ? '9+' : n;
+      tb.style.display = n ? 'flex' : 'none';
+    }
   },
 
   navigate(view, params){
@@ -1407,6 +2131,8 @@ const Render = {
       dashboard: this.dashboard, solicitacoes: this.solicitacoes, nova: this.novaSolicitacao,
       detail: this.detail, cadastros: this.cadastros, indicadores: this.indicadores,
       relatorios: this.relatorios, configuracoes: this.configuracoes, perfil: this.perfil,
+      notificacoes: this.notificacoes, minhasPendencias: this.minhasPendencias,
+      transportadora: this.transportadora,
     };
     const fn = map[view] || this.dashboard;
     document.getElementById('content').innerHTML = `<div class="view active" id="view-${view}"></div>`;
@@ -1549,7 +2275,7 @@ const Render = {
             <button class="view-toggle-btn ${STATE.viewMode==='list'?'active':''}" onclick="Render.setViewMode('list')">${Ic('list',14)} Lista</button>
             <button class="view-toggle-btn ${STATE.viewMode==='kanban'?'active':''}" onclick="Render.setViewMode('kanban')">${Ic('kanban',14)} Kanban</button>
           </div>
-          ${podeSolicitar() ? `<button class="btn btn-primary" onclick="App.navigate('nova')">${Ic('plus',14)} Nova Solicitação</button>` : ''}
+          ${podeSolicitar() ? `<button class="btn btn-primary" onclick="App.navigate('nova')">${Ic('plus',14)} Novo Pedido</button>` : ''}
         </div>
       </div>
 
@@ -1667,24 +2393,45 @@ const Render = {
   /* ---------------------------- NOVA SOLICITAÇÃO ---------------------------- */
   novaSolicitacao(){
     const html = `
-      <div class="page-head"><div><h1>Nova Solicitação</h1><p>Preencha os dados do pedido gerado no Agrotis Mobi</p></div></div>
-      <div class="card card-pad" style="max-width:900px;">
+      <div class="page-head"><div><h1>Novo Pedido</h1><p>Registre o pedido diretamente no VerOS Flow — nenhuma etapa depende de e-mail</p></div></div>
+      <div class="card card-pad" style="max-width:940px;">
         <form id="novaSolForm" onsubmit="Render.submitNovaSolicitacao(event)">
           <div class="form-section">
             <h3><span class="num">1</span>Dados do Pedido</h3>
             <div class="form-grid">
-              <div class="field"><label>Número Pedido MOBI *</label><input required id="f_mobi" placeholder="MOBI-00000"></div>
-              <div class="field"><label>Cliente *</label><input required id="f_cliente" placeholder="Nome do cliente / fazenda"></div>
+              <div class="field"><label>Número do Pedido (Mobi) *</label><input required id="f_mobi" placeholder="MOBI-00000"></div>
+              <div class="field"><label>Tipo de cliente *</label>
+                <select required id="f_tipo_cliente" onchange="Render.toggleTipoCliente(this.value)">
+                  <option value="Recompra">Recompra</option>
+                  <option value="Novo">Cliente novo</option>
+                </select>
+              </div>
+              <div class="field"><label>Cliente *</label><input required id="f_cliente" list="listaClientes" placeholder="Razão social / fazenda"><datalist id="listaClientes">${(DB.clientes||[]).map(c=>`<option value="${U.esc(c.razaoSocial)}">`).join('')}</datalist></div>
               <div class="field"><label>Nome RC *</label><input required id="f_rc" value="${U.esc(STATE.currentUser.nome)}"></div>
               <div class="field"><label>Unidade *</label><select required id="f_unidade">${DB.unidades.filter(u=>u.status==='Ativo').map(u=>`<option value="${u.id}" ${u.id===STATE.currentUser.unidade?'selected':''}>${u.nome}</option>`).join('')}</select></div>
               <div class="field"><label>Produto *</label><select required id="f_produto">${DB.produtos.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.cultura} · ${p.variedade}</option>`).join('')}</select></div>
               <div class="field"><label>Quantidade (sacas) *</label><input required type="number" min="1" id="f_qtd" placeholder="0"></div>
+              <div class="field"><label>Data de entrega negociada *</label><input required type="date" id="f_entrega"></div>
               <div class="field"><label>Desconto (%)</label><input type="number" min="0" max="100" step="0.1" id="f_desc" value="0"></div>
               <div class="field"><label>Valor Total (R$) *</label><input required type="number" min="0" step="0.01" id="f_valor" placeholder="0,00"></div>
               <div class="field full"><label>Forma de Pagamento *</label>
                 <select required id="f_pgto">
                   <option>À vista</option><option>Boleto 30/60/90</option><option>Boleto 30/60</option><option>Troca por produto</option><option>Outro</option>
                 </select>
+              </div>
+              <div class="field full"><label>Observações para as áreas</label><textarea id="f_obs" rows="2" placeholder="Informações adicionais que a UBS, Fiscal, Financeiro ou Logística precisam saber"></textarea></div>
+            </div>
+          </div>
+
+          <div class="form-section" id="docsSection">
+            <h3><span class="num">2</span>Documentação do cliente</h3>
+            <p style="font-size:12.5px;color:var(--v-ink-500);margin:-4px 0 12px;" id="docsHint">
+              Cliente novo só avança para a UBS com a documentação anexada — a trava é automática.
+            </p>
+            <div class="field"><label>Documentos do cliente</label>
+              <div class="upload-box" id="box_docs" onclick="document.getElementById('file_docs').click()">
+                <input type="file" id="file_docs" multiple onchange="Render.handleFileInput('docs', this.files)">
+                <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar contrato social, CNPJ, inscrição estadual…<div id="up_docs"></div>
               </div>
             </div>
           </div>
@@ -1700,19 +2447,13 @@ const Render = {
               <div class="field"><label>Limite Solicitado (R$)</label><input type="number" id="c_limite" placeholder="0,00"></div>
               <div class="field"><label>Observações</label><input id="c_obs" placeholder="Opcional"></div>
               <div class="field full"><label>Justificativa *</label><textarea id="c_justificativa" rows="3" placeholder="Descreva o motivo da solicitação de crédito"></textarea></div>
-              <div class="field"><label>Upload de Documentos</label>
-                <div class="upload-box" id="box_docs" onclick="document.getElementById('file_docs').click()">
-                  <input type="file" id="file_docs" multiple onchange="Render.handleFileInput('docs', this.files)">
-                  <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar documentos<div id="up_docs"></div>
-                </div>
-              </div>
               <div class="field"><label>Upload de Contrato</label>
                 <div class="upload-box" id="box_contrato" onclick="document.getElementById('file_contrato').click()">
                   <input type="file" id="file_contrato" onchange="Render.handleFileInput('contrato', this.files)">
                   <span class="ic">${Ic('fileText',20)}</span>Clique para anexar o contrato<div id="up_contrato"></div>
                 </div>
               </div>
-              <div class="field full"><label>Upload de Documentos Financeiros</label>
+              <div class="field"><label>Documentos Financeiros</label>
                 <div class="upload-box" id="box_fin" onclick="document.getElementById('file_fin').click()">
                   <input type="file" id="file_fin" multiple onchange="Render.handleFileInput('fin', this.files)">
                   <span class="ic">${Ic('card',20)}</span>Clique para anexar documentos financeiros<div id="up_fin"></div>
@@ -1723,13 +2464,22 @@ const Render = {
 
           <div class="form-footer">
             <button type="button" class="btn btn-ghost" onclick="App.navigate('solicitacoes')">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Enviar Solicitação →</button>
+            <button type="submit" class="btn btn-primary">Registrar pedido →</button>
           </div>
         </form>
       </div>
     `;
     document.getElementById('view-nova').innerHTML = html;
     Render._uploads = {docs:[],contrato:[],fin:[]};
+    Render.toggleTipoCliente('Recompra');
+  },
+
+  toggleTipoCliente(tipo){
+    const hint = document.getElementById('docsHint');
+    if(!hint) return;
+    hint.innerHTML = tipo === 'Novo'
+      ? 'Cliente novo: o pedido fica <b>travado</b> até a documentação ser anexada. A trava é automática.'
+      : 'Recompra: anexar documentos é opcional. O pedido segue direto para a consulta de estoque da UBS.';
   },
 
   toggleCredito(checked){ document.getElementById('creditPanel').classList.toggle('show', checked); },
@@ -1764,6 +2514,10 @@ const Render = {
     if(credito && !document.getElementById('c_justificativa').value.trim()){
       App.toast('Campo obrigatório','Informe a justificativa do crédito antes de enviar.','err'); return;
     }
+    const tipoCliente = document.getElementById('f_tipo_cliente').value;
+    const arquivos = Render._uploads || {docs:[],contrato:[],fin:[]};
+    const documentosOk = tipoCliente !== 'Novo' || (arquivos.docs && arquivos.docs.length > 0);
+
     const payload = {
       numeroPedidoMobi: document.getElementById('f_mobi').value,
       cliente: document.getElementById('f_cliente').value,
@@ -1774,6 +2528,9 @@ const Render = {
       desconto: Number(document.getElementById('f_desc').value)||0,
       valorTotal: Number(document.getElementById('f_valor').value),
       formaPagamento: document.getElementById('f_pgto').value,
+      dataEntregaNegociada: document.getElementById('f_entrega').value || null,
+      observacoes: document.getElementById('f_obs').value || null,
+      tipoCliente, documentosOk,
       solicitaCredito: credito,
       credito: credito ? {
         limiteSolicitado: Number(document.getElementById('c_limite').value)||0,
@@ -1781,16 +2538,20 @@ const Render = {
         observacoes: document.getElementById('c_obs').value,
       } : null,
     };
-    const arquivos = Render._uploads || {docs:[],contrato:[],fin:[]};
+
     const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true; const original = btn.innerHTML; btn.innerHTML = 'Enviando...';
+    btn.disabled = true; const original = btn.innerHTML; btn.innerHTML = 'Registrando...';
     try{
       const novoId = await Data.createSolicitacao(payload, arquivos);
       await Data.refreshSolicitacoesData();
-      App.toast('Solicitação enviada!','Pedido '+payload.numeroPedidoMobi+' encaminhado para ADM UBS, Financeiro, Logística e Operações.','ok');
+      if(!documentosOk){
+        App.toast('Pedido travado','Cliente novo sem documentação. Anexe os documentos no pedido para liberar a UBS.','warn');
+      } else {
+        App.toast('Pedido registrado','UBS, Fiscal e Financeiro foram notificados dentro do VerOS Flow.','ok');
+      }
       App.navigate('detail',{id:novoId});
     } catch(err){
-      App.toast('Erro ao enviar solicitação', err.message || 'Tente novamente.', 'err');
+      App.toast('Erro ao registrar pedido', err.message || 'Tente novamente.', 'err');
       btn.disabled = false; btn.innerHTML = original;
     }
   },
@@ -1798,148 +2559,315 @@ const Render = {
   /* ---------------------------- DETALHE / TIMELINE ---------------------------- */
   detail(){
     const sol = DB.solicitacoes.find(s=>s.id===STATE.detailId);
-    if(!sol){ document.getElementById('view-detail').innerHTML = `<div class="empty-state"><div class="ic">${Ic('folder',34)}</div><h3>Solicitação não encontrada</h3></div>`; return; }
-
-    const canAdmUbs = FLOW.podeEditarEtapa('admUbs');
-    const canFin = FLOW.podeEditarEtapa('financeiro');
-    const canLog = FLOW.podeEditarEtapa('logistica');
-    const canOps = FLOW.podeEditarEtapa('faturamento');
+    if(!sol){ document.getElementById('view-detail').innerHTML = `<div class="empty-state"><div class="ic">${Ic('folder',34)}</div><h3>Pedido não encontrado</h3></div>`; return; }
     const isAdmin = STATE.currentProfile==='COMERCIAL_ADM';
+    const tab = STATE.detailTab || 'etapas';
+
+    const corpo = tab==='mensagens' ? Render.abaMensagens(sol)
+                : tab==='lotes'     ? Render.abaLotes(sol)
+                : tab==='documentos'? Render.abaDocumentos(sol)
+                : Render.abaEtapas(sol);
 
     const html = `
-      <div class="breadcrumb"><b onclick="App.navigate('solicitacoes')" style="cursor:pointer;">Solicitações</b> / ${sol.id}</div>
+      <div class="breadcrumb"><b onclick="App.navigate('solicitacoes')" style="cursor:pointer;">Pedidos</b> / ${U.esc(sol.numeroPedidoMobi)}</div>
       <div class="detail-head">
         <div>
           <h1 style="font-family:var(--font-display);font-size:21px;">${U.esc(sol.cliente)}</h1>
-          <p style="color:var(--v-ink-500);font-size:13px;margin-top:4px;">Pedido ${U.esc(sol.numeroPedidoMobi)} · Criado por ${U.esc(sol.criadoPor)} em ${U.fmtDateTime(sol.criadoEm)}</p>
+          <p style="color:var(--v-ink-500);font-size:13px;margin-top:4px;">
+            Pedido ${U.esc(sol.numeroPedidoMobi)}${sol.pedidoSap?` · SAP ${U.esc(sol.pedidoSap)}`:''}${sol.fiscal&&sol.fiscal.codigoCliente?` · Cliente ${U.esc(sol.fiscal.codigoCliente)}`:''} · RC ${U.esc(sol.nomeRC)} · ${U.fmtDateTime(sol.criadoEm)}
+          </p>
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
+          ${sol.tipoCliente==='Novo'?`<span class="upload-tag">Cliente novo</span>`:''}
           ${badgeHtml(sol.status)}
-          ${isAdmin && sol.status!=='Cancelado' && sol.status!=='Entregue' ? `<button class="btn btn-danger btn-sm" onclick="Render.cancelarSolicitacao('${sol.id}')">Cancelar pedido</button>`:''}
+          ${isAdmin && !['Cancelado','Pago'].includes(sol.status) ? `<button class="btn btn-danger btn-sm" onclick="Render.cancelarSolicitacao('${sol.id}')">Cancelar pedido</button>`:''}
         </div>
       </div>
 
+      ${Render.flowRail(sol)}
+
+      <div class="detail-tabs">
+        <button class="detail-tab ${tab==='etapas'?'active':''}" onclick="Render.setDetailTab('etapas')">Etapas do processo</button>
+        <button class="detail-tab ${tab==='mensagens'?'active':''}" onclick="Render.setDetailTab('mensagens')">Mensagens${(sol.mensagens||[]).length?`<span class="cnt">${sol.mensagens.length}</span>`:''}</button>
+        <button class="detail-tab ${tab==='lotes'?'active':''}" onclick="Render.setDetailTab('lotes')">Lotes tratados${(sol.lotes||[]).length?`<span class="cnt">${sol.lotes.length}</span>`:''}</button>
+        <button class="detail-tab ${tab==='documentos'?'active':''}" onclick="Render.setDetailTab('documentos')">Documentos</button>
+      </div>
+
+      ${corpo}
+    `;
+    document.getElementById('view-detail').innerHTML = html;
+  },
+
+  setDetailTab(t){ STATE.detailTab = t; Render.detail(); },
+
+  /* -------- trilho visual do processo, na ordem do fluxograma ---------- */
+  flowRail(sol){
+    const etapas = [
+      { l:'Pedido',        ok:true },
+      { l:'Estoque UBS',   ok:!!(sol.admUbs && sol.admUbs.resultado) },
+      { l:'Tratamento',    ok:!!(sol.admUbs && sol.admUbs.tratamentoConcluido) },
+      { l:'Cadastro',      ok:!!(sol.fiscal && sol.fiscal.codigoCliente) },
+      { l:'Crédito',       ok:!!(sol.financeiro && sol.financeiro.decisao) },
+      { l:'Frete',         ok:!!(sol.logistica && sol.logistica.transportadora) },
+      { l:'Aprovação RC',  ok:!!sol.aprovadoRc },
+      { l:'SAP',           ok:!!sol.pedidoSap },
+      { l:'Transportadora',ok:!!(sol.logistica && sol.logistica.emailEnviadoEm) },
+      { l:'Carregamento',  ok:!!(sol.carregamento && sol.carregamento.carregadoEm) },
+      { l:'NF',            ok:!!(sol.faturamento && sol.faturamento.concluido) },
+      { l:'Entrega',       ok:sol.logistica && sol.logistica.statusEntrega==='Entregue' },
+      { l:'Pagamento',     ok:sol.pagamento && sol.pagamento.status==='Pago' },
+    ];
+    const idxAtual = etapas.findIndex(e=>!e.ok);
+    return `<div class="flow-rail">${etapas.map((e,i)=>
+      `<span class="flow-step ${e.ok?'done':(i===idxAtual?'current':'')}">${e.l}</span>`).join('')}</div>`;
+  },
+
+  /* ==================== ABA 1 — ETAPAS DO PROCESSO ==================== */
+  abaEtapas(sol){
+    const can = k => FLOW.podeEditarEtapa(k);
+    const dono = p => `<span class="stage-owner">${U.esc(U.perfilNome(p))}</span>`;
+    const travado = FLOW.travadoPorDocumentos(sol);
+    const est = sol.admUbs || {};
+    const pend = FLOW.pendenciasParaAprovacao(sol);
+
+    return `
       <div class="detail-grid">
         <div>
           <div class="card card-pad" style="margin-bottom:18px;">
             <div class="section-title">Dados do pedido</div>
             <div class="info-list">
               <div class="it"><b>Cliente</b><span>${U.esc(sol.cliente)}</span></div>
-              <div class="it"><b>RC</b><span>${U.esc(sol.nomeRC)}</span></div>
+              <div class="it"><b>Tipo</b><span>${U.esc(sol.tipoCliente||'Recompra')}</span></div>
               <div class="it"><b>Unidade</b><span>${U.esc(U.unidadeNome(sol.unidade))}</span></div>
               <div class="it"><b>Produto</b><span>${U.esc(U.produtoLabel(sol.produto))}</span></div>
               <div class="it"><b>Quantidade</b><span>${sol.quantidade} sc</span></div>
-              <div class="it"><b>Desconto</b><span>${sol.desconto}%</span></div>
               <div class="it"><b>Valor total</b><span>${U.brl(sol.valorTotal)}</span></div>
               <div class="it"><b>Forma de pagamento</b><span>${U.esc(sol.formaPagamento)}</span></div>
+              <div class="it"><b>Entrega negociada</b><span>${sol.dataEntregaNegociada?U.fmtDate(sol.dataEntregaNegociada):'—'}</span></div>
+              ${sol.observacoesPedido?`<div class="it" style="grid-column:1/-1;"><b>Observações do RC</b><span style="font-weight:500;">${U.esc(sol.observacoesPedido)}</span></div>`:''}
             </div>
           </div>
 
-          ${sol.solicitaCredito ? `
-          <div class="card card-pad" style="margin-bottom:18px;">
-            <div class="section-title">Formulário de crédito</div>
-            <div class="info-list">
-              <div class="it"><b>Limite solicitado</b><span>${U.brl(sol.credito.limiteSolicitado)}</span></div>
-              <div class="it"><b>Observações</b><span>${U.esc(sol.credito.observacoes)||'—'}</span></div>
-              <div class="it full" style="grid-column:1/-1;"><b>Justificativa</b><span style="font-weight:500;">${U.esc(sol.credito.justificativa)}</span></div>
-            </div>
-            <div style="margin-top:10px;">
-              ${(sol.credito.anexos||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('paperclip',11)} ${U.esc(a.nome)}</span>`).join('')}
-              ${sol.credito.contrato?`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${sol.credito.contrato.path}')">${Ic('fileText',11)} ${U.esc(sol.credito.contrato.nome)}</span>`:''}
-              ${(sol.credito.docsFinanceiros||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('card',11)} ${U.esc(a.nome)}</span>`).join('')}
-            </div>
+          <!-- 0. TRAVA DE DOCUMENTOS -->
+          ${travado ? `
+          <div class="stage-block blocked">
+            <h4>${Ic('alert',15)} Pedido travado · documentação do cliente novo ${dono('RC')}</h4>
+            <p style="font-size:12.5px;color:var(--v-ink-700);margin-bottom:10px;">
+              Este pedido é de um <b>cliente novo</b> e não possui documentação anexada. A UBS não recebe a
+              consulta de estoque enquanto os documentos não forem anexados aqui.
+            </p>
+            ${can('pedido') ? `<button class="btn btn-primary btn-sm" onclick="Render.abrirDocumentosModal('${sol.id}')">Anexar documentação</button>`
+              : `<span class="lock-note">Aguardando o RC anexar a documentação.</span>`}
           </div>` : ''}
 
-          <!-- ADM UBS -->
-          <div class="stage-block ${(!canAdmUbs)?'locked':''}">
-            <h4>${Ic('tag',15)} ADM UBS · Verificação de Saldo</h4>
-            ${sol.admUbs && sol.admUbs.saldoDisponivel!==undefined && sol.admUbs.saldoDisponivel!==null ? `
+          <!-- 1. UBS — CONSULTA DE ESTOQUE -->
+          <div class="stage-block ${est.resultado?'done':''} ${(!can('estoque'))?'locked':''}">
+            <h4>${Ic('tag',15)} UBS · Consulta de estoque ${dono('ADM_UBS')}</h4>
+            ${est.resultado ? `
               <div class="info-list">
-                <div class="it"><b>Resultado</b><span>${sol.admUbs.saldoDisponivel?'Saldo disponível':'Sem saldo'}</span></div>
-                <div class="it"><b>Avaliado por</b><span>${U.esc(Data.nomeUsuario(sol.admUbs.avaliadoPorId))}</span></div>
-                ${sol.admUbs.saldoDisponivel ? `<div class="it"><b>Tempo de produção</b><span>${U.esc(sol.admUbs.tempoProducao||'—')}</span></div>` : ''}
+                <div class="it"><b>Resultado</b><span>${U.esc(est.resultado)}</span></div>
+                <div class="it"><b>Respondido por</b><span>${U.esc(Data.nomeUsuario(est.avaliadoPorId))}</span></div>
+                ${est.prazoDisponibilidade?`<div class="it"><b>Previsão de disponibilidade</b><span>${U.esc(est.prazoDisponibilidade)}</span></div>`:''}
+                ${est.prazoTratamento?`<div class="it"><b>Prazo de tratamento</b><span>${U.esc(est.prazoTratamento)}</span></div>`:''}
               </div>
-            ` : canAdmUbs ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Verifique o saldo disponível da unidade para este pedido.</p>
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" onclick="Render.abrirSaldoDisponivelModal('${sol.id}')">Saldo disponível</button>
-                <button class="btn btn-danger btn-sm" onclick="Render.admUbsAction('${sol.id}',false)">Sem saldo</button>
-              </div>
-            ` : `<span class="lock-note">Aguardando avaliação do ADM UBS.</span>`}
+              ${can('estoque') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Revisar resposta</button></div>`:''}
+            ` : travado ? `<span class="lock-note">Liberado após a documentação do cliente ser anexada.</span>`
+              : can('estoque') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Informe a situação do estoque. A resposta chega ao RC pelo VerOS Flow — sem WhatsApp e sem e-mail.</p>
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Responder consulta de estoque</button>
+            ` : `<span class="lock-note">Aguardando a resposta da UBS.</span>`}
           </div>
 
-          <!-- FINANCEIRO -->
-          <div class="stage-block ${(!canFin)?'locked':''}">
-            <h4>${Ic('coin',15)} Financeiro · Análise de Crédito</h4>
+          <!-- 2. UBS — TRATAMENTO -->
+          ${est.resultado==='Com estoque para produção' ? `
+          <div class="stage-block ${est.tratamentoConcluido?'done':''} ${(!can('tratamento'))?'locked':''}">
+            <h4>${Ic('settings',15)} UBS · Tratamento das sementes ${dono('ADM_UBS')}</h4>
+            ${est.tratamentoConcluido ? `
+              <div class="info-list">
+                <div class="it"><b>Situação</b><span>Tratamento concluído</span></div>
+                <div class="it"><b>Concluído em</b><span>${est.tratamentoConcluidoEm?U.fmtDateTime(est.tratamentoConcluidoEm):'—'}</span></div>
+              </div>
+              <p style="font-size:12px;color:var(--v-ink-500);margin-top:8px;">Registre os lotes na aba <b>Lotes tratados</b> — é isso que substitui o e-mail obrigatório com os lotes.</p>
+            ` : can('tratamento') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Prazo informado: <b>${U.esc(est.prazoTratamento||'—')}</b>.</p>
+              <button class="btn btn-primary btn-sm" onclick="Render.concluirTratamentoAction('${sol.id}')">Marcar tratamento concluído</button>
+            ` : `<span class="lock-note">Sementes em tratamento na UBS.</span>`}
+          </div>` : ''}
+
+          <!-- 3. FISCAL — CADASTRO -->
+          <div class="stage-block ${(sol.fiscal&&sol.fiscal.codigoCliente)?'done':''} ${(!can('fiscal'))?'locked':''}">
+            <h4>${Ic('user',15)} Fiscal · Cadastro do cliente ${dono('FISCAL')}</h4>
+            ${sol.fiscal && sol.fiscal.codigoCliente ? `
+              <div class="info-list">
+                <div class="it"><b>Situação</b><span>${sol.fiscal.possuiCadastro?'Cliente já cadastrado':'Cliente cadastrado agora'}</span></div>
+                <div class="it"><b>Código do cliente</b><span>${U.esc(sol.fiscal.codigoCliente)}</span></div>
+                <div class="it"><b>Verificado por</b><span>${U.esc(Data.nomeUsuario(sol.fiscal.verificadoPorId))}</span></div>
+                ${sol.fiscal.observacoes?`<div class="it"><b>Observações</b><span>${U.esc(sol.fiscal.observacoes)}</span></div>`:''}
+              </div>
+            ` : can('fiscal') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Verifique se <b>${U.esc(sol.cliente)}</b> possui cadastro e devolva o código do cliente ao pedido.</p>
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirFiscalModal('${sol.id}')">Verificar cadastro</button>
+            ` : `<span class="lock-note">Aguardando verificação de cadastro pela Fiscal.</span>`}
+          </div>
+
+          <!-- 4. FINANCEIRO -->
+          <div class="stage-block ${(sol.financeiro&&sol.financeiro.decisao)?'done':''} ${(!can('financeiro'))?'locked':''}">
+            <h4>${Ic('coin',15)} Financeiro · Análise de crédito ${dono('COORD_FIN')}</h4>
             ${sol.financeiro && sol.financeiro.decisao ? `
               <div class="info-list">
                 <div class="it"><b>Decisão</b><span>${U.esc(sol.financeiro.decisao)}</span></div>
                 <div class="it"><b>Decidido por</b><span>${U.esc(Data.nomeUsuario(sol.financeiro.decididoPorId))}</span></div>
-                ${sol.financeiro.motivoRecusa?`<div class="it" style="grid-column:1/-1;"><b>${sol.financeiro.decisao==='Recusado'?'Motivo da recusa':'Ressalva'}</b><span>${U.esc(sol.financeiro.motivoRecusa)}</span></div>`:''}
+                ${sol.financeiro.motivoRecusa?`<div class="it" style="grid-column:1/-1;"><b>${sol.financeiro.decisao==='Recusado'?'Justificativa da reprovação':'Ressalva'}</b><span>${U.esc(sol.financeiro.motivoRecusa)}</span></div>`:''}
               </div>
-            ` : canFin ? (
-              !['Crédito recusado','Cancelado'].includes(sol.status) ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Analise os anexos e defina a decisão de crédito. Não é necessário aguardar a avaliação de saldo do ADM UBS.</p>
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado')">Aprovar</button>
-                <button class="btn btn-secondary btn-sm" onclick="Render.financeiroAction('${sol.id}','Aprovado com ressalvas')">Aprovar com ressalvas</button>
-                <button class="btn btn-danger btn-sm" onclick="Render.financeiroReprovar('${sol.id}')">Recusar</button>
-              </div>` : `<span class="lock-note">Pedido não está mais disponível para decisão de crédito.</span>`
-            ) : `<span class="lock-note">Aguardando decisão do Financeiro.</span>`}
+              ${can('financeiro') && sol.status!=='Cancelado' ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirCreditoModal('${sol.id}')">Revisar decisão</button></div>`:''}
+            ` : can('financeiro') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">A decisão e a justificativa ficam registradas no pedido e notificam o RC automaticamente.</p>
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirCreditoModal('${sol.id}')">Registrar análise de crédito</button>
+            ` : `<span class="lock-note">Aguardando análise do Financeiro.</span>`}
+            ${sol.solicitaCredito && sol.credito ? `
+              <div style="margin-top:12px;border-top:1px dashed var(--v-line);padding-top:12px;">
+                <div class="info-list">
+                  <div class="it"><b>Limite solicitado</b><span>${U.brl(sol.credito.limiteSolicitado)}</span></div>
+                  <div class="it"><b>Justificativa do RC</b><span style="font-weight:500;">${U.esc(sol.credito.justificativa)||'—'}</span></div>
+                </div>
+                <div style="margin-top:8px;">
+                  ${(sol.credito.anexos||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('paperclip',11)} ${U.esc(a.nome)}</span>`).join('')}
+                  ${sol.credito.contrato?`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${sol.credito.contrato.path}')">${Ic('fileText',11)} ${U.esc(sol.credito.contrato.nome)}</span>`:''}
+                  ${(sol.credito.docsFinanceiros||[]).map(a=>`<span class="upload-tag" style="cursor:pointer;" onclick="Render.baixarAnexoAction('${a.path}')">${Ic('card',11)} ${U.esc(a.nome)}</span>`).join('')}
+                </div>
+              </div>`:''}
           </div>
 
-          <!-- PRODUÇÃO (ADM UBS conclui) -->
-          <div class="stage-block ${(!canAdmUbs)?'locked':''}">
-            <h4>${Ic('settings',15)} ADM UBS · Produção</h4>
-            ${sol.status==='Produção' && canAdmUbs ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Marque como concluída quando a produção estiver pronta para expedição.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.concluirProducao('${sol.id}')">Marcar produção concluída</button>
-            ` : FLOW.ORDER.indexOf(sol.status) > FLOW.ORDER.indexOf('Produção') ? `<span class="lock-note">Produção concluída.</span>`
-              : sol.financeiro && sol.financeiro.decisao && sol.financeiro.decisao!=='Recusado' && !(sol.admUbs && sol.admUbs.saldoDisponivel) ? `<span class="lock-note">Crédito aprovado — aguardando confirmação de saldo pelo ADM UBS.</span>`
-              : `<span class="lock-note">Aguardando saldo confirmado e crédito aprovado.</span>`}
-          </div>
-
-          <!-- LOGÍSTICA -->
-          <div class="stage-block ${(!canLog)?'locked':''}">
-            <h4>${Ic('truck',15)} Logística · Frete</h4>
+          <!-- 5. LOGÍSTICA — COTAÇÃO -->
+          <div class="stage-block ${(sol.logistica&&sol.logistica.transportadora)?'done':''} ${(!can('logistica'))?'locked':''}">
+            <h4>${Ic('truck',15)} Logística · Cotação de frete ${dono('COORD_LOG')}</h4>
             ${sol.logistica && sol.logistica.transportadora ? `
               <div class="info-list">
                 <div class="it"><b>Transportadora</b><span>${U.esc(sol.logistica.transportadora)}</span></div>
                 <div class="it"><b>Valor do frete</b><span>${U.brl(sol.logistica.valorFrete)}</span></div>
                 <div class="it"><b>Prazo</b><span>${U.esc(sol.logistica.prazo)}</span></div>
-                <div class="it"><b>Data prevista</b><span>${U.fmtDate(sol.logistica.dataPrevista)}</span></div>
-              </div>` : canLog ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Informe a cotação de frete para este pedido.</p>
-              <button class="btn btn-secondary btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Registrar cotação</button>
+                <div class="it"><b>E-mail da transportadora</b><span>${U.esc(sol.logistica.transportadoraEmail)||'—'}</span></div>
+              </div>
+              ${can('logistica') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Editar cotação</button></div>`:''}
+            ` : can('logistica') ? `
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirCotacaoModal('${sol.id}')">Registrar cotação</button>
             ` : `<span class="lock-note">Aguardando cotação da Logística.</span>`}
-            ${sol.logistica && sol.logistica.transportadora && !sol.logistica.contratado && canLog ? `
-              <div class="mini-actions">
-                <button class="btn btn-primary btn-sm" ${(sol.financeiro.decisao==='Recusado' || !['Aguardando Frete','Produção'].includes(sol.status))?'disabled title="Disponível após crédito aprovado e produção concluída"':''} onclick="Render.contratarFrete('${sol.id}')">Contratar Frete</button>
-              </div>` : ''}
-            ${sol.logistica && sol.logistica.contratado ? `<div style="margin-top:8px;"><span class="status-pill on">Frete contratado</span></div>` : ''}
-
-            ${sol.logistica && sol.logistica.contratado && canLog && !['Entregue'].includes(sol.status) ? `
-              <div style="margin-top:14px;border-top:1px dashed var(--v-line);padding-top:14px;">
-                <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Atualizar status de entrega</p>
-                <div class="mini-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="Render.atualizarEntregaAction('${sol.id}','Em transporte')">Em transporte</button>
-                  <button class="btn btn-primary btn-sm" onclick="Render.abrirEntregaModal('${sol.id}')">Marcar entregue</button>
-                </div>
-              </div>` : ''}
-            ${sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `<div class="info-list" style="margin-top:10px;"><div class="it"><b>Entregue em</b><span>${U.fmtDate(sol.logistica.dataEntrega)}</span></div><div class="it"><b>Ocorrências</b><span>${U.esc(sol.logistica.ocorrencias)||'Nenhuma'}</span></div></div>`:''}
           </div>
 
-          <!-- FATURAMENTO -->
-          <div class="stage-block ${(!canOps)?'locked':''}">
-            <h4>${Ic('fileText',15)} Faturamento</h4>
+          <!-- 6. RC — APROVAÇÃO -->
+          <div class="stage-block ${sol.aprovadoRc?'done':''} ${(!can('aprovacaoRc'))?'locked':''}">
+            <h4>${Ic('check',15)} RC · Aprovar faturamento e frete ${dono('RC')}</h4>
+            ${sol.aprovadoRc ? `
+              <div class="info-list">
+                <div class="it"><b>Aprovado em</b><span>${U.fmtDateTime(sol.aprovadoRcEm)}</span></div>
+                <div class="it"><b>Situação</b><span>Liberado para faturamento</span></div>
+              </div>
+            ` : can('aprovacaoRc') ? (
+              FLOW.prontoParaAprovacaoRc(sol) ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Estoque, cadastro, crédito e frete concluídos. Aprove para liberar o faturamento.</p>
+              <button class="btn btn-primary btn-sm" onclick="Render.aprovarRcAction('${sol.id}')">Aprovar faturamento e frete</button>`
+              : `<span class="lock-note">Faltam: ${U.esc(pend.join(', '))}.</span>`
+            ) : `<span class="lock-note">Aguardando aprovação do RC responsável.</span>`}
+          </div>
+
+          <!-- 7. COMERCIAL ADM — SAP -->
+          <div class="stage-block ${sol.pedidoSap?'done':''} ${(!can('faturamento'))?'locked':''}">
+            <h4>${Ic('fileText',15)} Comercial ADM · Pedido no SAP ${dono('OPERACOES')}</h4>
+            ${sol.pedidoSap ? `
+              <div class="info-list"><div class="it"><b>Pedido SAP</b><span>${U.esc(sol.pedidoSap)}</span></div></div>
+            ` : !sol.aprovadoRc ? `<span class="lock-note">Disponível após a aprovação do RC.</span>`
+              : can('faturamento') ? `
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirSapModal('${sol.id}')">Imputar pedido no SAP</button>
+            ` : `<span class="lock-note">Aguardando o Comercial ADM imputar no SAP.</span>`}
+          </div>
+
+          <!-- 8. TRANSPORTADORA — ÚNICO E-MAIL -->
+          <div class="stage-block email ${(!can('transportadora'))?'locked':''}">
+            <h4>${Ic('mail',15)} Logística → Transportadora ${dono('COORD_LOG')}</h4>
+            <span class="email-tag">${Ic('mail',11)} Única etapa por e-mail</span>
+            <p style="font-size:12.5px;color:var(--v-ink-700);margin:10px 0;">
+              A transportadora é externa e não acessa o VerOS Flow. O e-mail é gerado aqui, com os dados do
+              pedido, e o envio e a resposta ficam registrados no histórico.
+            </p>
+            ${(sol.comunicacoes||[]).length ? `
+              <div class="info-list" style="margin-bottom:10px;">
+                <div class="it"><b>Último contato</b><span>${U.esc(sol.comunicacoes[sol.comunicacoes.length-1].direcao)} · ${U.fmtDateTime(sol.comunicacoes[sol.comunicacoes.length-1].registradoEm)}</span></div>
+                <div class="it"><b>Liberação do caminhão</b><span>${sol.logistica && sol.logistica.liberacaoConfirmada?'Confirmada':'Pendente'}</span></div>
+              </div>`:''}
+            ${can('transportadora') ? `
+              <div class="mini-actions">
+                <button class="btn ${sol.logistica&&sol.logistica.emailEnviadoEm?'btn-secondary':'btn-primary'} btn-sm"
+                  ${(!sol.pedidoSap)?'disabled title="Disponível após o pedido ser imputado no SAP"':''}
+                  onclick="Render.abrirEmailTransportadoraModal('${sol.id}')">
+                  ${sol.logistica&&sol.logistica.emailEnviadoEm?'Reenviar / novo e-mail':'Gerar e-mail para a transportadora'}
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="Render.abrirRespostaTransportadoraModal('${sol.id}')">Registrar resposta</button>
+              </div>` : `<span class="lock-note">Comunicação conduzida pela Logística.</span>`}
+          </div>
+
+          <!-- 9. CARREGAMENTO -->
+          <div class="stage-block ${(sol.carregamento&&sol.carregamento.carregadoEm)?'done':''} ${(!can('carregamento'))?'locked':''}">
+            <h4>${Ic('truck',15)} Logística · Receber e carregar caminhão ${dono('COORD_LOG')}</h4>
+            ${sol.carregamento && (sol.carregamento.chegadaEm||sol.carregamento.carregadoEm) ? `
+              <div class="info-list">
+                <div class="it"><b>Placa</b><span>${U.esc(sol.carregamento.placa)||'—'}</span></div>
+                <div class="it"><b>Motorista</b><span>${U.esc(sol.carregamento.motorista)||'—'}</span></div>
+                <div class="it"><b>Chegada</b><span>${sol.carregamento.chegadaEm?U.fmtDateTime(sol.carregamento.chegadaEm):'—'}</span></div>
+                <div class="it"><b>Carregado</b><span>${sol.carregamento.carregadoEm?U.fmtDateTime(sol.carregamento.carregadoEm):'—'}</span></div>
+              </div>`:''}
+            ${can('carregamento') ? `
+              <div class="mini-actions">
+                ${!(sol.carregamento&&sol.carregamento.chegadaEm)?`<button class="btn btn-secondary btn-sm" onclick="Render.abrirCarregamentoModal('${sol.id}')">Registrar chegada do caminhão</button>`:''}
+                ${(sol.carregamento&&sol.carregamento.chegadaEm&&!sol.carregamento.carregadoEm)?`<button class="btn btn-primary btn-sm" onclick="Render.marcarCarregadoAction('${sol.id}')">Caminhão carregado · solicitar faturamento</button>`:''}
+                ${(sol.faturamento&&sol.faturamento.concluido&&!(sol.carregamento&&sol.carregamento.liberadoEm))?`<button class="btn btn-primary btn-sm" onclick="Render.liberarCaminhaoAction('${sol.id}')">Liberar caminhão</button>`:''}
+              </div>` : `<span class="lock-note">Controle de pátio conduzido pela Logística.</span>`}
+            ${sol.carregamento&&sol.carregamento.liberadoEm?`<div style="margin-top:8px;"><span class="status-pill on">Caminhão liberado em ${U.fmtDateTime(sol.carregamento.liberadoEm)}</span></div>`:''}
+          </div>
+
+          <!-- 10. FATURAMENTO -->
+          <div class="stage-block ${(sol.faturamento&&sol.faturamento.concluido)?'done':''} ${(!can('faturamento'))?'locked':''}">
+            <h4>${Ic('fileText',15)} Comercial ADM · Faturar pedido ${dono('OPERACOES')}</h4>
             ${sol.faturamento && sol.faturamento.concluido ? `
               <div class="info-list">
-                <div class="it"><b>Número NF</b><span>${U.esc(sol.faturamento.numeroNF)}</span></div>
+                <div class="it"><b>Número da NF</b><span>${U.esc(sol.faturamento.numeroNF)}</span></div>
                 <div class="it"><b>Data</b><span>${U.fmtDate(sol.faturamento.dataNF)}</span></div>
-              </div>` : (sol.status==='Frete contratado' && canOps) ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Emita a nota fiscal para concluir o faturamento.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.abrirFaturamentoModal('${sol.id}')">Emitir NF</button>
-            ` : `<span class="lock-note">Disponível após contratação do frete.</span>`}
+                <div class="it" style="grid-column:1/-1;"><b>Lotes vinculados</b><span>${(sol.lotes||[]).length?U.esc(sol.lotes.map(l=>l.lote).join(', ')):'nenhum lote registrado'}</span></div>
+              </div>
+            ` : can('faturamento') ? `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">A NF e os lotes ficam anexados ao pedido — substitui o encaminhamento da NF por e-mail.</p>
+              <button class="btn btn-primary btn-sm" ${(!sol.aprovadoRc)?'disabled title="Disponível após aprovação do RC"':''} onclick="Render.abrirFaturamentoModal('${sol.id}')">Emitir NF</button>
+            ` : `<span class="lock-note">Aguardando faturamento.</span>`}
+          </div>
+
+          <!-- 11. ENTREGA -->
+          <div class="stage-block ${(sol.logistica&&sol.logistica.statusEntrega==='Entregue')?'done':''} ${(!can('logistica'))?'locked':''}">
+            <h4>${Ic('check',15)} Cliente · Recebimento ${dono('COORD_LOG')}</h4>
+            ${sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `
+              <div class="info-list">
+                <div class="it"><b>Entregue em</b><span>${U.fmtDate(sol.logistica.dataEntrega)}</span></div>
+                <div class="it"><b>Ocorrências</b><span>${U.esc(sol.logistica.ocorrencias)||'Nenhuma'}</span></div>
+              </div>
+            ` : can('logistica') && sol.carregamento && sol.carregamento.liberadoEm ? `
+              <button class="btn btn-primary btn-sm" onclick="Render.abrirEntregaModal('${sol.id}')">Confirmar entrega ao cliente</button>
+            ` : `<span class="lock-note">Disponível após a liberação do caminhão.</span>`}
+          </div>
+
+          <!-- 12. PAGAMENTO -->
+          <div class="stage-block ${(sol.pagamento&&sol.pagamento.status==='Pago')?'done':''} ${(!can('pagamento'))?'locked':''}">
+            <h4>${Ic('coin',15)} Cliente · Pagamento e renegociação ${dono('COORD_FIN')}</h4>
+            ${sol.pagamento && sol.pagamento.status ? `
+              <div class="info-list">
+                <div class="it"><b>Situação</b><span>${U.esc(sol.pagamento.status)}</span></div>
+                <div class="it"><b>Vencimento</b><span>${sol.pagamento.vencimento?U.fmtDate(sol.pagamento.vencimento):'—'}</span></div>
+                ${sol.pagamento.pagoEm?`<div class="it"><b>Pago em</b><span>${U.fmtDate(sol.pagamento.pagoEm)}</span></div>`:''}
+                ${sol.pagamento.renegociacaoObs?`<div class="it" style="grid-column:1/-1;"><b>Renegociação</b><span>${U.esc(sol.pagamento.renegociacaoObs)}</span></div>`:''}
+              </div>`:''}
+            ${can('pagamento') && sol.pagamento && sol.pagamento.status !== 'Pago' && sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `
+              <div class="mini-actions">
+                <button class="btn btn-primary btn-sm" onclick="Render.pagamentoAction('${sol.id}','Pago')">Registrar pagamento</button>
+                <button class="btn btn-secondary btn-sm" onclick="Render.abrirRenegociacaoModal('${sol.id}')">Abrir renegociação</button>
+              </div>`
+            : (!sol.pagamento || !sol.pagamento.status) ? `<span class="lock-note">Disponível após a entrega ao cliente.</span>` : ''}
           </div>
         </div>
 
@@ -1948,7 +2876,7 @@ const Render = {
             <div class="section-title">Linha do tempo</div>
             <div class="timeline">
               ${sol.timeline.map((t,i)=>`
-                <div class="tl-item ${t.done?'done':''} ${t.current?'current':''}">
+                <div class="tl-item ${t.done?'done':''}">
                   <div class="tl-dot" style="${t.bad?'background:var(--v-red)':''}">${t.done?Ic('check',12):(i+1)}</div>
                   <div class="tl-body">
                     <b>${U.esc(t.etapa)}</b>
@@ -1958,238 +2886,920 @@ const Render = {
             </div>
           </div>
 
-          ${(()=>{ const est = U.estimativaEntrega(sol); return `
+          ${(()=>{ const e = U.estimativaEntrega(sol); return `
           <div class="card card-pad" style="margin-top:16px;border-left:4px solid var(--v-green-600);">
             <div class="section-title">Estimativa de entrega</div>
-            ${est.completa ? `
-              <div style="font-size:13px;color:var(--v-ink-700);"><b style="color:var(--v-green-700);">${est.total} dias</b> · previsão até <b>${U.fmtDate(est.dataFinal)}</b></div>
+            ${e.completa ? `
+              <div style="font-size:13px;color:var(--v-ink-700);"><b style="color:var(--v-green-700);">${e.total} dias</b> · previsão até <b>${U.fmtDate(e.dataFinal)}</b></div>
               <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;">
-                ${est.partes.map(p=>`<span class="upload-tag">${U.esc(p.label)}: ${p.dias} dia${p.dias===1?'':'s'}</span>`).join('')}
-              </div>
-            ` : `
-              <div style="font-size:12.5px;color:var(--v-ink-500);">Aguardando <b>${U.esc(est.faltando.join(' e '))}</b> para calcular a data final.</div>
-              <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;">
-                <span class="upload-tag">Análise de crédito: 1 dia</span>
-                <span class="upload-tag">Folga do processo: 1 dia</span>
-              </div>
-            `}
+                ${e.partes.map(p=>`<span class="upload-tag">${U.esc(p.label)}: ${p.dias} dia${p.dias===1?'':'s'}</span>`).join('')}
+              </div>` : `
+              <div style="font-size:12.5px;color:var(--v-ink-500);">Aguardando <b>${U.esc(e.faltando.join(' e '))}</b> para calcular a data final.</div>`}
+            ${sol.dataEntregaNegociada?`<div style="margin-top:10px;font-size:12.5px;color:var(--v-ink-500);">Negociado com o cliente: <b>${U.fmtDate(sol.dataEntregaNegociada)}</b></div>`:''}
           </div>`; })()}
+
+          <div class="card card-pad" style="margin-top:16px;">
+            <div class="section-title">Conversar com as áreas</div>
+            <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">
+              Toda troca sobre este pedido acontece na aba Mensagens — é o que substitui o grupo de WhatsApp.
+            </p>
+            <button class="btn btn-secondary btn-sm" onclick="Render.setDetailTab('mensagens')">
+              Abrir mensagens${(sol.mensagens||[]).length?` (${sol.mensagens.length})`:''}
+            </button>
+          </div>
         </div>
       </div>
     `;
-    document.getElementById('view-detail').innerHTML = html;
   },
 
-  async admUbsAction(id, disponivel){
-    const sol = DB.solicitacoes.find(s=>s.id===id);
-    try{
-      await FLOW.definirSaldo(sol, disponivel);
-      App.toast('Saldo avaliado', disponivel? 'Saldo disponível — pedido segue para crédito e logística.' : 'Sem saldo — pedido aguardando aprovação financeira.', disponivel?'ok':'warn');
-      Render.detail();
-    } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
+  /* ==================== ABA 2 — MENSAGENS ==================== */
+  abaMensagens(sol){
+    const msgs = sol.mensagens || [];
+    return `
+      <div class="card card-pad" style="max-width:860px;">
+        <div class="section-title">Mensagens do pedido</div>
+        <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:14px;">
+          Substitui o WhatsApp e as respostas por e-mail entre Comercial, UBS, Fiscal, Financeiro, Logística e Comercial ADM.
+          Quem for marcado recebe uma notificação dentro do sistema.
+        </p>
+        ${msgs.length ? `<div class="msg-thread">
+          ${msgs.map(m=>`
+            <div class="msg ${m.autorId===STATE.currentUser.id?'mine':''}">
+              <div class="av">${U.initials(Data.nomeUsuario(m.autorId))}</div>
+              <div class="msg-body">
+                <div class="msg-head">
+                  <b>${U.esc(Data.nomeUsuario(m.autorId))}</b>
+                  <span class="role">${U.esc(U.perfilNome(m.autorPerfil))}</span>
+                  ${m.destinoPerfil?`<span class="role">para ${U.esc(U.perfilNome(m.destinoPerfil))}</span>`:''}
+                  <span class="time">${U.fmtDateTime(m.criadoEm)}</span>
+                </div>
+                <div class="msg-text">${U.esc(m.texto)}</div>
+                ${m.anexoPath?`<span class="upload-tag" style="cursor:pointer;margin-top:8px;" onclick="Render.baixarAnexoAction('${m.anexoPath}')">${Ic('paperclip',11)} ${U.esc(m.anexoNome||'anexo')}</span>`:''}
+              </div>
+            </div>`).join('')}
+        </div>` : `<div class="empty-state" style="padding:26px 0;"><div class="ic">${Ic('bell',28)}</div><h3 style="font-size:14px;">Nenhuma mensagem ainda</h3><p style="font-size:12.5px;">Comece a conversa sobre este pedido aqui.</p></div>`}
 
-  // Saldo disponível exige informar o tempo estimado de produção — igual à
-  // logística, que estipula prazo de frete. Sem esse dado a etapa não fecha.
-  abrirSaldoDisponivelModal(id){
-    Modal.open('Saldo disponível', `
-      <div class="form-grid">
-        <div class="field full"><label>Tempo estimado para finalizar a produção *</label><input id="m_tempo_prod" placeholder="Ex: 10 dias úteis"></div>
+        <div class="msg-composer">
+          <textarea id="msgTexto" placeholder="Escreva sua mensagem sobre este pedido..."></textarea>
+          <div class="msg-composer-row">
+            <select id="msgDestino">
+              <option value="">Todos que acompanham o pedido</option>
+              <option value="RC">RC · Comercial</option>
+              <option value="ADM_UBS">UBS</option>
+              <option value="FISCAL">Fiscal</option>
+              <option value="COORD_FIN">Financeiro</option>
+              <option value="COORD_LOG">Logística</option>
+              <option value="OPERACOES">Comercial ADM</option>
+            </select>
+            <label class="btn btn-ghost btn-sm" style="margin:0;">
+              ${Ic('paperclip',13)} Anexo
+              <input type="file" id="msgArquivo" style="display:none;" onchange="Render.msgArquivoLabel(this)">
+            </label>
+            <span id="msgArquivoNome" style="font-size:11.5px;color:var(--v-ink-500);"></span>
+            <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="Render.enviarMensagemAction('${sol.id}')">Enviar mensagem</button>
+          </div>
+        </div>
       </div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar saldo disponível', cls:'btn-primary', onClick: async function(){
-        const btn=this;
-        const tempoProducao = document.getElementById('m_tempo_prod').value.trim();
-        if(!tempoProducao){ App.toast('Campo obrigatório','Informe o tempo estimado de produção.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        btn.disabled=true; btn.textContent='Salvando...';
-        try{
-          await FLOW.definirSaldo(sol, true, tempoProducao);
-          Modal.close();
-          App.toast('Saldo avaliado','Saldo disponível — pedido segue para crédito e logística.','ok');
-          Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-        finally{ btn.disabled=false; btn.textContent='Confirmar saldo disponível'; }
-      }},
-    ]);
+    `;
   },
+
+  msgArquivoLabel(input){
+    const el = document.getElementById('msgArquivoNome');
+    if(el) el.textContent = input.files && input.files[0] ? input.files[0].name : '';
+  },
+
+  async enviarMensagemAction(id){
+    const texto = (document.getElementById('msgTexto').value||'').trim();
+    if(!texto){ App.toast('Mensagem vazia','Escreva algo antes de enviar.','err'); return; }
+    const destino = document.getElementById('msgDestino').value;
+    const arq = document.getElementById('msgArquivo').files[0] || null;
+    try{
+      await Data.enviarMensagem(id, texto, destino, arq);
+      await Data.refreshSolicitacoesData();
+      App.toast('Mensagem enviada', destino ? `${U.perfilNome(destino)} foi notificado no VerOS Flow.` : 'Todos que acompanham o pedido foram notificados.','ok');
+      Render.detail();
+    }catch(err){ App.toast('Erro ao enviar', err.message||'Tente novamente.','err'); }
+  },
+
+  /* ==================== ABA 3 — LOTES TRATADOS ==================== */
+  abaLotes(sol){
+    const podeLancar = FLOW.podeEditarEtapa('lotes');
+    const lotes = sol.lotes || [];
+    return `
+      <div class="card card-pad" style="max-width:900px;">
+        <div class="section-title">Lotes tratados</div>
+        <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:14px;">
+          Este registro substitui o <b>envio obrigatório do e-mail com os lotes</b>. Os lotes lançados aqui
+          ficam vinculados ao pedido e aparecem automaticamente na emissão da NF.
+        </p>
+        ${lotes.length ? `
+          <table class="lote-table">
+            <thead><tr><th>Lote</th><th>Qtd (sc)</th><th>Tratamento</th><th>Data</th><th>Germinação</th><th></th></tr></thead>
+            <tbody>
+              ${lotes.map(l=>`<tr>
+                <td><b>${U.esc(l.lote)}</b></td>
+                <td>${l.quantidade||'—'}</td>
+                <td>${U.esc(l.tratamento)||'—'}</td>
+                <td>${l.dataTratamento?U.fmtDate(l.dataTratamento):'—'}</td>
+                <td>${l.germinacao?l.germinacao+'%':'—'}</td>
+                <td style="text-align:right;">${podeLancar?`<button class="btn btn-ghost btn-sm" onclick="Render.excluirLoteAction('${l.id}')">${Ic('x',12)}</button>`:''}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>` : `<div class="empty-state" style="padding:24px 0;"><div class="ic">${Ic('tag',28)}</div><h3 style="font-size:14px;">Nenhum lote registrado</h3></div>`}
+        ${podeLancar?`<div class="mini-actions"><button class="btn btn-primary btn-sm" onclick="Render.abrirLoteModal('${sol.id}')">${Ic('plus',13)} Registrar lote</button></div>`
+          :`<span class="lock-note">Somente a UBS registra os lotes tratados.</span>`}
+      </div>
+    `;
+  },
+
+  /* ==================== ABA 4 — DOCUMENTOS ==================== */
+  abaDocumentos(sol){
+    const anexos = [];
+    if(sol.credito){
+      (sol.credito.anexos||[]).forEach(a=>anexos.push({t:'Documento do cliente', n:a.nome, p:a.path}));
+      if(sol.credito.contrato) anexos.push({t:'Contrato', n:sol.credito.contrato.nome, p:sol.credito.contrato.path});
+      (sol.credito.docsFinanceiros||[]).forEach(a=>anexos.push({t:'Financeiro', n:a.nome, p:a.path}));
+    }
+    const podeDoc = FLOW.podeEditarEtapa('transportadora') || FLOW.podeEditarEtapa('faturamento');
+    return `
+      <div class="detail-grid">
+        <div>
+          <div class="card card-pad" style="margin-bottom:16px;">
+            <div class="section-title">Arquivos anexados ao pedido</div>
+            ${anexos.length? anexos.map(a=>`
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--v-line);">
+                <span style="color:var(--v-green-700);">${Ic('paperclip',15)}</span>
+                <div style="flex:1;"><b style="font-size:13px;">${U.esc(a.n)}</b><div style="font-size:11px;color:var(--v-ink-300);">${U.esc(a.t)}</div></div>
+                <button class="btn btn-ghost btn-sm" onclick="Render.baixarAnexoAction('${a.p}')">Baixar</button>
+              </div>`).join('') : `<span class="lock-note">Nenhum arquivo anexado.</span>`}
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-title">Documentos fiscais do transporte</div>
+            <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:12px;">MDF-e e CT-e emitidos pela transportadora, registrados no pedido.</p>
+            ${(sol.docsFiscais||[]).length ? `
+              <table class="lote-table">
+                <thead><tr><th>Tipo</th><th>Número</th><th>Chave</th><th>Emissão</th></tr></thead>
+                <tbody>${sol.docsFiscais.map(d=>`<tr>
+                  <td><b>${U.esc(d.tipo)}</b></td><td>${U.esc(d.numero)||'—'}</td>
+                  <td style="font-size:11px;word-break:break-all;">${U.esc(d.chave)||'—'}</td>
+                  <td>${d.emitidoEm?U.fmtDate(d.emitidoEm):'—'}</td>
+                </tr>`).join('')}</tbody>
+              </table>` : `<span class="lock-note">Nenhum documento fiscal registrado.</span>`}
+            ${podeDoc?`<div class="mini-actions"><button class="btn btn-secondary btn-sm" onclick="Render.abrirDocFiscalModal('${sol.id}')">${Ic('plus',13)} Registrar MDF-e / CT-e</button></div>`:''}
+          </div>
+        </div>
+
+        <div>
+          <div class="card card-pad">
+            <div class="section-title">Histórico com a transportadora</div>
+            <p style="font-size:12px;color:var(--v-ink-500);margin-bottom:12px;">Único canal externo do processo. Tudo registrado.</p>
+            ${(sol.comunicacoes||[]).length ? sol.comunicacoes.map(c=>`
+              <div style="border:1px solid var(--v-line);border-radius:9px;padding:11px;margin-bottom:9px;">
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:5px;">
+                  <span class="email-tag">${c.direcao}</span>
+                  <span style="font-size:10.5px;color:var(--v-ink-300);margin-left:auto;">${U.fmtDateTime(c.registradoEm)}</span>
+                </div>
+                <b style="font-size:12.5px;">${U.esc(c.assunto)}</b>
+                <div style="font-size:11.5px;color:var(--v-ink-500);margin-top:3px;">${U.esc(c.destinatario)||''}</div>
+                <div style="font-size:12px;color:var(--v-ink-700);margin-top:7px;white-space:pre-wrap;max-height:120px;overflow:auto;">${U.esc(c.corpo)}</div>
+                <div style="font-size:10.5px;color:var(--v-ink-300);margin-top:6px;">Registrado por ${U.esc(Data.nomeUsuario(c.registradoPorId))}</div>
+              </div>`).join('') : `<span class="lock-note">Nenhum e-mail registrado ainda.</span>`}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /* ==================== AÇÕES E MODAIS ==================== */
 
   async baixarAnexoAction(path){
     try{
       const url = await Data.baixarAnexo(path);
       window.open(url, '_blank');
     }catch(err){
-      App.toast('Não foi possível baixar', err.message || 'Verifique as permissões no Supabase.', 'err');
+      App.toast('Não foi possível abrir o anexo', err.message || 'Arquivo indisponível.', 'err');
     }
   },
 
-  async financeiroAction(id, decisao){
-    if(decisao === 'Aprovado com ressalvas'){ Render.abrirRessalvaCreditoModal(id); return; }
-    const sol = DB.solicitacoes.find(s=>s.id===id);
-    try{
-      await FLOW.decidirCredito(sol, decisao);
-      const atualizado = DB.solicitacoes.find(s=>s.id===id);
-      App.toast('Crédito aprovado', atualizado && atualizado.status==='Produção' ? 'Pedido liberado para produção.' : 'Aguardando confirmação de saldo pelo ADM UBS para liberar a produção.', 'ok');
-      Render.detail();
-    } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+  abrirDocumentosModal(id){
+    Modal.open('Anexar documentação do cliente', `
+      <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:12px;">
+        Anexe contrato social, CNPJ, inscrição estadual ou o que sua política exigir. Ao salvar, a trava
+        do pedido é liberada e a UBS é notificada automaticamente.
+      </p>
+      <div class="upload-box" id="box_mdocs" onclick="document.getElementById('m_docs').click()">
+        <input type="file" id="m_docs" multiple onchange="document.getElementById('m_docs_nome').textContent = Array.from(this.files).map(f=>f.name).join(', ')">
+        <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar
+        <div id="m_docs_nome" style="font-size:11.5px;margin-top:6px;color:var(--v-green-700);"></div>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Salvar e liberar pedido', cls:'btn-primary', onClick: async ()=>{
+        const files = Array.from(document.getElementById('m_docs').files||[]);
+        if(!files.length){ App.toast('Anexo obrigatório','Selecione ao menos um documento.','err'); return; }
+        try{
+          await Data.confirmarDocumentos(id, files);
+          await Data.refreshSolicitacoesData();
+          Modal.close(); App.toast('Pedido liberado','UBS e Fiscal foram notificados no VerOS Flow.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
   },
 
-  abrirRessalvaCreditoModal(id){
-    Modal.open('Aprovar crédito com ressalvas', `
-      <div class="field full"><label>Informe a ressalva *</label><textarea id="m_ressalva" rows="4" placeholder="Descreva a ressalva da análise de crédito..."></textarea></div>
+  abrirEstoqueModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    const at = (sol.admUbs||{}).resultado || '';
+    Modal.open('Consulta de estoque', `
+      <div class="field"><label>Resultado da consulta *</label>
+        <select id="e_resultado" onchange="Render.toggleEstoqueCampos(this.value)">
+          <option value="">Selecione…</option>
+          <option value="Com estoque" ${at==='Com estoque'?'selected':''}>Com estoque — pronto para faturar</option>
+          <option value="Com estoque para produção" ${at==='Com estoque para produção'?'selected':''}>Com estoque para produção — precisa tratar</option>
+          <option value="Sem estoque" ${at==='Sem estoque'?'selected':''}>Sem estoque</option>
+        </select>
+      </div>
+      <div class="field" id="campoDisponibilidade" style="display:none;margin-top:12px;">
+        <label>Previsão de disponibilidade *</label>
+        <input id="e_disponibilidade" placeholder="ex.: 15 dias úteis" value="${U.esc((sol.admUbs||{}).prazoDisponibilidade)||''}">
+      </div>
+      <div class="field" id="campoTratamento" style="display:none;margin-top:12px;">
+        <label>Prazo de tratamento *</label>
+        <input id="e_tratamento" placeholder="ex.: 5 dias úteis" value="${U.esc((sol.admUbs||{}).prazoTratamento)||''}">
+      </div>
+      <p style="font-size:11.5px;color:var(--v-ink-500);margin-top:12px;">
+        A resposta é publicada no pedido e o RC recebe a notificação dentro do sistema.
+      </p>
     `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar aprovação', cls:'btn-primary', onClick: async function(){
-        const btn=this;
-        const motivo = document.getElementById('m_ressalva').value.trim();
-        if(!motivo){ App.toast('Campo obrigatório','Informe a ressalva antes de confirmar.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
-        btn.disabled=true; btn.textContent='Salvando...';
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Responder consulta', cls:'btn-primary', onClick: async ()=>{
+        const resultado = document.getElementById('e_resultado').value;
+        if(!resultado){ App.toast('Campo obrigatório','Selecione o resultado da consulta.','err'); return; }
+        const prazos = {
+          disponibilidade: (document.getElementById('e_disponibilidade')||{}).value || '',
+          tratamento: (document.getElementById('e_tratamento')||{}).value || '',
+        };
+        if(resultado==='Sem estoque' && !prazos.disponibilidade){ App.toast('Campo obrigatório','Informe a previsão de disponibilidade.','err'); return; }
+        if(resultado==='Com estoque para produção' && !prazos.tratamento){ App.toast('Campo obrigatório','Informe o prazo de tratamento.','err'); return; }
         try{
-          await FLOW.decidirCredito(sol, 'Aprovado com ressalvas', motivo);
+          const sol2 = DB.solicitacoes.find(s=>s.id===id);
+          await FLOW.definirEstoque(sol2, resultado, prazos);
+          Modal.close(); App.toast('Resposta registrada','O RC foi notificado no VerOS Flow.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+    Render.toggleEstoqueCampos(at);
+  },
+
+  toggleEstoqueCampos(v){
+    const d = document.getElementById('campoDisponibilidade');
+    const t = document.getElementById('campoTratamento');
+    if(d) d.style.display = v==='Sem estoque' ? 'block':'none';
+    if(t) t.style.display = v==='Com estoque para produção' ? 'block':'none';
+  },
+
+  async concluirTratamentoAction(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id);
+    try{
+      await FLOW.concluirTratamento(sol);
+      App.toast('Tratamento concluído','Registre os lotes na aba Lotes tratados.','ok');
+      Render.detail();
+    }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
+  },
+
+  abrirLoteModal(id){
+    Modal.open('Registrar lote tratado', `
+      <div class="form-grid">
+        <div class="field"><label>Número do lote *</label><input id="l_lote" placeholder="ex.: L-2026-0134"></div>
+        <div class="field"><label>Quantidade (sc)</label><input type="number" id="l_qtd" placeholder="0"></div>
+        <div class="field"><label>Tratamento aplicado</label><input id="l_trat" placeholder="ex.: Standak Top"></div>
+        <div class="field"><label>Data do tratamento</label><input type="date" id="l_data"></div>
+        <div class="field"><label>Germinação (%)</label><input type="number" id="l_germ" placeholder="0"></div>
+        <div class="field"><label>Observações</label><input id="l_obs" placeholder="Opcional"></div>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar lote', cls:'btn-primary', onClick: async ()=>{
+        const lote = document.getElementById('l_lote').value.trim();
+        if(!lote){ App.toast('Campo obrigatório','Informe o número do lote.','err'); return; }
+        try{
+          await FLOW.registrarLote(DB.solicitacoes.find(s=>s.id===id), {
+            lote, quantidade: Number(document.getElementById('l_qtd').value)||null,
+            tratamento: document.getElementById('l_trat').value||null,
+            dataTratamento: document.getElementById('l_data').value||null,
+            germinacao: Number(document.getElementById('l_germ').value)||null,
+            observacoes: document.getElementById('l_obs').value||null,
+          });
+          Modal.close(); App.toast('Lote registrado','Comercial ADM e RC foram notificados.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao registrar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  excluirLoteAction(loteId){
+    App.confirmAction('Excluir lote','Remover este lote do pedido?', async ()=>{
+      try{ await Data.excluirLote(loteId); await Data.refreshSolicitacoesData(); Render.detail(); }
+      catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+    });
+  },
+
+  abrirFiscalModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    Modal.open('Verificação de cadastro do cliente', `
+      <div class="field"><label>O cliente já possui cadastro? *</label>
+        <select id="fi_possui" onchange="Render.toggleFiscalCampos(this.value)">
+          <option value="sim">Sim — já cadastrado</option>
+          <option value="nao">Não — cadastrar agora</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:12px;"><label>Código do cliente *</label>
+        <input id="fi_codigo" placeholder="Código no SAP">
+      </div>
+      <div id="fiscalNovoCliente" style="display:none;margin-top:12px;">
+        <div class="form-grid">
+          <div class="field"><label>Razão social *</label><input id="fi_razao" value="${U.esc(sol.cliente)||''}"></div>
+          <div class="field"><label>CNPJ / CPF</label><input id="fi_cnpj"></div>
+          <div class="field"><label>Cidade</label><input id="fi_cidade"></div>
+          <div class="field"><label>UF</label><input id="fi_uf" maxlength="2" placeholder="MT"></div>
+          <div class="field"><label>E-mail</label><input id="fi_email" type="email"></div>
+          <div class="field"><label>Telefone</label><input id="fi_tel"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;"><label>Observações</label><input id="fi_obs" placeholder="Opcional"></div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Confirmar cadastro', cls:'btn-primary', onClick: async ()=>{
+        const possui = document.getElementById('fi_possui').value === 'sim';
+        const codigo = document.getElementById('fi_codigo').value.trim();
+        if(!codigo){ App.toast('Campo obrigatório','Informe o código do cliente.','err'); return; }
+        const dados = { possuiCadastro: possui, codigoCliente: codigo, observacoes: document.getElementById('fi_obs').value||null };
+        if(!possui){
+          const razao = document.getElementById('fi_razao').value.trim();
+          if(!razao){ App.toast('Campo obrigatório','Informe a razão social do cliente.','err'); return; }
+          dados.novoCliente = {
+            codigo, razaoSocial: razao,
+            cnpjCpf: document.getElementById('fi_cnpj').value||null,
+            cidade: document.getElementById('fi_cidade').value||null,
+            uf: (document.getElementById('fi_uf').value||'').toUpperCase()||null,
+            email: document.getElementById('fi_email').value||null,
+            telefone: document.getElementById('fi_tel').value||null,
+            tipo: sol.tipoCliente||'Novo', status:'Ativo',
+          };
+        }
+        try{
+          await FLOW.salvarFiscal(DB.solicitacoes.find(s=>s.id===id), dados);
+          await Data.loadCadastros();
+          Modal.close(); App.toast('Cadastro confirmado','Código do cliente publicado no pedido.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  toggleFiscalCampos(v){
+    const el = document.getElementById('fiscalNovoCliente');
+    if(el) el.style.display = v==='nao' ? 'block':'none';
+  },
+
+  abrirCreditoModal(id){
+    Modal.open('Análise de crédito', `
+      <div class="field"><label>Decisão *</label>
+        <select id="cr_decisao" onchange="Render.toggleCreditoMotivo(this.value)">
+          <option value="Aprovado">Aprovado</option>
+          <option value="Aprovado com ressalvas">Aprovado com ressalvas</option>
+          <option value="Recusado">Reprovado</option>
+        </select>
+      </div>
+      <div class="field" id="campoMotivo" style="display:none;margin-top:12px;">
+        <label>Justificativa *</label>
+        <textarea id="cr_motivo" rows="3" placeholder="A justificativa fica registrada no pedido e é enviada ao RC pelo sistema."></textarea>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar decisão', cls:'btn-primary', onClick: async ()=>{
+        const decisao = document.getElementById('cr_decisao').value;
+        const motivo = (document.getElementById('cr_motivo')||{}).value || '';
+        if(decisao!=='Aprovado' && !motivo.trim()){ App.toast('Campo obrigatório','Descreva a justificativa.','err'); return; }
+        try{
+          await FLOW.decidirCredito(DB.solicitacoes.find(s=>s.id===id), decisao, motivo);
           Modal.close();
-          App.toast('Crédito aprovado com ressalvas','A ressalva foi registrada no processo.','ok');
+          App.toast('Decisão registrada','O RC foi notificado no VerOS Flow.', decisao==='Recusado'?'warn':'ok');
           Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-        finally{ btn.disabled=false; btn.textContent='Confirmar aprovação'; }
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
       }},
     ]);
+    Render.toggleCreditoMotivo('Aprovado');
   },
-  financeiroReprovar(id){
-    Modal.open('Recusar crédito', `
-      <div class="field"><label>Motivo da recusa *</label><textarea id="m_motivo" rows="3" placeholder="Este campo é obrigatório"></textarea></div>
-    `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar recusa', cls:'btn-danger', onClick: async ()=>{
-        const motivo = document.getElementById('m_motivo').value.trim();
-        if(!motivo){ App.toast('Campo obrigatório','Informe o motivo da recusa.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
+
+  toggleCreditoMotivo(v){
+    const el = document.getElementById('campoMotivo');
+    if(el) el.style.display = v==='Aprovado' ? 'none':'block';
+  },
+
+  async aprovarRcAction(id){
+    App.confirmAction('Aprovar faturamento e frete',
+      'Confirma a aprovação? O Comercial ADM e a Logística serão notificados para imputar o pedido no SAP e acionar a transportadora.',
+      async ()=>{
         try{
-          await FLOW.decidirCredito(sol,'Recusado', motivo);
-          Modal.close(); App.toast('Crédito recusado','O RC será notificado do motivo.','warn'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+          await FLOW.aprovarRc(DB.solicitacoes.find(s=>s.id===id));
+          App.toast('Pedido aprovado','Comercial ADM e Logística notificados.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao aprovar', err.message||'Tente novamente.','err'); }
+      });
+  },
+
+  abrirSapModal(id){
+    Modal.open('Imputar pedido no SAP', `
+      <div class="field"><label>Número do pedido no SAP *</label><input id="sap_num" placeholder="ex.: 4500123456"></div>
+      <p style="font-size:11.5px;color:var(--v-ink-500);margin-top:10px;">
+        Ao salvar, o RC e a Logística são notificados dentro do sistema — sem e-mail.
+      </p>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Salvar', cls:'btn-primary', onClick: async ()=>{
+        const num = document.getElementById('sap_num').value.trim();
+        if(!num){ App.toast('Campo obrigatório','Informe o número do pedido no SAP.','err'); return; }
+        try{
+          await FLOW.imputarSap(DB.solicitacoes.find(s=>s.id===id), num);
+          Modal.close(); App.toast('Pedido imputado','Logística liberada para acionar a transportadora.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
       }},
     ]);
-  },
-  async concluirProducao(id){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.concluirProducao(sol); App.toast('Produção concluída','Pedido liberado para contratação de frete.','ok'); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-  async contratarFrete(id){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.contratarFrete(sol); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-  },
-  async atualizarEntregaAction(id, status){
-    const sol=DB.solicitacoes.find(s=>s.id===id);
-    try{ await FLOW.atualizarEntrega(sol,{statusEntrega:status}); App.toast('Status atualizado', 'Entrega marcada como: '+status,'ok'); Render.detail(); }
-    catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
   },
 
   abrirCotacaoModal(id){
-    Modal.open('Registrar cotação de frete', `
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    const l = sol.logistica || {};
+    Modal.open('Cotação de frete', `
       <div class="form-grid">
-        <div class="field full"><label>Transportadora *</label><input id="m_transp" placeholder="Nome da transportadora"></div>
-        <div class="field"><label>Valor do frete (R$) *</label><input id="m_valor" type="number" min="0" step="0.01"></div>
-        <div class="field"><label>Prazo *</label><input id="m_prazo" placeholder="Ex: 5 dias úteis"></div>
-        <div class="field full"><label>Data prevista</label><input id="m_data" type="date"></div>
+        <div class="field"><label>Transportadora *</label><input id="ct_transp" value="${U.esc(l.transportadora)||''}"></div>
+        <div class="field"><label>E-mail da transportadora *</label><input id="ct_email" type="email" value="${U.esc(l.transportadoraEmail)||''}" placeholder="operacional@transportadora.com.br"></div>
+        <div class="field"><label>Valor do frete (R$) *</label><input type="number" step="0.01" id="ct_valor" value="${l.valorFrete||''}"></div>
+        <div class="field"><label>Prazo de entrega *</label><input id="ct_prazo" value="${U.esc(l.prazo)||''}" placeholder="ex.: 4 dias úteis"></div>
+        <div class="field full"><label>Data prevista</label><input type="date" id="ct_data" value="${l.dataPrevista||''}"></div>
+      </div>
+      <p style="font-size:11.5px;color:var(--v-ink-500);margin-top:10px;">
+        O e-mail cadastrado aqui é usado depois para gerar a comunicação com a transportadora.
+      </p>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Salvar cotação', cls:'btn-primary', onClick: async ()=>{
+        const dados = {
+          transportadora: document.getElementById('ct_transp').value.trim(),
+          email: document.getElementById('ct_email').value.trim(),
+          valorFrete: Number(document.getElementById('ct_valor').value)||0,
+          prazo: document.getElementById('ct_prazo').value.trim(),
+          dataPrevista: document.getElementById('ct_data').value || null,
+        };
+        if(!dados.transportadora || !dados.prazo){ App.toast('Campos obrigatórios','Informe transportadora e prazo.','err'); return; }
+        try{
+          await FLOW.salvarCotacao(DB.solicitacoes.find(s=>s.id===id), dados);
+          Modal.close(); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  /* ---- ÚNICO E-MAIL DO PROCESSO ---- */
+  montarEmailTransportadora(sol){
+    const lotes = (sol.lotes||[]).map(l=>l.lote).join(', ');
+    const assunto = `Coleta de carga — Pedido ${sol.numeroPedidoMobi}${sol.pedidoSap?` / SAP ${sol.pedidoSap}`:''} — Produtiva Sementes`;
+    const corpo =
+`Prezados,
+
+Solicitamos a disponibilização de veículo para coleta da carga abaixo:
+
+Pedido..............: ${sol.numeroPedidoMobi}${sol.pedidoSap?`
+Pedido SAP..........: ${sol.pedidoSap}`:''}
+Cliente.............: ${sol.cliente}
+Local de coleta.....: ${U.unidadeNome(sol.unidade)}
+Produto.............: ${U.produtoLabel(sol.produto)}
+Quantidade..........: ${sol.quantidade} sacas${lotes?`
+Lotes...............: ${lotes}`:''}
+Prazo acordado......: ${(sol.logistica&&sol.logistica.prazo)||'—'}
+Entrega negociada...: ${sol.dataEntregaNegociada?U.fmtDate(sol.dataEntregaNegociada):'—'}
+
+Favor confirmar por resposta a este e-mail:
+1. Placa e nome do motorista;
+2. Data e horário previstos de chegada para carregamento;
+3. Emissão de MDF-e e CT-e.
+
+Atenciosamente,
+${STATE.currentUser.nome} — Logística
+Produtiva Sementes`;
+    return { assunto, corpo };
+  },
+
+  abrirEmailTransportadoraModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    const l = sol.logistica || {};
+    const { assunto, corpo } = Render.montarEmailTransportadora(sol);
+    Modal.open('E-mail para a transportadora', `
+      <span class="email-tag">${Ic('mail',11)} Única etapa do processo que sai do VerOS Flow</span>
+      <div class="form-grid" style="margin-top:12px;">
+        <div class="field"><label>Transportadora *</label><input id="em_transp" value="${U.esc(l.transportadora)||''}"></div>
+        <div class="field"><label>E-mail de destino *</label><input id="em_dest" type="email" value="${U.esc(l.transportadoraEmail)||''}"></div>
+        <div class="field full"><label>Assunto *</label><input id="em_assunto" value="${U.esc(assunto)}"></div>
+        <div class="field full"><label>Mensagem</label><textarea id="em_corpo" rows="12" style="font-family:var(--font-body);font-size:12.5px;">${U.esc(corpo)}</textarea></div>
+      </div>
+      <p style="font-size:11.5px;color:var(--v-ink-500);margin-top:8px;">
+        Ao registrar, o envio fica gravado no histórico do pedido e o status muda para
+        <b>Aguardando transportadora</b>. Use "Abrir no e-mail" para disparar pelo seu cliente de e-mail
+        ou "Copiar" para colar onde preferir.
+      </p>
+    `, [
+      {label:'Copiar', cls:'btn-ghost', onClick:()=>{
+        const txt = document.getElementById('em_corpo').value;
+        navigator.clipboard.writeText(txt).then(()=>App.toast('Copiado','Mensagem copiada para a área de transferência.','ok'));
+      }},
+      {label:'Abrir no e-mail', cls:'btn-secondary', onClick:()=>{
+        const dest = document.getElementById('em_dest').value;
+        const a = document.getElementById('em_assunto').value;
+        const c = document.getElementById('em_corpo').value;
+        window.location.href = `mailto:${encodeURIComponent(dest)}?subject=${encodeURIComponent(a)}&body=${encodeURIComponent(c)}`;
+      }},
+      {label:'Registrar envio', cls:'btn-primary', onClick: async ()=>{
+        const dados = {
+          transportadora: document.getElementById('em_transp').value.trim(),
+          destinatario: document.getElementById('em_dest').value.trim(),
+          assunto: document.getElementById('em_assunto').value.trim(),
+          corpo: document.getElementById('em_corpo').value,
+        };
+        if(!dados.destinatario){ App.toast('Campo obrigatório','Informe o e-mail da transportadora.','err'); return; }
+        try{
+          await FLOW.registrarEmailTransportadora(DB.solicitacoes.find(s=>s.id===id), dados);
+          Modal.close(); App.toast('Envio registrado','O e-mail ficou gravado no histórico do pedido.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao registrar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  abrirRespostaTransportadoraModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    Modal.open('Registrar resposta da transportadora', `
+      <div class="form-grid">
+        <div class="field full"><label>Conteúdo da resposta *</label>
+          <textarea id="rt_corpo" rows="5" placeholder="Cole aqui a resposta recebida por e-mail (placa, motorista, horário, documentos…)"></textarea>
+        </div>
+        <div class="field"><label>MDF-e (número)</label><input id="rt_mdfe"></div>
+        <div class="field"><label>CT-e (número)</label><input id="rt_cte"></div>
+      </div>
+      <div class="check-row" style="margin-top:12px;">
+        <input type="checkbox" id="rt_liberado" checked>
+        <label for="rt_liberado">A transportadora confirmou a liberação do caminhão para carregamento</label>
       </div>
     `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Salvar cotação', cls:'btn-primary', onClick: async ()=>{
-        const transportadora = document.getElementById('m_transp').value.trim();
-        const valorFrete = Number(document.getElementById('m_valor').value);
-        const prazo = document.getElementById('m_prazo').value.trim();
-        const dataPrevista = document.getElementById('m_data').value || null;
-        if(!transportadora || !valorFrete || !prazo){ App.toast('Campos obrigatórios','Preencha transportadora, valor e prazo.','err'); return; }
-        const sol = DB.solicitacoes.find(s=>s.id===id);
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar resposta', cls:'btn-primary', onClick: async ()=>{
+        const corpo = document.getElementById('rt_corpo').value.trim();
+        if(!corpo){ App.toast('Campo obrigatório','Cole o conteúdo da resposta.','err'); return; }
+        const docs = [];
+        const mdfe = document.getElementById('rt_mdfe').value.trim();
+        const cte  = document.getElementById('rt_cte').value.trim();
+        if(mdfe) docs.push({tipo:'MDF-e', numero:mdfe});
+        if(cte)  docs.push({tipo:'CT-e',  numero:cte});
         try{
-          await FLOW.salvarCotacao(sol, {transportadora, valorFrete, prazo, dataPrevista});
-          Modal.close(); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+          await FLOW.registrarRespostaTransportadora(DB.solicitacoes.find(s=>s.id===id), {
+            transportadora: (sol.logistica||{}).transportadora, corpo, docs,
+            liberado: document.getElementById('rt_liberado').checked,
+          });
+          Modal.close(); App.toast('Resposta registrada','Histórico do pedido atualizado.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao registrar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  abrirCarregamentoModal(id){
+    Modal.open('Chegada do caminhão', `
+      <div class="form-grid">
+        <div class="field"><label>Placa *</label><input id="cg_placa" placeholder="ABC1D23"></div>
+        <div class="field"><label>Motorista</label><input id="cg_motorista"></div>
+        <div class="field full"><label>Observações</label><input id="cg_obs" placeholder="Opcional"></div>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar chegada', cls:'btn-primary', onClick: async ()=>{
+        const placa = document.getElementById('cg_placa').value.trim();
+        if(!placa){ App.toast('Campo obrigatório','Informe a placa do veículo.','err'); return; }
+        try{
+          await FLOW.salvarCarregamento(DB.solicitacoes.find(s=>s.id===id), {
+            placa, motorista: document.getElementById('cg_motorista').value||null,
+            observacoes: document.getElementById('cg_obs').value||null, chegada:true,
+          });
+          Modal.close(); App.toast('Chegada registrada','Caminhão em pátio.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao registrar', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  async marcarCarregadoAction(id){
+    try{
+      await FLOW.salvarCarregamento(DB.solicitacoes.find(s=>s.id===id), { carregado:true });
+      App.toast('Caminhão carregado','Solicitação de faturamento enviada ao Comercial ADM.','ok'); Render.detail();
+    }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+  },
+
+  async liberarCaminhaoAction(id){
+    App.confirmAction('Liberar caminhão','Confirma a liberação do caminhão? O pedido passa para "Em transporte".', async ()=>{
+      try{
+        await FLOW.liberarCaminhao(DB.solicitacoes.find(s=>s.id===id));
+        App.toast('Caminhão liberado','RC notificado no VerOS Flow.','ok'); Render.detail();
+      }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+    });
+  },
+
+  renderModalFileTag(boxId, targetId, filename){
+    const t = document.getElementById(targetId);
+    const b = document.getElementById(boxId);
+    if(t) t.innerHTML = filename ? `<span class="upload-tag">${Ic('paperclip',11)} ${U.esc(filename)}</span>` : '';
+    if(b) b.classList.toggle('has-files', !!filename);
+  },
+
+  abrirFaturamentoModal(id){
+    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
+    const lotes = (sol.lotes||[]).map(l=>l.lote).join(', ');
+    Modal.open('Faturar pedido', `
+      <div class="form-grid">
+        <div class="field"><label>Número da NF *</label><input id="nf_num" placeholder="000.000.000"></div>
+        <div class="field"><label>Data de emissão *</label><input type="date" id="nf_data" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="field full"><label>Lotes vinculados</label><input id="nf_lotes" value="${U.esc(lotes)}" readonly style="background:var(--v-bg);"></div>
+        <div class="field full"><label>Observações</label><input id="nf_obs" placeholder="Opcional"></div>
+        <div class="field full"><label>Anexar DANFE</label>
+          <div class="upload-box" id="box_nf" onclick="document.getElementById('nf_file').click()">
+            <input type="file" id="nf_file" onchange="Render.renderModalFileTag('box_nf','up_nf', this.files[0] && this.files[0].name)">
+            <span class="ic">${Ic('fileText',20)}</span>Clique para anexar o PDF da NF<div id="up_nf"></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--v-ink-500);margin-top:10px;">
+        A NF e os lotes ficam anexados ao pedido e o RC é notificado — substitui o e-mail com a NF e os lotes tratados.
+      </p>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Emitir NF', cls:'btn-primary', onClick: async ()=>{
+        const numeroNF = document.getElementById('nf_num').value.trim();
+        const dataNF = document.getElementById('nf_data').value;
+        if(!numeroNF || !dataNF){ App.toast('Campos obrigatórios','Informe número e data da NF.','err'); return; }
+        try{
+          await FLOW.emitirNF(DB.solicitacoes.find(s=>s.id===id), {
+            numeroNF, dataNF, observacoes: document.getElementById('nf_obs').value||null,
+          }, document.getElementById('nf_file').files[0]||null);
+          Modal.close(); App.toast('Pedido faturado','RC e Logística notificados no VerOS Flow.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao faturar', err.message||'Tente novamente.','err'); }
       }},
     ]);
   },
 
   abrirEntregaModal(id){
-    Render._modalFile = null; Render._modalFileObj = null;
-    Modal.open('Confirmar entrega', `
+    Modal.open('Confirmar entrega ao cliente', `
       <div class="form-grid">
-        <div class="field full"><label>Data de entrega *</label><input id="m_dataent" type="date"></div>
-        <div class="field full"><label>Comprovante</label>
-          <div class="upload-box" id="box_comprovante" onclick="document.getElementById('file_comprovante').click()">
-            <input type="file" id="file_comprovante" onchange="Render._modalFileObj=this.files[0]||null; Render._modalFile=this.files[0]?this.files[0].name:null; Render.renderModalFileTag('box_comprovante','up_comprovante', Render._modalFile)">
-            <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar comprovante<div id="up_comprovante"></div>
+        <div class="field"><label>Data da entrega *</label><input type="date" id="en_data" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="field"><label>Vencimento do pagamento</label><input type="date" id="en_venc"></div>
+        <div class="field full"><label>Ocorrências</label><input id="en_ocor" placeholder="Nenhuma"></div>
+        <div class="field full"><label>Comprovante de entrega</label>
+          <div class="upload-box" id="box_en" onclick="document.getElementById('en_file').click()">
+            <input type="file" id="en_file" onchange="Render.renderModalFileTag('box_en','up_en', this.files[0] && this.files[0].name)">
+            <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar o canhoto<div id="up_en"></div>
           </div>
         </div>
-        <div class="field full"><label>Ocorrências</label><textarea id="m_ocorr" rows="2" placeholder="Opcional"></textarea></div>
       </div>
     `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Confirmar entrega', cls:'btn-primary', onClick: async ()=>{
-        const dataEntrega = document.getElementById('m_dataent').value || null;
-        const ocorrencias = document.getElementById('m_ocorr').value;
-        const sol = DB.solicitacoes.find(s=>s.id===id);
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Confirmar entrega', cls:'btn-primary', onClick: async ()=>{
         try{
-          await FLOW.atualizarEntrega(sol, {statusEntrega:'Entregue', dataEntrega, ocorrencias}, Render._modalFileObj);
-          Modal.close(); App.toast('Pedido entregue!','Fluxo concluído com sucesso.','ok'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+          await FLOW.atualizarEntrega(DB.solicitacoes.find(s=>s.id===id), {
+            statusEntrega:'Entregue',
+            dataEntrega: document.getElementById('en_data').value,
+            vencimento: document.getElementById('en_venc').value||null,
+            ocorrencias: document.getElementById('en_ocor').value||'',
+          }, document.getElementById('en_file').files[0]||null);
+          Modal.close(); App.toast('Entrega confirmada','Financeiro notificado para acompanhar o pagamento.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
       }},
     ]);
   },
 
-  renderModalFileTag(boxId, targetId, filename){
-    const target = document.getElementById(targetId);
-    const box = document.getElementById(boxId);
-    if(!target) return;
-    target.innerHTML = filename ? `<span class="upload-tag">${Ic('paperclip',11)} ${U.esc(filename)}</span>` : '';
-    if(box) box.classList.toggle('has-files', !!filename);
+  async pagamentoAction(id, status){
+    const sol = DB.solicitacoes.find(s=>s.id===id);
+    try{
+      await FLOW.atualizarPagamento(sol, {
+        status, vencimento: (sol.pagamento||{}).vencimento, valor: sol.valorTotal,
+        pagoEm: status==='Pago' ? new Date().toISOString().slice(0,10) : null,
+      });
+      App.toast('Pagamento atualizado','Situação registrada no pedido.','ok'); Render.detail();
+    }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
   },
 
-  abrirFaturamentoModal(id){
-    Render._modalFile = null; Render._modalFileObj = null;
-    Modal.open('Emitir Nota Fiscal', `
-      <div class="form-grid">
-        <div class="field"><label>Número NF *</label><input id="m_nf" placeholder="000000"></div>
-        <div class="field"><label>Data *</label><input id="m_nfdata" type="date"></div>
-        <div class="field full"><label>Observações</label><textarea id="m_nfobs" rows="2"></textarea></div>
-        <div class="field full"><label>Anexo da DANFE</label>
-          <div class="upload-box" id="box_danfe" onclick="document.getElementById('file_danfe').click()">
-            <input type="file" id="file_danfe" onchange="Render._modalFileObj=this.files[0]||null; Render._modalFile=this.files[0]?this.files[0].name:null; Render.renderModalFileTag('box_danfe','up_danfe', Render._modalFile)">
-            <span class="ic">${Ic('fileText',20)}</span>Clique para anexar a DANFE<div id="up_danfe"></div>
-          </div>
-        </div>
+  abrirRenegociacaoModal(id){
+    Modal.open('Abrir renegociação', `
+      <div class="field"><label>Nova data de vencimento</label><input type="date" id="rn_venc"></div>
+      <div class="field" style="margin-top:12px;"><label>Condições acordadas *</label>
+        <textarea id="rn_obs" rows="3" placeholder="Descreva o que foi negociado com o cliente"></textarea>
       </div>
     `, [
-      { label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close() },
-      { label:'Concluir faturamento', cls:'btn-primary', onClick: async ()=>{
-        const numeroNF = document.getElementById('m_nf').value.trim();
-        const dataNF = document.getElementById('m_nfdata').value || null;
-        const observacoes = document.getElementById('m_nfobs').value;
-        if(!numeroNF){ App.toast('Campo obrigatório','Informe o número da NF.','err'); return; }
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar renegociação', cls:'btn-primary', onClick: async ()=>{
+        const obs = document.getElementById('rn_obs').value.trim();
+        if(!obs){ App.toast('Campo obrigatório','Descreva as condições acordadas.','err'); return; }
         const sol = DB.solicitacoes.find(s=>s.id===id);
         try{
-          await FLOW.emitirNF(sol, {numeroNF, dataNF, observacoes}, Render._modalFileObj);
-          Modal.close(); App.toast('Faturamento concluído!','NF '+numeroNF+' emitida com sucesso.','ok'); Render.detail();
-        } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
+          await FLOW.atualizarPagamento(sol, {
+            status:'Em renegociação', vencimento: document.getElementById('rn_venc').value||null,
+            valor: sol.valorTotal, renegociacaoObs: obs,
+          });
+          Modal.close(); App.toast('Renegociação registrada','RC notificado no VerOS Flow.','warn'); Render.detail();
+        }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
+  },
+
+  abrirDocFiscalModal(id){
+    Modal.open('Registrar documento fiscal', `
+      <div class="form-grid">
+        <div class="field"><label>Tipo *</label>
+          <select id="df_tipo"><option>MDF-e</option><option>CT-e</option><option>NF-e</option><option>Outro</option></select>
+        </div>
+        <div class="field"><label>Número</label><input id="df_num"></div>
+        <div class="field full"><label>Chave de acesso</label><input id="df_chave"></div>
+        <div class="field"><label>Data de emissão</label><input type="date" id="df_data"></div>
+      </div>
+    `, [
+      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Registrar', cls:'btn-primary', onClick: async ()=>{
+        try{
+          await Data.registrarDocFiscal(id, {
+            tipo: document.getElementById('df_tipo').value,
+            numero: document.getElementById('df_num').value||null,
+            chave: document.getElementById('df_chave').value||null,
+            emitidoEm: document.getElementById('df_data').value||null,
+          });
+          await Data.refreshSolicitacoesData();
+          Modal.close(); App.toast('Documento registrado','Disponível na aba Documentos.','ok'); Render.detail();
+        }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
       }},
     ]);
   },
 
   cancelarSolicitacao(id){
-    App.confirmAction('Cancelar solicitação','Tem certeza que deseja cancelar esta solicitação? Esta ação ficará registrada no histórico.', async ()=>{
-      const sol = DB.solicitacoes.find(s=>s.id===id);
-      try{
-        await FLOW.cancelar(sol,'Cancelado manualmente pelo administrador');
-        App.toast('Solicitação cancelada','O status foi atualizado.','warn');
-        Render.detail();
-      } catch(err){ App.toast('Erro ao salvar', err.message || 'Tente novamente.', 'err'); }
-    });
+    Modal.open('Cancelar pedido', `
+      <div class="field"><label>Motivo do cancelamento *</label>
+        <textarea id="cancel_motivo" rows="3" placeholder="Descreva o motivo"></textarea>
+      </div>
+    `, [
+      {label:'Voltar', cls:'btn-ghost', onClick:()=>Modal.close()},
+      {label:'Confirmar cancelamento', cls:'btn-danger', onClick: async ()=>{
+        const motivo = document.getElementById('cancel_motivo').value.trim();
+        if(!motivo){ App.toast('Campo obrigatório','Informe o motivo.','err'); return; }
+        try{
+          await FLOW.cancelar(DB.solicitacoes.find(s=>s.id===id), motivo);
+          Modal.close(); App.toast('Pedido cancelado','O RC foi notificado.','warn'); Render.detail();
+        }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+      }},
+    ]);
   },
 
-  /* ---------------------------- CADASTROS ---------------------------- */
+  /* ==================== NOVAS TELAS ==================== */
+
+  notificacoes(){
+    const todas = DB.notificacoes || [];
+    const lista = STATE.notifFilter === 'todas' ? todas : todas.filter(n=>!n.lida);
+    const html = `
+      <div class="page-head">
+        <div><h1>Notificações</h1><p>Substituem os avisos por e-mail e WhatsApp entre as áreas</p></div>
+        <div class="page-actions">
+          <div class="view-toggle">
+            <button class="view-toggle-btn ${STATE.notifFilter==='nao_lidas'?'active':''}" onclick="Render.setNotifFilter('nao_lidas')">Não lidas</button>
+            <button class="view-toggle-btn ${STATE.notifFilter==='todas'?'active':''}" onclick="Render.setNotifFilter('todas')">Todas</button>
+          </div>
+          ${todas.some(n=>!n.lida)?`<button class="btn btn-secondary" onclick="Render.marcarTodasLidasAction()">Marcar todas como lidas</button>`:''}
+        </div>
+      </div>
+      ${lista.length ? lista.map(n=>`
+        <div class="notif ${n.lida?'':'unread'} ${n.tipo==='warn'?'warn':''} ${n.tipo==='err'?'err':''}" onclick="Render.abrirNotificacao('${n.id}','${n.solicitacaoId||''}')" style="cursor:pointer;">
+          <div class="ni">${Ic(n.tipo==='err'?'alert':n.tipo==='warn'?'alert':'bell',15)}</div>
+          <div class="notif-main">
+            <b>${U.esc(n.titulo)}</b>
+            <p>${U.esc(n.texto)||''}</p>
+            <div class="notif-meta">${U.fmtDateTime(n.criadoEm)}${n.origemUsuario?` · ${U.esc(Data.nomeUsuario(n.origemUsuario))}`:''}</div>
+          </div>
+          ${!n.lida?`<span class="status-pill on">nova</span>`:''}
+        </div>`).join('')
+        : `<div class="empty-state"><div class="ic">${Ic('bell',34)}</div><h3>Nada por aqui</h3><p>Você está em dia com as suas pendências.</p></div>`}
+    `;
+    document.getElementById('view-notificacoes').innerHTML = html;
+  },
+
+  setNotifFilter(f){ STATE.notifFilter = f; Render.notificacoes(); },
+
+  async abrirNotificacao(id, solId){
+    try{ await Data.marcarNotificacaoLida(id); App.updateNotifBadge(); }catch(e){}
+    if(solId) App.navigate('detail', {id: solId});
+    else Render.notificacoes();
+  },
+
+  async marcarTodasLidasAction(){
+    try{ await Data.marcarTodasLidas(); App.updateNotifBadge(); Render.notificacoes(); }
+    catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
+  },
+
+  /* ---- Fila de trabalho: o que ESTE perfil precisa fazer agora ---- */
+  pendenciasDoPerfil(){
+    const perfil = STATE.currentProfile;
+    const lista = Render.visibleSolicitacoes().filter(s=>!['Cancelado','Pago'].includes(s.status));
+    const out = [];
+    lista.forEach(s=>{
+      const est = s.admUbs||{};
+      const add = acao => out.push({ sol:s, acao });
+      if(perfil==='RC' || perfil==='COMERCIAL_ADM'){
+        if(FLOW.travadoPorDocumentos(s)) add('Anexar documentação do cliente');
+        else if(!s.aprovadoRc && FLOW.prontoParaAprovacaoRc(s)) add('Aprovar faturamento e frete');
+      }
+      if(perfil==='ADM_UBS' || perfil==='COMERCIAL_ADM'){
+        if(!FLOW.travadoPorDocumentos(s) && !est.resultado) add('Responder consulta de estoque');
+        else if(est.resultado==='Com estoque para produção' && !est.tratamentoConcluido) add('Concluir tratamento');
+        else if(est.tratamentoConcluido && !(s.lotes||[]).length) add('Registrar lotes tratados');
+      }
+      if(perfil==='FISCAL' || perfil==='COMERCIAL_ADM'){
+        if(!FLOW.travadoPorDocumentos(s) && !(s.fiscal && s.fiscal.codigoCliente)) add('Verificar cadastro do cliente');
+      }
+      if(perfil==='COORD_FIN' || perfil==='COMERCIAL_ADM'){
+        if(!(s.financeiro && s.financeiro.decisao)) add('Analisar crédito');
+        else if(s.pagamento && s.pagamento.status==='Pendente') add('Acompanhar pagamento');
+      }
+      if(perfil==='COORD_LOG' || perfil==='COMERCIAL_ADM'){
+        if(!(s.logistica && s.logistica.transportadora)) add('Registrar cotação de frete');
+        else if(s.pedidoSap && !(s.logistica && s.logistica.emailEnviadoEm)) add('Acionar transportadora por e-mail');
+        else if(s.logistica && s.logistica.liberacaoConfirmada && !(s.carregamento && s.carregamento.chegadaEm)) add('Registrar chegada do caminhão');
+        else if(s.carregamento && s.carregamento.chegadaEm && !s.carregamento.carregadoEm) add('Confirmar carregamento');
+        else if(s.faturamento && s.faturamento.concluido && !(s.carregamento && s.carregamento.liberadoEm)) add('Liberar caminhão');
+        else if(s.carregamento && s.carregamento.liberadoEm && s.logistica.statusEntrega!=='Entregue') add('Confirmar entrega');
+      }
+      if(perfil==='OPERACOES' || perfil==='COMERCIAL_ADM'){
+        if(s.aprovadoRc && !s.pedidoSap) add('Imputar pedido no SAP');
+        else if(s.carregamento && s.carregamento.carregadoEm && !(s.faturamento && s.faturamento.concluido)) add('Emitir NF');
+      }
+    });
+    return out;
+  },
+
+  minhasPendencias(){
+    const pend = Render.pendenciasDoPerfil();
+    const html = `
+      <div class="page-head">
+        <div><h1>Minhas pendências</h1><p>${pend.length} ação(ões) aguardando o perfil ${U.esc(U.perfilNome(STATE.currentProfile))}</p></div>
+      </div>
+      ${pend.length ? pend.map(p=>`
+        <div class="pend-card" onclick="App.navigate('detail',{id:'${p.sol.id}'})">
+          <div class="pc-main">
+            <b>${U.esc(p.sol.cliente)}</b>
+            <span>Pedido ${U.esc(p.sol.numeroPedidoMobi)} · ${U.esc(U.produtoLabel(p.sol.produto))} · ${p.sol.quantidade} sc</span>
+          </div>
+          ${badgeHtml(p.sol.status)}
+          <span class="pend-acao">${U.esc(p.acao)}</span>
+        </div>`).join('')
+        : `<div class="empty-state"><div class="ic">${Ic('check',34)}</div><h3>Nenhuma pendência</h3><p>Nenhum pedido aguarda uma ação sua neste momento.</p></div>`}
+    `;
+    document.getElementById('view-minhasPendencias').innerHTML = html;
+  },
+
+  transportadora(){
+    const lista = Render.visibleSolicitacoes().filter(s=>
+      (s.logistica && s.logistica.transportadora) && !['Cancelado'].includes(s.status));
+    const aEnviar = lista.filter(s=>s.pedidoSap && !(s.logistica.emailEnviadoEm));
+    const aguardando = lista.filter(s=>s.logistica.emailEnviadoEm && !s.logistica.liberacaoConfirmada);
+    const confirmados = lista.filter(s=>s.logistica.liberacaoConfirmada);
+
+    const bloco = (titulo, desc, arr, acao) => `
+      <div class="card card-pad" style="margin-bottom:16px;">
+        <div class="section-title">${titulo} ${arr.length?`<span class="upload-tag">${arr.length}</span>`:''}</div>
+        <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:12px;">${desc}</p>
+        ${arr.length ? arr.map(s=>`
+          <div class="pend-card" style="margin-bottom:8px;">
+            <div class="pc-main" onclick="App.navigate('detail',{id:'${s.id}'})" style="cursor:pointer;">
+              <b>${U.esc(s.cliente)}</b>
+              <span>Pedido ${U.esc(s.numeroPedidoMobi)}${s.pedidoSap?` · SAP ${U.esc(s.pedidoSap)}`:''} · ${U.esc(s.logistica.transportadora)}</span>
+            </div>
+            ${acao ? `<button class="btn btn-primary btn-sm" onclick="Render.${acao}('${s.id}')">${acao==='abrirEmailTransportadoraModal'?'Gerar e-mail':'Registrar resposta'}</button>` : `<span class="status-pill on">Liberado</span>`}
+          </div>`).join('')
+          : `<span class="lock-note">Nenhum pedido nesta fila.</span>`}
+      </div>`;
+
+    const html = `
+      <div class="page-head">
+        <div><h1>Transportadora</h1><p>Único canal externo do processo — todo o resto acontece dentro do VerOS Flow</p></div>
+      </div>
+      <div class="card card-pad" style="margin-bottom:16px;border-left:4px solid var(--v-amber);">
+        <span class="email-tag">${Ic('mail',11)} Comunicação por e-mail</span>
+        <p style="font-size:12.5px;color:var(--v-ink-700);margin-top:10px;">
+          A transportadora é uma parte externa e não tem acesso ao sistema. O VerOS Flow monta o e-mail com os
+          dados do pedido, registra o envio e guarda a resposta — assim a etapa continua auditável mesmo saindo da ferramenta.
+        </p>
+      </div>
+      ${bloco('Prontos para acionar','Pedidos aprovados e imputados no SAP, aguardando o envio do e-mail.', aEnviar, 'abrirEmailTransportadoraModal')}
+      ${bloco('Aguardando resposta','E-mail enviado — registre a resposta com placa, motorista e documentos.', aguardando, 'abrirRespostaTransportadoraModal')}
+      ${bloco('Liberação confirmada','Transportadora confirmou o veículo. Siga para o carregamento.', confirmados, null)}
+    `;
+    document.getElementById('view-transportadora').innerHTML = html;
+  },
+
   cadastros(){
     const tabs = [
       {id:'usuarios', label:'Usuários'}, {id:'unidades', label:'Unidades'},
