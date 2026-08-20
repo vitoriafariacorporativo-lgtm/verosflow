@@ -2,7 +2,10 @@
 
 Fluxo de pedidos de venda de sementes — **processo redesenhado para operar sem e-mail**.
 
-Toda a esteira (Comercial/RC, UBS, Fiscal, Financeiro, Logística e Comercial ADM) acontece
+**Escopo:** o fluxo começa no pedido **já emitido no Mobi**. Cadastro do cliente e validações
+fiscais acontecem lá — o VerOS Flow cuida do que vem depois da emissão.
+
+Toda a esteira (Comercial/RC, UBS, Financeiro, Logística e Comercial ADM) acontece
 dentro do sistema. A **única** comunicação que continua por e-mail é
 **Logística → Transportadora**, porque a transportadora é uma parte externa e não acessa a
 ferramenta — e mesmo essa etapa é gerada e registrada dentro do VerOS Flow.
@@ -25,13 +28,10 @@ ferramenta — e mesmo essa etapa é gerada e registrada dentro do VerOS Flow.
 
 1. Supabase → **SQL Editor** → **New query**
 2. Cole o conteúdo de `veros_flow_schema_v2.sql` e execute
-3. Confirme no **Table Editor** que as 9 tabelas novas apareceram
+3. Confirme no **Table Editor** que as 7 tabelas novas apareceram
 
 O script é **aditivo e idempotente**: não apaga, não renomeia e não altera a view
 `vw_solicitacoes_completas`. A conexão existente continua funcionando durante e depois.
-
-Depois da migração, cadastre pelo menos um usuário com o perfil **Fiscal**
-(Cadastros → Usuários), senão a etapa de cadastro do cliente fica sem responsável.
 
 ---
 
@@ -39,10 +39,9 @@ Depois da migração, cadastre pelo menos um usuário com o perfil **Fiscal**
 
 | Perfil | Responsabilidade no fluxo |
 |---|---|
-| **RC · Comercial** | Registra o pedido, anexa documentação e aprova faturamento + cotação de frete |
+| **RC · Comercial** | Traz o pedido do Mobi e aprova faturamento + cotação de frete |
 | **UBS** | Consulta estoque, informa prazos, conclui tratamento e registra os lotes |
-| **Fiscal** *(novo)* | Verifica/cria o cadastro e devolve o código do cliente |
-| **Financeiro** | Analisa crédito e acompanha pagamento/renegociação |
+| **Financeiro** | Analisa crédito e conduz o pós-venda (pagamento e renegociação) |
 | **Logística** | Cota frete, aciona a transportadora, controla carregamento e entrega |
 | **Comercial ADM** | Imputa no SAP, fatura e vincula a NF aos lotes |
 | **Administrador** | Acesso total, cadastros, auditoria e edição de qualquer etapa |
@@ -56,7 +55,6 @@ Depois da migração, cadastre pelo menos um usuário com o perfil **Fiscal**
 | Comunicar UBS por e-mail | Notificação automática ao registrar o pedido |
 | Responder no WhatsApp sobre estoque | Consulta de estoque em 3 vias, publicada no pedido |
 | **Envio obrigatório do e-mail com os lotes** | Aba **Lotes tratados** — entram sozinhos na NF |
-| Responder no Wpp + código do cliente | Etapa Fiscal grava o código direto no pedido |
 | Grupo do WhatsApp do Financeiro | Decisão + justificativa no pedido, com notificação ao RC |
 | Encaminhar NF por e-mail | NF anexada ao pedido, com lotes vinculados |
 | Validação de saída por WhatsApp | Registro de chegada → carregamento → liberação |
@@ -79,10 +77,12 @@ Depois da migração, cadastre pelo menos um usuário com o perfil **Fiscal**
 
 ## Status do pedido
 
-`Novo` → `Documentos pendentes` → `Consulta de estoque` → `Sem estoque` / `Em tratamento` →
-`Aguardando cadastro` → `Aguardando crédito` → `Aguardando aprovação do RC` →
-`Aguardando faturamento` → `Aguardando transportadora` → `Em carregamento` → `Faturado` →
-`Em transporte` → `Entregue` → `Aguardando pagamento` → `Pago` / `Em renegociação`
+`Novo` → `Consulta de estoque` → `Sem estoque` / `Em tratamento` →
+`Aguardando crédito` → `Aguardando aprovação do RC` → `Aguardando faturamento` → `Aguardando transportadora` → `Em carregamento` → `Faturado` →
+`Em transporte` → `Finalizado` → `Pago` / `Em renegociação`
+
+Ao confirmar a entrega, o pedido é dado como **finalizado** e passa ao **pós-venda**, onde só
+resta o acompanhamento do pagamento.
 
 Os status antigos continuam reconhecidos, para que pedidos criados antes da v2 não quebrem.
 
@@ -90,8 +90,8 @@ Os status antigos continuam reconhecidos, para que pedidos criados antes da v2 n
 
 ## Travas automáticas
 
-- Pedido de **cliente novo** sem documentação anexada não chega à UBS.
-- A **aprovação do RC** só habilita com estoque/tratamento, código do cliente, crédito e cotação prontos.
+- A **aprovação do RC** só habilita com estoque/tratamento, crédito e cotação de frete prontos.
 - O **e-mail à transportadora** só habilita depois do pedido imputado no SAP.
 - A **NF** só habilita depois da aprovação do RC.
 - A **liberação do caminhão** só habilita depois da NF emitida.
+- O **pagamento** só habilita depois da entrega e é ação exclusiva do Financeiro e do Administrador.

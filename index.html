@@ -758,7 +758,6 @@ const DB = {
   perfis: [
     { id:'RC', nome:'RC · Comercial (Solicitante)', descricao:'Registra o pedido no VerOS Flow, acompanha o andamento e aprova faturamento e cotação de frete.', permissoes:['Registrar pedido','Anexar documentos do cliente','Aprovar faturamento e frete','Conversar com todas as áreas','Acompanhar timeline'] },
     { id:'ADM_UBS', nome:'UBS · Estoque e Tratamento', descricao:'Consulta estoque, informa prazos de disponibilidade e tratamento e registra os lotes tratados.', permissoes:['Consultar estoque','Informar prazo de disponibilidade','Informar prazo de tratamento','Registrar lotes tratados'] },
-    { id:'FISCAL', nome:'Fiscal · Cadastro do Cliente', descricao:'Verifica se o cliente possui cadastro, cadastra quando necessário e devolve o código do cliente ao pedido.', permissoes:['Verificar cadastro','Cadastrar cliente','Informar código do cliente'] },
     { id:'COORD_FIN', nome:'Financeiro · Análise de Crédito', descricao:'Analisa crédito, aprova ou reprova com justificativa registrada no pedido.', permissoes:['Visualizar todos os pedidos','Aprovar / Recusar crédito','Registrar justificativa'] },
     { id:'COORD_LOG', nome:'Logística · Frete e Carregamento', descricao:'Cota frete, comunica a transportadora por e-mail, valida a saída e controla o carregamento.', permissoes:['Cotar frete','Comunicar transportadora (e-mail)','Registrar carregamento','Liberar caminhão','Atualizar entrega'] },
     { id:'OPERACOES', nome:'Comercial ADM · Faturamento', descricao:'Imputa o pedido no SAP, fatura, anexa a NF e vincula os lotes tratados.', permissoes:['Imputar pedido no SAP','Emitir NF','Anexar NF e lotes','Registrar documentos fiscais'] },
@@ -767,7 +766,6 @@ const DB = {
   unidades: [],
   produtos: [],
   usuarios: [],
-  clientes: [],
   solicitacoes: [],
   notificacoes: [],
   logs: [],
@@ -849,6 +847,13 @@ const U = {
   unidadeNome(id){ const u = DB.unidades.find(x=>x.id===id); return u? u.nome : '—'; },
   produtoLabel(id){ const p = DB.produtos.find(x=>x.id===id); return p? (p.cultura+' · '+p.variedade) : '—'; },
   perfilNome(id){ const p = DB.perfis.find(x=>x.id===id); return p? p.nome : id; },
+  // Nome curto, para as etiquetas de responsável nos cartões de etapa —
+  // o nome completo do perfil polui o cabeçalho do cartão.
+  perfilCurto(id){
+    return ({ RC:'RC · Comercial', ADM_UBS:'UBS', COORD_FIN:'Financeiro',
+              COORD_LOG:'Logística', OPERACOES:'Comercial ADM',
+              COMERCIAL_ADM:'Administrador' })[id] || U.perfilNome(id);
+  },
   initials(name){ if(!name) return '--'; const parts = name.trim().split(' '); return (parts[0][0] + (parts[1]? parts[1][0]:'')).toUpperCase(); },
   // Extrai o primeiro número de um texto livre tipo "10 dias úteis" → 10.
   numDias(v){ if(v===null||v===undefined||v==='') return null; const m = String(v).replace(',','.').match(/\d+(?:\.\d+)?/); return m ? Number(m[0]) : null; },
@@ -882,11 +887,9 @@ const U = {
    ------------------------------------------------------------------------ */
 const STATUS_META = {
   'Novo':                          { cls:'badge-novo' },
-  'Documentos pendentes':          { cls:'badge-recusado' },
   'Consulta de estoque':           { cls:'badge-analise' },
   'Sem estoque':                   { cls:'badge-aguardando' },
   'Em tratamento':                 { cls:'badge-producao' },
-  'Aguardando cadastro':           { cls:'badge-aguardando' },
   'Aguardando crédito':            { cls:'badge-aguardando' },
   'Crédito recusado':              { cls:'badge-recusado' },
   'Aguardando aprovação do RC':    { cls:'badge-analise' },
@@ -897,6 +900,7 @@ const STATUS_META = {
   'Faturado':                      { cls:'badge-faturado' },
   'Em transporte':                 { cls:'badge-transporte' },
   'Entregue':                      { cls:'badge-entregue' },
+  'Finalizado':                    { cls:'badge-entregue' },
   'Aguardando pagamento':          { cls:'badge-aguardando' },
   'Pago':                          { cls:'badge-entregue' },
   'Em renegociação':               { cls:'badge-analise' },
@@ -932,18 +936,11 @@ const Data = {
 
   async loadCadastros(){
     Data.requireConfig();
-    const [{data: unidades, error: e1}, {data: produtos, error: e2}, {data: clientes, error: e3}] = await Promise.all([
+    const [{data: unidades, error: e1}, {data: produtos, error: e2}] = await Promise.all([
       supabaseClient.from('unidades').select('*').order('nome'),
       supabaseClient.from('produtos').select('*').order('cultura'),
-      supabaseClient.from('clientes').select('*').order('razao_social'),
     ]);
     if(e1) throw e1; if(e2) throw e2;
-    if(e3) console.warn('[VerOS Flow] Tabela clientes indisponível — rode veros_flow_schema_v2.sql.', e3);
-    DB.clientes = (clientes||[]).map(c=>({
-      id:c.id, codigo:c.codigo, razaoSocial:c.razao_social, nomeFantasia:c.nome_fantasia,
-      cnpjCpf:c.cnpj_cpf, cidade:c.cidade, uf:c.uf, email:c.email, telefone:c.telefone,
-      tipo:c.tipo, status:c.status,
-    }));
     DB.unidades = (unidades||[]).map(u=>({ id:u.id, codigo:u.codigo, nome:u.nome, cidade:u.cidade, uf:u.uf, status:u.status }));
     DB.produtos = (produtos||[]).map(p=>({ id:p.id, codigo:p.codigo, cultura:p.cultura, variedade:p.variedade, tratamento:p.tratamento, tamanhoSc:p.tamanho_sc, peso:p.peso_kg, status:p.status }));
     // Usuários carregam junto com os demais cadastros: garante que os nomes
@@ -1009,7 +1006,6 @@ const Data = {
       // ------- tabelas novas da v2 (falham em silêncio se a migração ainda
       // não tiver sido rodada, para não derrubar a tela) -------
       const v2 = await Promise.all([
-        supabaseClient.from('fiscal_cadastros').select('*').in('solicitacao_id', ids),
         supabaseClient.from('pedido_lotes').select('*').in('solicitacao_id', ids).order('created_at'),
         supabaseClient.from('carregamentos').select('*').in('solicitacao_id', ids),
         supabaseClient.from('comunicacoes_transportadora').select('*').in('solicitacao_id', ids).order('registrado_em'),
@@ -1020,11 +1016,11 @@ const Data = {
       const pick = i => (v2[i] && !v2[i].error && v2[i].data) ? v2[i].data : [];
       if(v2.some(x=>x && x.error)) console.warn('[VerOS Flow] Tabelas da v2 ausentes — rode veros_flow_schema_v2.sql.');
       Data._v2 = {
-        fiscal: pick(0), lotes: pick(1), carregamentos: pick(2),
-        comunicacoes: pick(3), docsFiscais: pick(4), pagamentos: pick(5), mensagens: pick(6),
+        lotes: pick(0), carregamentos: pick(1), comunicacoes: pick(2),
+        docsFiscais: pick(3), pagamentos: pick(4), mensagens: pick(5),
       };
     } else {
-      Data._v2 = { fiscal:[], lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
+      Data._v2 = { lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
     }
     DB.solicitacoes = (rows||[]).map(r=>Data._mapSolicitacao(r, anexos, timeline, admUbsRows, financeiroRows, logisticaRows));
   },
@@ -1116,9 +1112,8 @@ const Data = {
     const admUbsRow = pickLatest(admUbsRows, 'avaliado_em');
     const financeiroRow = pickLatest(financeiroRows, 'decidido_em');
     const logisticaRow = pickLatest(logisticaRows, 'contratado_em') || {};
-    const V2 = Data._v2 || { fiscal:[], lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
+    const V2 = Data._v2 || { lotes:[], carregamentos:[], comunicacoes:[], docsFiscais:[], pagamentos:[], mensagens:[] };
     const ex = (Data._extras || {})[r.id] || {};
-    const fiscalRow = (V2.fiscal||[]).find(x=>x.solicitacao_id===r.id) || {};
     const cargaRow  = (V2.carregamentos||[]).find(x=>x.solicitacao_id===r.id) || {};
     const pagRow    = (V2.pagamentos||[]).find(x=>x.solicitacao_id===r.id) || {};
     return {
@@ -1156,21 +1151,13 @@ const Data = {
         liberacaoConfirmada: !!logisticaRow.liberacao_confirmada, liberacaoConfirmadaEm: logisticaRow.liberacao_confirmada_em },
       faturamento: { numeroNF: r.numero_nf, dataNF: r.data_nf, concluido: !!r.numero_nf },
       // ---------------- campos e etapas introduzidos na v2 ----------------
-      clienteId: ex.cliente_id || null,
+      codigoCliente: ex.codigo_cliente || null,
       tipoCliente: ex.tipo_cliente || 'Recompra',
-      documentosOk: ex.documentos_ok === undefined ? true : !!ex.documentos_ok,
       dataEntregaNegociada: ex.data_entrega_negociada || null,
       observacoesPedido: ex.observacoes_pedido || '',
       pedidoSap: ex.pedido_sap || null,
       aprovadoRc: !!ex.aprovado_rc,
       aprovadoRcEm: ex.aprovado_rc_em || null,
-      fiscal: {
-        possuiCadastro: fiscalRow.possui_cadastro,
-        clienteId: fiscalRow.cliente_id,
-        codigoCliente: fiscalRow.codigo_cliente,
-        observacoes: fiscalRow.observacoes,
-        verificadoPorId: fiscalRow.verificado_por,
-      },
       lotes: (V2.lotes||[]).filter(x=>x.solicitacao_id===r.id).map(x=>({
         id:x.id, lote:x.lote, quantidade:x.quantidade_sc, tratamento:x.tratamento,
         dataTratamento:x.data_tratamento, germinacao:x.germinacao_pct, observacoes:x.observacoes,
@@ -1269,22 +1256,23 @@ const Data = {
   // Lê o estado atual de todas as etapas e devolve o status macro correto.
   async _proximoStatus(solId){
     const q = (t, col) => supabaseClient.from(t).select('*').eq(col||'solicitacao_id', solId).maybeSingle();
-    const [sRes, admRes, fisRes, finRes, logRes, carRes, fatRes, pagRes] = await Promise.all([
+    const [sRes, admRes, finRes, logRes, carRes, fatRes, pagRes] = await Promise.all([
       supabaseClient.from('solicitacoes').select('*').eq('id', solId).single(),
-      q('adm_ubs_avaliacoes'), q('fiscal_cadastros'), q('financeiro_decisoes'),
+      q('adm_ubs_avaliacoes'), q('financeiro_decisoes'),
       q('logistica_fretes'), q('carregamentos'), q('faturamentos'), q('pagamentos'),
     ]);
     const s = sRes.data || {};
-    const adm = admRes.data, fis = fisRes.data, fin = finRes.data;
+    const adm = admRes.data, fin = finRes.data;
     const log = logRes.data, car = carRes.data, fat = fatRes.data, pag = pagRes.data;
 
     if(s.status === 'Cancelado') return 'Cancelado';
     if(fin && fin.decisao === 'Recusado') return 'Crédito recusado';
-    if(s.tipo_cliente === 'Novo' && !s.documentos_ok) return 'Documentos pendentes';
 
     if(pag && pag.status === 'Pago') return 'Pago';
     if(pag && pag.status === 'Em renegociação') return 'Em renegociação';
-    if(log && log.status_entrega === 'Entregue') return 'Aguardando pagamento';
+    // Entregue = pedido finalizado. O que continua é o pós-venda (pagamento),
+    // acompanhado pelo Financeiro.
+    if(log && log.status_entrega === 'Entregue') return 'Finalizado';
     if(log && log.status_entrega === 'Em transporte') return 'Em transporte';
     if(fat && fat.concluido) return 'Faturado';
     if(car && (car.chegada_em || car.carregado_em)) return 'Em carregamento';
@@ -1294,7 +1282,6 @@ const Data = {
     if(!adm || !adm.resultado_estoque) return 'Consulta de estoque';
     if(adm.resultado_estoque === 'Sem estoque') return 'Sem estoque';
     if(adm.resultado_estoque === 'Com estoque para produção' && !adm.tratamento_concluido) return 'Em tratamento';
-    if(!(fis && fis.codigo_cliente)) return 'Aguardando cadastro';
     if(!(fin && ['Aprovado','Aprovado com ressalvas'].includes(fin.decisao))) return 'Aguardando crédito';
     if(!(log && log.transportadora)) return 'Aguardando frete';
     return 'Aguardando aprovação do RC';
@@ -1309,19 +1296,17 @@ const Data = {
   /* ---------------------------------------------------- 1. PEDIDO (RC) --- */
   async createSolicitacao(payload, arquivos){
     Data.requireConfig();
-    const travado = payload.tipoCliente === 'Novo' && !payload.documentosOk;
     const { data: sol, error } = await supabaseClient.from('solicitacoes').insert({
       numero_pedido_mobi: payload.numeroPedidoMobi, cliente: payload.cliente,
-      cliente_id: payload.clienteId || null,
+      codigo_cliente: payload.codigoCliente || null,
       rc_usuario_id: STATE.currentUser.id, nome_rc: payload.nomeRC,
       unidade_id: payload.unidade, produto_id: payload.produto,
       quantidade: payload.quantidade, desconto_pct: payload.desconto, valor_total: payload.valorTotal,
       forma_pagamento: payload.formaPagamento, solicita_credito: payload.solicitaCredito,
       tipo_cliente: payload.tipoCliente || 'Recompra',
-      documentos_ok: !!payload.documentosOk,
       data_entrega_negociada: payload.dataEntregaNegociada || null,
       observacoes_pedido: payload.observacoes || null,
-      status: travado ? 'Documentos pendentes' : 'Consulta de estoque',
+      status: 'Consulta de estoque',
       criado_por: STATE.currentUser.id,
     }).select().single();
     if(error) throw error;
@@ -1341,44 +1326,17 @@ const Data = {
     if(anexoRows.length){ const { error: axErr } = await supabaseClient.from('anexos_credito').insert(anexoRows); if(axErr) throw axErr; }
 
     const ref = `Pedido ${payload.numeroPedidoMobi} · ${payload.cliente}`;
-    await Data.addTimeline(sol.id, 'Pedido registrado no VerOS Flow');
-    await Data.logAcao(sol.id, 'Solicitação criada', '—', payload.cliente);
+    await Data.addTimeline(sol.id, 'Pedido emitido no Mobi e registrado no VerOS Flow');
+    await Data.logAcao(sol.id, 'Pedido registrado', '—', payload.cliente);
 
-    if(travado){
-      await Data.addTimeline(sol.id, 'Pedido travado — cliente novo sem documentação anexada', true);
-      await Data.notificarUsuario(sol.id, STATE.currentUser.id, 'Pedido travado por falta de documentos',
-        `${ref} — anexe a documentação do cliente novo para o pedido seguir para a UBS.`, 'warn');
-    } else {
-      // Substitui o "Comunicar UBS" que antes era feito por e-mail.
-      await Data.notificar(sol.id, 'ADM_UBS', 'Novo pedido para consulta de estoque',
-        `${ref} — ${payload.quantidade} sc. Informe estoque e prazos.`);
-      await Data.notificar(sol.id, 'FISCAL', 'Verificar cadastro do cliente',
-        `${ref} — confirme o cadastro e devolva o código do cliente.`);
-      if(payload.solicitaCredito){
-        await Data.notificar(sol.id, 'COORD_FIN', 'Nova análise de crédito',
-          `${ref} — ${U.brl(payload.valorTotal)}.`);
-      }
+    // Substitui o "Comunicar UBS" que antes era feito por e-mail.
+    await Data.notificar(sol.id, 'ADM_UBS', 'Novo pedido para consulta de estoque',
+      `${ref} — ${payload.quantidade} sc. Informe estoque e prazos.`);
+    if(payload.solicitaCredito){
+      await Data.notificar(sol.id, 'COORD_FIN', 'Nova análise de crédito',
+        `${ref} — ${U.brl(payload.valorTotal)}.`);
     }
     return sol.id;
-  },
-
-  async confirmarDocumentos(solId, arquivos){
-    const rows = [];
-    for(const f of (arquivos||[])){
-      const p = await Data.uploadFile(`${solId}/documentos`, f);
-      rows.push({solicitacao_id:solId, tipo:'documento', nome_arquivo:f.name, storage_path:p, uploaded_by:STATE.currentUser.id});
-    }
-    if(rows.length) await supabaseClient.from('anexos_credito').insert(rows);
-    const { error } = await supabaseClient.from('solicitacoes').update({ documentos_ok:true }).eq('id', solId);
-    if(error) throw error;
-    const novo = await Data._sincronizarStatus(solId);
-    await Data.addTimeline(solId, 'Documentação do cliente anexada — pedido liberado');
-    await Data.logAcao(solId, 'Documentos', 'Pendente', 'OK');
-    await Data.notificar(solId, 'ADM_UBS', 'Pedido liberado para consulta de estoque',
-      'A documentação do cliente novo foi anexada. Informe estoque e prazos.');
-    await Data.notificar(solId, 'FISCAL', 'Verificar cadastro do cliente',
-      'Pedido liberado — confirme o cadastro e devolva o código do cliente.');
-    return novo;
   },
 
   /* ------------------------------------------------ 2. UBS — ESTOQUE ----- */
@@ -1451,52 +1409,6 @@ const Data = {
   async excluirLote(loteId){
     const { error } = await supabaseClient.from('pedido_lotes').delete().eq('id', loteId);
     if(error) throw error;
-  },
-
-  /* ------------------------------------------------ 3. FISCAL — CADASTRO - */
-  async salvarCliente(id, data){
-    const payload = {
-      codigo:data.codigo||null, razao_social:data.razaoSocial, nome_fantasia:data.nomeFantasia||null,
-      cnpj_cpf:data.cnpjCpf||null, cidade:data.cidade||null, uf:data.uf||null,
-      email:data.email||null, telefone:data.telefone||null,
-      tipo:data.tipo||'Novo', status:data.status||'Ativo',
-    };
-    if(!id) payload.cadastrado_por = STATE.currentUser.id;
-    const q = id ? supabaseClient.from('clientes').update(payload).eq('id', id).select().single()
-                 : supabaseClient.from('clientes').insert(payload).select().single();
-    const { data: row, error } = await q;
-    if(error) throw error;
-    return row;
-  },
-
-  async salvarFiscal(solId, dados){
-    let clienteId = dados.clienteId || null;
-    if(!dados.possuiCadastro && dados.novoCliente){
-      const novo = await Data.salvarCliente(null, dados.novoCliente);
-      clienteId = novo.id;
-      dados.codigoCliente = dados.codigoCliente || novo.codigo;
-    }
-    const { error } = await supabaseClient.from('fiscal_cadastros').upsert({
-      solicitacao_id: solId, possui_cadastro: dados.possuiCadastro,
-      cliente_id: clienteId, codigo_cliente: dados.codigoCliente,
-      observacoes: dados.observacoes||null,
-      verificado_por: STATE.currentUser.id, verificado_em: new Date().toISOString(),
-    }, { onConflict:'solicitacao_id' });
-    if(error) throw error;
-    if(clienteId) await supabaseClient.from('solicitacoes').update({ cliente_id: clienteId }).eq('id', solId);
-
-    const novo = await Data._sincronizarStatus(solId);
-    const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
-    await Data.addTimeline(solId, dados.possuiCadastro
-      ? `Cadastro confirmado — código ${dados.codigoCliente}`
-      : `Cliente cadastrado — código ${dados.codigoCliente}`);
-    await Data.logAcao(solId, 'Código do cliente', '—', dados.codigoCliente);
-    // Substitui o "responder no WhatsApp + código do cliente".
-    if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Código do cliente disponível',
-      `${Data.ref(sol)} — código ${dados.codigoCliente}.`, 'ok');
-    await Data.notificar(solId, 'OPERACOES', 'Cliente pronto para faturamento',
-      `${Data.ref(sol)} — código ${dados.codigoCliente}.`);
-    return novo;
   },
 
   /* --------------------------------------------- 4. FINANCEIRO — CRÉDITO - */
@@ -1691,11 +1603,11 @@ const Data = {
     }
     const novo = await Data._sincronizarStatus(solId);
     const sol = DB.solicitacoes.find(s=>s.id===solId) || {};
-    await Data.addTimeline(solId, dados.statusEntrega==='Entregue' ? 'Cliente recebeu as sementes' : 'Pedido em transporte');
+    await Data.addTimeline(solId, dados.statusEntrega==='Entregue' ? 'Pedido entregue e finalizado — segue no pós-venda' : 'Pedido em transporte');
     await Data.logAcao(solId, 'Status', '—', dados.statusEntrega);
     if(dados.statusEntrega === 'Entregue'){
-      if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido entregue', Data.ref(sol), 'ok');
-      await Data.notificar(solId, 'COORD_FIN', 'Pedido entregue — acompanhar pagamento',
+      if(sol.rcUsuarioId) await Data.notificarUsuario(solId, sol.rcUsuarioId, 'Pedido finalizado', `${Data.ref(sol)} — entregue ao cliente. Acompanhamento agora é do pós-venda.`, 'ok');
+      await Data.notificar(solId, 'COORD_FIN', 'Pedido finalizado — acompanhar pagamento',
         `${Data.ref(sol)}${dados.vencimento ? ' — vencimento ' + U.fmtDate(dados.vencimento) : ''}`);
     }
     return novo;
@@ -1780,16 +1692,16 @@ const FLOW = {
   /* Ordem macro do processo redesenhado (fluxograma "sem e-mail").
      Os status legados continuam aceitos, mas não fazem parte da ordem. */
   ORDER: [
-    'Novo','Documentos pendentes','Consulta de estoque','Sem estoque','Em tratamento',
-    'Aguardando cadastro','Aguardando crédito','Aguardando aprovação do RC',
+    'Novo','Consulta de estoque','Sem estoque','Em tratamento',
+    'Aguardando crédito','Aguardando aprovação do RC',
     'Aguardando faturamento','Aguardando frete','Aguardando transportadora',
-    'Em carregamento','Faturado','Em transporte','Entregue','Aguardando pagamento','Pago'
+    'Em carregamento','Faturado','Em transporte','Finalizado','Pago'
   ],
 
   /* Quem age em cada etapa. Usado para rotear notificações e travar botões. */
   DONO_ETAPA: {
     pedido:'RC', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
-    fiscal:'FISCAL', financeiro:'COORD_FIN', aprovacaoRc:'RC',
+    financeiro:'COORD_FIN', aprovacaoRc:'RC',
     faturamento:'OPERACOES', logistica:'COORD_LOG', transportadora:'COORD_LOG',
     carregamento:'COORD_LOG', entrega:'COORD_LOG', pagamento:'COORD_FIN',
   },
@@ -1804,10 +1716,6 @@ const FLOW = {
   },
   async registrarLote(sol, lote){
     await Data.registrarLote(sol.id, lote);
-    await Data.refreshSolicitacoesData();
-  },
-  async salvarFiscal(sol, dados){
-    await Data.salvarFiscal(sol.id, dados);
     await Data.refreshSolicitacoesData();
   },
   async decidirCredito(sol, decisao, motivo){
@@ -1860,19 +1768,13 @@ const FLOW = {
     await Data.refreshSolicitacoesData();
   },
 
-  /* Bloqueio do fluxograma: pedido de cliente NOVO sem documentação é travado. */
-  travadoPorDocumentos(sol){
-    return sol.tipoCliente === 'Novo' && !sol.documentosOk;
-  },
-
   /* Pré-requisitos para o RC aprovar faturamento e frete. */
   prontoParaAprovacaoRc(sol){
     const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
                       (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
-    const fiscalOk  = sol.fiscal && sol.fiscal.codigoCliente;
     const creditoOk = sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao);
     const freteOk   = sol.logistica && sol.logistica.transportadora;
-    return !!(estoqueOk && fiscalOk && creditoOk && freteOk);
+    return !!(estoqueOk && creditoOk && freteOk);
   },
 
   pendenciasParaAprovacao(sol){
@@ -1880,7 +1782,6 @@ const FLOW = {
     const estoqueOk = sol.admUbs && (sol.admUbs.resultado === 'Com estoque' ||
                       (sol.admUbs.resultado === 'Com estoque para produção' && sol.admUbs.tratamentoConcluido));
     if(!estoqueOk) p.push('estoque/tratamento da UBS');
-    if(!(sol.fiscal && sol.fiscal.codigoCliente)) p.push('código do cliente (Fiscal)');
     if(!(sol.financeiro && ['Aprovado','Aprovado com ressalvas'].includes(sol.financeiro.decisao))) p.push('aprovação de crédito');
     if(!(sol.logistica && sol.logistica.transportadora)) p.push('cotação de frete');
     return p;
@@ -1891,9 +1792,11 @@ const FLOW = {
     if(STATE.currentProfile === 'COMERCIAL_ADM') return true;
     const map = {
       admUbs:'ADM_UBS', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
-      fiscal:'FISCAL', financeiro:'COORD_FIN', aprovacaoRc:'RC',
+      financeiro:'COORD_FIN', aprovacaoRc:'RC',
       logistica:'COORD_LOG', transportadora:'COORD_LOG', carregamento:'COORD_LOG',
-      faturamento:'OPERACOES', pagamento:'COORD_FIN', pedido:'RC',
+      faturamento:'OPERACOES', pedido:'RC',
+      // Pagamento (pós-venda): só Financeiro e Administrador.
+      pagamento:'COORD_FIN',
     };
     return map[etapa] === STATE.currentProfile;
   },
@@ -2155,12 +2058,13 @@ const Render = {
     const count = st => all.filter(s=>s.status===st).length;
     const kpis = [
       { lbl:'Total de solicitações', val: all.length, ic:'list', bg:'var(--v-green-100)', fg:'var(--v-green-700)', trend:'+'+Math.max(1,Math.round(all.length*0.12))+' esta semana', up:true },
-      { lbl:'Aguardando ação', val: all.filter(s=>!['Faturado','Entregue','Cancelado','Crédito recusado'].includes(s.status) && !['Em transporte'].includes(s.status)).length, ic:'clock', bg:'var(--v-amber-bg)', fg:'var(--v-amber)', trend:'requer atenção', up:false },
+      { lbl:'Aguardando ação', val: all.filter(s=>!['Faturado','Entregue','Finalizado','Pago','Cancelado','Crédito recusado'].includes(s.status) && !['Em transporte'].includes(s.status)).length, ic:'clock', bg:'var(--v-amber-bg)', fg:'var(--v-amber)', trend:'requer atenção', up:false },
       { lbl:'Crédito aprovado', val: all.filter(s=>s.financeiro && s.financeiro.decisao && s.financeiro.decisao!=='Recusado').length, ic:'check', bg:'var(--v-green-100)', fg:'var(--v-green-700)', trend:'aprovações', up:true },
       { lbl:'Crédito recusado', val: count('Crédito recusado'), ic:'x', bg:'var(--v-red-bg)', fg:'var(--v-red)', trend:'revisar', up:false },
       { lbl:'Em produção', val: count('Produção'), ic:'settings', bg:'var(--v-blue-bg)', fg:'var(--v-blue)', trend:'em andamento', up:true },
       { lbl:'Faturados', val: count('Faturado'), ic:'fileText', bg:'var(--v-gold-100)', fg:'var(--v-gold-600)', trend:'concluídos', up:true },
-      { lbl:'Entregues', val: count('Entregue'), ic:'box', bg:'var(--v-green-100)', fg:'var(--v-green-700)', trend:'finalizados', up:true },
+      { lbl:'Finalizados', val: count('Finalizado')+count('Entregue')+count('Pago'), ic:'box', bg:'var(--v-green-100)', fg:'var(--v-green-700)', trend:'entregues ao cliente', up:true },
+      { lbl:'Pós-venda em aberto', val: all.filter(s=>['Finalizado','Em renegociação'].includes(s.status)).length, ic:'coin', bg:'var(--v-gold-100)', fg:'var(--v-gold-600)', trend:'aguardando pagamento', up:true },
       { lbl:'Pendências', val: all.filter(s=>s.status==='Crédito recusado'||s.status==='Cancelado').length, ic:'alert', bg:'var(--v-red-bg)', fg:'var(--v-red)', trend:'ação necessária', up:false },
     ];
 
@@ -2393,20 +2297,21 @@ const Render = {
   /* ---------------------------- NOVA SOLICITAÇÃO ---------------------------- */
   novaSolicitacao(){
     const html = `
-      <div class="page-head"><div><h1>Novo Pedido</h1><p>Registre o pedido diretamente no VerOS Flow — nenhuma etapa depende de e-mail</p></div></div>
+      <div class="page-head"><div><h1>Novo Pedido</h1><p>Traga para o VerOS Flow um pedido já emitido no Mobi — daqui em diante nenhuma etapa depende de e-mail</p></div></div>
       <div class="card card-pad" style="max-width:940px;">
         <form id="novaSolForm" onsubmit="Render.submitNovaSolicitacao(event)">
           <div class="form-section">
             <h3><span class="num">1</span>Dados do Pedido</h3>
             <div class="form-grid">
               <div class="field"><label>Número do Pedido (Mobi) *</label><input required id="f_mobi" placeholder="MOBI-00000"></div>
-              <div class="field"><label>Tipo de cliente *</label>
-                <select required id="f_tipo_cliente" onchange="Render.toggleTipoCliente(this.value)">
+              <div class="field"><label>Código do cliente (Mobi) *</label><input required id="f_cod_cliente" placeholder="000123"></div>
+              <div class="field"><label>Cliente *</label><input required id="f_cliente" placeholder="Razão social / fazenda"></div>
+              <div class="field"><label>Tipo de cliente</label>
+                <select id="f_tipo_cliente">
                   <option value="Recompra">Recompra</option>
                   <option value="Novo">Cliente novo</option>
                 </select>
               </div>
-              <div class="field"><label>Cliente *</label><input required id="f_cliente" list="listaClientes" placeholder="Razão social / fazenda"><datalist id="listaClientes">${(DB.clientes||[]).map(c=>`<option value="${U.esc(c.razaoSocial)}">`).join('')}</datalist></div>
               <div class="field"><label>Nome RC *</label><input required id="f_rc" value="${U.esc(STATE.currentUser.nome)}"></div>
               <div class="field"><label>Unidade *</label><select required id="f_unidade">${DB.unidades.filter(u=>u.status==='Ativo').map(u=>`<option value="${u.id}" ${u.id===STATE.currentUser.unidade?'selected':''}>${u.nome}</option>`).join('')}</select></div>
               <div class="field"><label>Produto *</label><select required id="f_produto">${DB.produtos.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.cultura} · ${p.variedade}</option>`).join('')}</select></div>
@@ -2423,15 +2328,16 @@ const Render = {
             </div>
           </div>
 
-          <div class="form-section" id="docsSection">
-            <h3><span class="num">2</span>Documentação do cliente</h3>
-            <p style="font-size:12.5px;color:var(--v-ink-500);margin:-4px 0 12px;" id="docsHint">
-              Cliente novo só avança para a UBS com a documentação anexada — a trava é automática.
+          <div class="form-section">
+            <h3><span class="num">2</span>Anexos do pedido</h3>
+            <p style="font-size:12.5px;color:var(--v-ink-500);margin:-4px 0 12px;">
+              Opcional. O cadastro e a documentação do cliente já foram tratados na emissão do pedido no Mobi —
+              anexe aqui apenas o que as áreas precisarem consultar durante o fluxo.
             </p>
-            <div class="field"><label>Documentos do cliente</label>
+            <div class="field"><label>Arquivos de apoio</label>
               <div class="upload-box" id="box_docs" onclick="document.getElementById('file_docs').click()">
                 <input type="file" id="file_docs" multiple onchange="Render.handleFileInput('docs', this.files)">
-                <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar contrato social, CNPJ, inscrição estadual…<div id="up_docs"></div>
+                <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar<div id="up_docs"></div>
               </div>
             </div>
           </div>
@@ -2471,15 +2377,6 @@ const Render = {
     `;
     document.getElementById('view-nova').innerHTML = html;
     Render._uploads = {docs:[],contrato:[],fin:[]};
-    Render.toggleTipoCliente('Recompra');
-  },
-
-  toggleTipoCliente(tipo){
-    const hint = document.getElementById('docsHint');
-    if(!hint) return;
-    hint.innerHTML = tipo === 'Novo'
-      ? 'Cliente novo: o pedido fica <b>travado</b> até a documentação ser anexada. A trava é automática.'
-      : 'Recompra: anexar documentos é opcional. O pedido segue direto para a consulta de estoque da UBS.';
   },
 
   toggleCredito(checked){ document.getElementById('creditPanel').classList.toggle('show', checked); },
@@ -2514,13 +2411,13 @@ const Render = {
     if(credito && !document.getElementById('c_justificativa').value.trim()){
       App.toast('Campo obrigatório','Informe a justificativa do crédito antes de enviar.','err'); return;
     }
-    const tipoCliente = document.getElementById('f_tipo_cliente').value;
     const arquivos = Render._uploads || {docs:[],contrato:[],fin:[]};
-    const documentosOk = tipoCliente !== 'Novo' || (arquivos.docs && arquivos.docs.length > 0);
 
     const payload = {
       numeroPedidoMobi: document.getElementById('f_mobi').value,
+      codigoCliente: document.getElementById('f_cod_cliente').value,
       cliente: document.getElementById('f_cliente').value,
+      tipoCliente: document.getElementById('f_tipo_cliente').value,
       nomeRC: document.getElementById('f_rc').value,
       unidade: document.getElementById('f_unidade').value,
       produto: document.getElementById('f_produto').value,
@@ -2530,7 +2427,6 @@ const Render = {
       formaPagamento: document.getElementById('f_pgto').value,
       dataEntregaNegociada: document.getElementById('f_entrega').value || null,
       observacoes: document.getElementById('f_obs').value || null,
-      tipoCliente, documentosOk,
       solicitaCredito: credito,
       credito: credito ? {
         limiteSolicitado: Number(document.getElementById('c_limite').value)||0,
@@ -2544,11 +2440,7 @@ const Render = {
     try{
       const novoId = await Data.createSolicitacao(payload, arquivos);
       await Data.refreshSolicitacoesData();
-      if(!documentosOk){
-        App.toast('Pedido travado','Cliente novo sem documentação. Anexe os documentos no pedido para liberar a UBS.','warn');
-      } else {
-        App.toast('Pedido registrado','UBS, Fiscal e Financeiro foram notificados dentro do VerOS Flow.','ok');
-      }
+      App.toast('Pedido registrado','A UBS foi notificada dentro do VerOS Flow.','ok');
       App.navigate('detail',{id:novoId});
     } catch(err){
       App.toast('Erro ao registrar pedido', err.message || 'Tente novamente.', 'err');
@@ -2574,13 +2466,13 @@ const Render = {
         <div>
           <h1 style="font-family:var(--font-display);font-size:21px;">${U.esc(sol.cliente)}</h1>
           <p style="color:var(--v-ink-500);font-size:13px;margin-top:4px;">
-            Pedido ${U.esc(sol.numeroPedidoMobi)}${sol.pedidoSap?` · SAP ${U.esc(sol.pedidoSap)}`:''}${sol.fiscal&&sol.fiscal.codigoCliente?` · Cliente ${U.esc(sol.fiscal.codigoCliente)}`:''} · RC ${U.esc(sol.nomeRC)} · ${U.fmtDateTime(sol.criadoEm)}
+            Pedido ${U.esc(sol.numeroPedidoMobi)}${sol.pedidoSap?` · SAP ${U.esc(sol.pedidoSap)}`:''}${sol.codigoCliente?` · Cliente ${U.esc(sol.codigoCliente)}`:''} · RC ${U.esc(sol.nomeRC)} · ${U.fmtDateTime(sol.criadoEm)}
           </p>
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
           ${sol.tipoCliente==='Novo'?`<span class="upload-tag">Cliente novo</span>`:''}
           ${badgeHtml(sol.status)}
-          ${isAdmin && !['Cancelado','Pago'].includes(sol.status) ? `<button class="btn btn-danger btn-sm" onclick="Render.cancelarSolicitacao('${sol.id}')">Cancelar pedido</button>`:''}
+          ${isAdmin && !['Cancelado','Pago','Finalizado'].includes(sol.status) ? `<button class="btn btn-danger btn-sm" onclick="Render.cancelarSolicitacao('${sol.id}')">Cancelar pedido</button>`:''}
         </div>
       </div>
 
@@ -2606,7 +2498,6 @@ const Render = {
       { l:'Pedido',        ok:true },
       { l:'Estoque UBS',   ok:!!(sol.admUbs && sol.admUbs.resultado) },
       { l:'Tratamento',    ok:!!(sol.admUbs && sol.admUbs.tratamentoConcluido) },
-      { l:'Cadastro',      ok:!!(sol.fiscal && sol.fiscal.codigoCliente) },
       { l:'Crédito',       ok:!!(sol.financeiro && sol.financeiro.decisao) },
       { l:'Frete',         ok:!!(sol.logistica && sol.logistica.transportadora) },
       { l:'Aprovação RC',  ok:!!sol.aprovadoRc },
@@ -2615,7 +2506,7 @@ const Render = {
       { l:'Carregamento',  ok:!!(sol.carregamento && sol.carregamento.carregadoEm) },
       { l:'NF',            ok:!!(sol.faturamento && sol.faturamento.concluido) },
       { l:'Entrega',       ok:sol.logistica && sol.logistica.statusEntrega==='Entregue' },
-      { l:'Pagamento',     ok:sol.pagamento && sol.pagamento.status==='Pago' },
+      { l:'Pós-venda · pagamento', ok:sol.pagamento && sol.pagamento.status==='Pago' },
     ];
     const idxAtual = etapas.findIndex(e=>!e.ok);
     return `<div class="flow-rail">${etapas.map((e,i)=>
@@ -2625,8 +2516,7 @@ const Render = {
   /* ==================== ABA 1 — ETAPAS DO PROCESSO ==================== */
   abaEtapas(sol){
     const can = k => FLOW.podeEditarEtapa(k);
-    const dono = p => `<span class="stage-owner">${U.esc(U.perfilNome(p))}</span>`;
-    const travado = FLOW.travadoPorDocumentos(sol);
+    const dono = (...perfis) => `<span class="stage-owner">${U.esc(perfis.map(U.perfilCurto).join(' · '))}</span>`;
     const est = sol.admUbs || {};
     const pend = FLOW.pendenciasParaAprovacao(sol);
 
@@ -2637,7 +2527,7 @@ const Render = {
             <div class="section-title">Dados do pedido</div>
             <div class="info-list">
               <div class="it"><b>Cliente</b><span>${U.esc(sol.cliente)}</span></div>
-              <div class="it"><b>Tipo</b><span>${U.esc(sol.tipoCliente||'Recompra')}</span></div>
+              <div class="it"><b>Código do cliente</b><span>${U.esc(sol.codigoCliente)||'—'}</span></div>
               <div class="it"><b>Unidade</b><span>${U.esc(U.unidadeNome(sol.unidade))}</span></div>
               <div class="it"><b>Produto</b><span>${U.esc(U.produtoLabel(sol.produto))}</span></div>
               <div class="it"><b>Quantidade</b><span>${sol.quantidade} sc</span></div>
@@ -2647,18 +2537,6 @@ const Render = {
               ${sol.observacoesPedido?`<div class="it" style="grid-column:1/-1;"><b>Observações do RC</b><span style="font-weight:500;">${U.esc(sol.observacoesPedido)}</span></div>`:''}
             </div>
           </div>
-
-          <!-- 0. TRAVA DE DOCUMENTOS -->
-          ${travado ? `
-          <div class="stage-block blocked">
-            <h4>${Ic('alert',15)} Pedido travado · documentação do cliente novo ${dono('RC')}</h4>
-            <p style="font-size:12.5px;color:var(--v-ink-700);margin-bottom:10px;">
-              Este pedido é de um <b>cliente novo</b> e não possui documentação anexada. A UBS não recebe a
-              consulta de estoque enquanto os documentos não forem anexados aqui.
-            </p>
-            ${can('pedido') ? `<button class="btn btn-primary btn-sm" onclick="Render.abrirDocumentosModal('${sol.id}')">Anexar documentação</button>`
-              : `<span class="lock-note">Aguardando o RC anexar a documentação.</span>`}
-          </div>` : ''}
 
           <!-- 1. UBS — CONSULTA DE ESTOQUE -->
           <div class="stage-block ${est.resultado?'done':''} ${(!can('estoque'))?'locked':''}">
@@ -2671,8 +2549,7 @@ const Render = {
                 ${est.prazoTratamento?`<div class="it"><b>Prazo de tratamento</b><span>${U.esc(est.prazoTratamento)}</span></div>`:''}
               </div>
               ${can('estoque') ? `<div class="mini-actions"><button class="btn btn-ghost btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Revisar resposta</button></div>`:''}
-            ` : travado ? `<span class="lock-note">Liberado após a documentação do cliente ser anexada.</span>`
-              : can('estoque') ? `
+            ` : can('estoque') ? `
               <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Informe a situação do estoque. A resposta chega ao RC pelo VerOS Flow — sem WhatsApp e sem e-mail.</p>
               <button class="btn btn-primary btn-sm" onclick="Render.abrirEstoqueModal('${sol.id}')">Responder consulta de estoque</button>
             ` : `<span class="lock-note">Aguardando a resposta da UBS.</span>`}
@@ -2693,22 +2570,6 @@ const Render = {
               <button class="btn btn-primary btn-sm" onclick="Render.concluirTratamentoAction('${sol.id}')">Marcar tratamento concluído</button>
             ` : `<span class="lock-note">Sementes em tratamento na UBS.</span>`}
           </div>` : ''}
-
-          <!-- 3. FISCAL — CADASTRO -->
-          <div class="stage-block ${(sol.fiscal&&sol.fiscal.codigoCliente)?'done':''} ${(!can('fiscal'))?'locked':''}">
-            <h4>${Ic('user',15)} Fiscal · Cadastro do cliente ${dono('FISCAL')}</h4>
-            ${sol.fiscal && sol.fiscal.codigoCliente ? `
-              <div class="info-list">
-                <div class="it"><b>Situação</b><span>${sol.fiscal.possuiCadastro?'Cliente já cadastrado':'Cliente cadastrado agora'}</span></div>
-                <div class="it"><b>Código do cliente</b><span>${U.esc(sol.fiscal.codigoCliente)}</span></div>
-                <div class="it"><b>Verificado por</b><span>${U.esc(Data.nomeUsuario(sol.fiscal.verificadoPorId))}</span></div>
-                ${sol.fiscal.observacoes?`<div class="it"><b>Observações</b><span>${U.esc(sol.fiscal.observacoes)}</span></div>`:''}
-              </div>
-            ` : can('fiscal') ? `
-              <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:10px;">Verifique se <b>${U.esc(sol.cliente)}</b> possui cadastro e devolva o código do cliente ao pedido.</p>
-              <button class="btn btn-primary btn-sm" onclick="Render.abrirFiscalModal('${sol.id}')">Verificar cadastro</button>
-            ` : `<span class="lock-note">Aguardando verificação de cadastro pela Fiscal.</span>`}
-          </div>
 
           <!-- 4. FINANCEIRO -->
           <div class="stage-block ${(sol.financeiro&&sol.financeiro.decisao)?'done':''} ${(!can('financeiro'))?'locked':''}">
@@ -2852,23 +2713,34 @@ const Render = {
             ` : `<span class="lock-note">Disponível após a liberação do caminhão.</span>`}
           </div>
 
-          <!-- 12. PAGAMENTO -->
-          <div class="stage-block ${(sol.pagamento&&sol.pagamento.status==='Pago')?'done':''} ${(!can('pagamento'))?'locked':''}">
-            <h4>${Ic('coin',15)} Cliente · Pagamento e renegociação ${dono('COORD_FIN')}</h4>
-            ${sol.pagamento && sol.pagamento.status ? `
+          <!-- 12. PÓS-VENDA · PAGAMENTO (somente Financeiro e Administrador) -->
+          ${(()=>{
+            const entregue = sol.logistica && sol.logistica.statusEntrega==='Entregue';
+            const pag = sol.pagamento || {};
+            // Ação exclusiva do Financeiro e do Administrador do sistema.
+            const podeAgir = ['COORD_FIN','COMERCIAL_ADM'].includes(STATE.currentProfile);
+            return `
+          <div class="stage-block ${pag.status==='Pago'?'done':''} ${(!podeAgir)?'locked':''}">
+            <h4>${Ic('coin',15)} Pagamento ${entregue?'<span class="upload-tag" style="margin:0 0 0 8px;">Pós-venda</span>':''} ${dono('COORD_FIN','COMERCIAL_ADM')}</h4>
+            ${pag.status ? `
               <div class="info-list">
-                <div class="it"><b>Situação</b><span>${U.esc(sol.pagamento.status)}</span></div>
-                <div class="it"><b>Vencimento</b><span>${sol.pagamento.vencimento?U.fmtDate(sol.pagamento.vencimento):'—'}</span></div>
-                ${sol.pagamento.pagoEm?`<div class="it"><b>Pago em</b><span>${U.fmtDate(sol.pagamento.pagoEm)}</span></div>`:''}
-                ${sol.pagamento.renegociacaoObs?`<div class="it" style="grid-column:1/-1;"><b>Renegociação</b><span>${U.esc(sol.pagamento.renegociacaoObs)}</span></div>`:''}
+                <div class="it"><b>Situação</b><span>${U.esc(pag.status)}</span></div>
+                <div class="it"><b>Vencimento</b><span>${pag.vencimento?U.fmtDate(pag.vencimento):'—'}</span></div>
+                ${pag.pagoEm?`<div class="it"><b>Pago em</b><span>${U.fmtDate(pag.pagoEm)}</span></div>`:''}
+                ${pag.renegociacaoObs?`<div class="it" style="grid-column:1/-1;"><b>Renegociação</b><span>${U.esc(pag.renegociacaoObs)}</span></div>`:''}
               </div>`:''}
-            ${can('pagamento') && sol.pagamento && sol.pagamento.status !== 'Pago' && sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `
+            ${!entregue ? `<span class="lock-note">Disponível após a entrega ao cliente.</span>`
+              : !podeAgir ? `<span class="lock-note">Acompanhamento exclusivo do Financeiro e do Administrador.</span>`
+              : pag.status === 'Pago' ? ''
+              : `
+              <p style="font-size:12.5px;color:var(--v-ink-500);margin:${pag.status?'12px':'0'} 0 10px;">
+                Pedido finalizado. Registre a quitação ou abra uma renegociação com o cliente.
+              </p>
               <div class="mini-actions">
                 <button class="btn btn-primary btn-sm" onclick="Render.pagamentoAction('${sol.id}','Pago')">Registrar pagamento</button>
                 <button class="btn btn-secondary btn-sm" onclick="Render.abrirRenegociacaoModal('${sol.id}')">Abrir renegociação</button>
-              </div>`
-            : (!sol.pagamento || !sol.pagamento.status) ? `<span class="lock-note">Disponível após a entrega ao cliente.</span>` : ''}
-          </div>
+              </div>`}
+          </div>`; })()}
         </div>
 
         <div>
@@ -2919,7 +2791,7 @@ const Render = {
       <div class="card card-pad" style="max-width:860px;">
         <div class="section-title">Mensagens do pedido</div>
         <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:14px;">
-          Substitui o WhatsApp e as respostas por e-mail entre Comercial, UBS, Fiscal, Financeiro, Logística e Comercial ADM.
+          Substitui o WhatsApp e as respostas por e-mail entre Comercial, UBS, Financeiro, Logística e Comercial ADM.
           Quem for marcado recebe uma notificação dentro do sistema.
         </p>
         ${msgs.length ? `<div class="msg-thread">
@@ -2946,7 +2818,6 @@ const Render = {
               <option value="">Todos que acompanham o pedido</option>
               <option value="RC">RC · Comercial</option>
               <option value="ADM_UBS">UBS</option>
-              <option value="FISCAL">Fiscal</option>
               <option value="COORD_FIN">Financeiro</option>
               <option value="COORD_LOG">Logística</option>
               <option value="OPERACOES">Comercial ADM</option>
@@ -3082,31 +2953,6 @@ const Render = {
     }
   },
 
-  abrirDocumentosModal(id){
-    Modal.open('Anexar documentação do cliente', `
-      <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:12px;">
-        Anexe contrato social, CNPJ, inscrição estadual ou o que sua política exigir. Ao salvar, a trava
-        do pedido é liberada e a UBS é notificada automaticamente.
-      </p>
-      <div class="upload-box" id="box_mdocs" onclick="document.getElementById('m_docs').click()">
-        <input type="file" id="m_docs" multiple onchange="document.getElementById('m_docs_nome').textContent = Array.from(this.files).map(f=>f.name).join(', ')">
-        <span class="ic">${Ic('paperclip',20)}</span>Clique para anexar
-        <div id="m_docs_nome" style="font-size:11.5px;margin-top:6px;color:var(--v-green-700);"></div>
-      </div>
-    `, [
-      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
-      {label:'Salvar e liberar pedido', cls:'btn-primary', onClick: async ()=>{
-        const files = Array.from(document.getElementById('m_docs').files||[]);
-        if(!files.length){ App.toast('Anexo obrigatório','Selecione ao menos um documento.','err'); return; }
-        try{
-          await Data.confirmarDocumentos(id, files);
-          await Data.refreshSolicitacoesData();
-          Modal.close(); App.toast('Pedido liberado','UBS e Fiscal foram notificados no VerOS Flow.','ok'); Render.detail();
-        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
-      }},
-    ]);
-  },
-
   abrirEstoqueModal(id){
     const sol = DB.solicitacoes.find(s=>s.id===id) || {};
     const at = (sol.admUbs||{}).resultado || '';
@@ -3201,63 +3047,6 @@ const Render = {
       try{ await Data.excluirLote(loteId); await Data.refreshSolicitacoesData(); Render.detail(); }
       catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
     });
-  },
-
-  abrirFiscalModal(id){
-    const sol = DB.solicitacoes.find(s=>s.id===id) || {};
-    Modal.open('Verificação de cadastro do cliente', `
-      <div class="field"><label>O cliente já possui cadastro? *</label>
-        <select id="fi_possui" onchange="Render.toggleFiscalCampos(this.value)">
-          <option value="sim">Sim — já cadastrado</option>
-          <option value="nao">Não — cadastrar agora</option>
-        </select>
-      </div>
-      <div class="field" style="margin-top:12px;"><label>Código do cliente *</label>
-        <input id="fi_codigo" placeholder="Código no SAP">
-      </div>
-      <div id="fiscalNovoCliente" style="display:none;margin-top:12px;">
-        <div class="form-grid">
-          <div class="field"><label>Razão social *</label><input id="fi_razao" value="${U.esc(sol.cliente)||''}"></div>
-          <div class="field"><label>CNPJ / CPF</label><input id="fi_cnpj"></div>
-          <div class="field"><label>Cidade</label><input id="fi_cidade"></div>
-          <div class="field"><label>UF</label><input id="fi_uf" maxlength="2" placeholder="MT"></div>
-          <div class="field"><label>E-mail</label><input id="fi_email" type="email"></div>
-          <div class="field"><label>Telefone</label><input id="fi_tel"></div>
-        </div>
-      </div>
-      <div class="field" style="margin-top:12px;"><label>Observações</label><input id="fi_obs" placeholder="Opcional"></div>
-    `, [
-      {label:'Cancelar', cls:'btn-ghost', onClick:()=>Modal.close()},
-      {label:'Confirmar cadastro', cls:'btn-primary', onClick: async ()=>{
-        const possui = document.getElementById('fi_possui').value === 'sim';
-        const codigo = document.getElementById('fi_codigo').value.trim();
-        if(!codigo){ App.toast('Campo obrigatório','Informe o código do cliente.','err'); return; }
-        const dados = { possuiCadastro: possui, codigoCliente: codigo, observacoes: document.getElementById('fi_obs').value||null };
-        if(!possui){
-          const razao = document.getElementById('fi_razao').value.trim();
-          if(!razao){ App.toast('Campo obrigatório','Informe a razão social do cliente.','err'); return; }
-          dados.novoCliente = {
-            codigo, razaoSocial: razao,
-            cnpjCpf: document.getElementById('fi_cnpj').value||null,
-            cidade: document.getElementById('fi_cidade').value||null,
-            uf: (document.getElementById('fi_uf').value||'').toUpperCase()||null,
-            email: document.getElementById('fi_email').value||null,
-            telefone: document.getElementById('fi_tel').value||null,
-            tipo: sol.tipoCliente||'Novo', status:'Ativo',
-          };
-        }
-        try{
-          await FLOW.salvarFiscal(DB.solicitacoes.find(s=>s.id===id), dados);
-          await Data.loadCadastros();
-          Modal.close(); App.toast('Cadastro confirmado','Código do cliente publicado no pedido.','ok'); Render.detail();
-        }catch(err){ App.toast('Erro ao salvar', err.message||'Tente novamente.','err'); }
-      }},
-    ]);
-  },
-
-  toggleFiscalCampos(v){
-    const el = document.getElementById('fiscalNovoCliente');
-    if(el) el.style.display = v==='nao' ? 'block':'none';
   },
 
   abrirCreditoModal(id){
@@ -3709,20 +3498,16 @@ Produtiva Sementes`;
       const est = s.admUbs||{};
       const add = acao => out.push({ sol:s, acao });
       if(perfil==='RC' || perfil==='COMERCIAL_ADM'){
-        if(FLOW.travadoPorDocumentos(s)) add('Anexar documentação do cliente');
-        else if(!s.aprovadoRc && FLOW.prontoParaAprovacaoRc(s)) add('Aprovar faturamento e frete');
+        if(!s.aprovadoRc && FLOW.prontoParaAprovacaoRc(s)) add('Aprovar faturamento e frete');
       }
       if(perfil==='ADM_UBS' || perfil==='COMERCIAL_ADM'){
-        if(!FLOW.travadoPorDocumentos(s) && !est.resultado) add('Responder consulta de estoque');
+        if(!est.resultado) add('Responder consulta de estoque');
         else if(est.resultado==='Com estoque para produção' && !est.tratamentoConcluido) add('Concluir tratamento');
         else if(est.tratamentoConcluido && !(s.lotes||[]).length) add('Registrar lotes tratados');
       }
-      if(perfil==='FISCAL' || perfil==='COMERCIAL_ADM'){
-        if(!FLOW.travadoPorDocumentos(s) && !(s.fiscal && s.fiscal.codigoCliente)) add('Verificar cadastro do cliente');
-      }
       if(perfil==='COORD_FIN' || perfil==='COMERCIAL_ADM'){
         if(!(s.financeiro && s.financeiro.decisao)) add('Analisar crédito');
-        else if(s.pagamento && s.pagamento.status==='Pendente') add('Acompanhar pagamento');
+        else if(s.pagamento && ['Pendente','Em renegociação'].includes(s.pagamento.status)) add('Pós-venda · registrar pagamento');
       }
       if(perfil==='COORD_LOG' || perfil==='COMERCIAL_ADM'){
         if(!(s.logistica && s.logistica.transportadora)) add('Registrar cotação de frete');
@@ -3945,7 +3730,7 @@ Produtiva Sementes`;
     const all = DB.solicitacoes;
     const aprovadas = all.filter(s=>s.financeiro && s.financeiro.decisao && s.financeiro.decisao!=='Recusado');
     const recusadas = all.filter(s=>s.status==='Crédito recusado');
-    const entregues = all.filter(s=>s.status==='Entregue');
+    const entregues = all.filter(s=>['Finalizado','Entregue','Pago'].includes(s.status));
     const faturadas = all.filter(s=>s.faturamento && s.faturamento.concluido);
     const aguardCredito = all.filter(s=>['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'].includes(s.status));
     const aguardLogistica = all.filter(s=>s.status==='Aguardando Frete');
@@ -4039,7 +3824,7 @@ Produtiva Sementes`;
       ['Total de solicitações', all.length],
       ['Crédito aprovado', all.filter(s=>s.financeiro && s.financeiro.decisao && s.financeiro.decisao!=='Recusado').length],
       ['Crédito recusado', all.filter(s=>s.status==='Crédito recusado').length],
-      ['Pedidos entregues', all.filter(s=>s.status==='Entregue').length],
+      ['Pedidos finalizados', all.filter(s=>['Finalizado','Entregue','Pago'].includes(s.status)).length],
       ['Pedidos faturados', all.filter(s=>s.faturamento && s.faturamento.concluido).length],
       ['Aguardando crédito', all.filter(s=>['Aguardando Aprovação Financeira','Aguardando Crédito e Logística'].includes(s.status)).length],
       ['Aguardando logística', all.filter(s=>s.status==='Aguardando Frete').length],

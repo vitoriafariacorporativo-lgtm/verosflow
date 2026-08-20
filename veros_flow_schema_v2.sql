@@ -7,10 +7,10 @@
 -- Rode no Supabase: SQL Editor → New query → cole tudo → Run.
 --
 -- O que ele faz:
---   1. Adiciona o perfil FISCAL e novas colunas em tabelas existentes.
---   2. Cria as tabelas que o processo redesenhado exige (cliente, lotes,
---      mensagens, notificações, comunicação com a transportadora,
---      carregamento, documentos fiscais e pagamento).
+--   1. Adiciona colunas novas em tabelas existentes.
+--   2. Cria as tabelas que o processo redesenhado exige (lotes, mensagens,
+--      notificações, comunicação com a transportadora, carregamento,
+--      documentos fiscais e pagamento).
 --   3. Cria as políticas de RLS equivalentes às que você já usa.
 --
 -- Nada aqui depende da view vw_solicitacoes_completas: o front-end passou a
@@ -36,10 +36,11 @@ $$;
 
 
 -- ----------------------------------------------------------------------------
--- 1. PERFIS — adiciona FISCAL
+-- 1. PERFIS
 -- ----------------------------------------------------------------------------
--- Se a coluna `perfil` da tabela usuarios tiver um CHECK constraint, ele
--- precisa aceitar o novo perfil. O bloco abaixo detecta e recria.
+-- O escopo do VerOS Flow começa no pedido JÁ EMITIDO no Mobi: cadastro do
+-- cliente e validações fiscais acontecem lá. Por isso não existe perfil Fiscal.
+-- Este bloco apenas garante que o CHECK de `usuarios.perfil` esteja alinhado.
 do $$
 declare
   c record;
@@ -56,43 +57,17 @@ begin
 
   alter table public.usuarios
     add constraint usuarios_perfil_check check (perfil in (
-      'RC','ADM_UBS','FISCAL','COORD_FIN','COORD_LOG','OPERACOES','COMERCIAL_ADM'
+      'RC','ADM_UBS','COORD_FIN','COORD_LOG','OPERACOES','COMERCIAL_ADM'
     ));
 end $$;
 
 
 -- ----------------------------------------------------------------------------
--- 2. CLIENTES — cadastro mantido pela Fiscal
---    Substitui o campo texto livre `solicitacoes.cliente`, que continua
---    existindo para compatibilidade (o front grava nos dois).
--- ----------------------------------------------------------------------------
-create table if not exists public.clientes (
-  id            uuid primary key default gen_random_uuid(),
-  codigo        text unique,              -- código do cliente no SAP
-  razao_social  text not null,
-  nome_fantasia text,
-  cnpj_cpf      text,
-  inscricao_est text,
-  cidade        text,
-  uf            char(2),
-  email         text,
-  telefone      text,
-  tipo          text default 'Novo' check (tipo in ('Novo','Recompra')),
-  status        text default 'Ativo' check (status in ('Ativo','Inativo','Pendente')),
-  cadastrado_por uuid references public.usuarios(id),
-  created_at    timestamptz default now()
-);
-create index if not exists idx_clientes_codigo on public.clientes(codigo);
-create index if not exists idx_clientes_razao on public.clientes(razao_social);
-
-
--- ----------------------------------------------------------------------------
--- 3. SOLICITACOES — novas colunas do processo redesenhado
+-- 2. SOLICITACOES — novas colunas do processo redesenhado
 -- ----------------------------------------------------------------------------
 alter table public.solicitacoes
-  add column if not exists cliente_id            uuid references public.clientes(id),
-  add column if not exists tipo_cliente          text default 'Recompra',   -- Novo | Recompra
-  add column if not exists documentos_ok         boolean default false,     -- trava do pedido novo
+  add column if not exists codigo_cliente        text,                      -- código vindo do Mobi
+  add column if not exists tipo_cliente          text default 'Recompra',   -- Novo | Recompra (informativo)
   add column if not exists data_entrega_negociada date,
   add column if not exists observacoes_pedido    text,
   add column if not exists pedido_sap            text,                      -- nº do pedido imputado no SAP
@@ -100,12 +75,12 @@ alter table public.solicitacoes
   add column if not exists aprovado_rc_em        timestamptz,
   add column if not exists aprovado_rc_por       uuid references public.usuarios(id);
 
-comment on column public.solicitacoes.documentos_ok is
-  'Trava do fluxo: pedido de cliente NOVO só avança com documentação anexada.';
+comment on column public.solicitacoes.codigo_cliente is
+  'Código do cliente conforme o Mobi. O cadastro é feito lá, antes da emissão do pedido.';
 
 
 -- ----------------------------------------------------------------------------
--- 4. UBS — estoque e tratamento (estende adm_ubs_avaliacoes)
+-- 3. UBS — estoque e tratamento (estende adm_ubs_avaliacoes)
 --    O "saldo disponível" vira um resultado de 3 vias, como no fluxograma:
 --    Sem estoque | Com estoque para produção | Com estoque.
 -- ----------------------------------------------------------------------------
@@ -132,7 +107,7 @@ end $$;
 
 
 -- ----------------------------------------------------------------------------
--- 5. LOTES TRATADOS — substitui o "envio obrigatório do e-mail com os lotes"
+-- 4. LOTES TRATADOS — substitui o "envio obrigatório do e-mail com os lotes"
 -- ----------------------------------------------------------------------------
 create table if not exists public.pedido_lotes (
   id             uuid primary key default gen_random_uuid(),
@@ -150,21 +125,7 @@ create index if not exists idx_lotes_sol on public.pedido_lotes(solicitacao_id);
 
 
 -- ----------------------------------------------------------------------------
--- 6. ETAPA FISCAL — verificação/criação do cadastro do cliente
--- ----------------------------------------------------------------------------
-create table if not exists public.fiscal_cadastros (
-  solicitacao_id uuid primary key references public.solicitacoes(id) on delete cascade,
-  possui_cadastro boolean,
-  cliente_id     uuid references public.clientes(id),
-  codigo_cliente text,
-  observacoes    text,
-  verificado_por uuid references public.usuarios(id),
-  verificado_em  timestamptz default now()
-);
-
-
--- ----------------------------------------------------------------------------
--- 7. COMUNICAÇÃO COM A TRANSPORTADORA
+-- 5. COMUNICAÇÃO COM A TRANSPORTADORA
 --    ÚNICO ponto do processo que continua por e-mail. Tudo fica registrado
 --    aqui: o que foi enviado, por quem, quando, e a resposta recebida.
 -- ----------------------------------------------------------------------------
@@ -190,7 +151,7 @@ alter table public.logistica_fretes
 
 
 -- ----------------------------------------------------------------------------
--- 8. CARREGAMENTO — receber e carregar caminhão, liberar saída
+-- 6. CARREGAMENTO — receber e carregar caminhão, liberar saída
 -- ----------------------------------------------------------------------------
 create table if not exists public.carregamentos (
   solicitacao_id uuid primary key references public.solicitacoes(id) on delete cascade,
@@ -205,7 +166,7 @@ create table if not exists public.carregamentos (
 
 
 -- ----------------------------------------------------------------------------
--- 9. DOCUMENTOS FISCAIS DO TRANSPORTE — MDF-e / CT-e
+-- 7. DOCUMENTOS FISCAIS DO TRANSPORTE — MDF-e / CT-e
 -- ----------------------------------------------------------------------------
 create table if not exists public.documentos_fiscais (
   id             uuid primary key default gen_random_uuid(),
@@ -222,7 +183,7 @@ create index if not exists idx_docfiscais_sol on public.documentos_fiscais(solic
 
 
 -- ----------------------------------------------------------------------------
--- 10. PAGAMENTO / RENEGOCIAÇÃO — raia do Cliente no fluxograma
+-- 8. PAGAMENTO / RENEGOCIAÇÃO — raia do Cliente no fluxograma
 -- ----------------------------------------------------------------------------
 create table if not exists public.pagamentos (
   solicitacao_id uuid primary key references public.solicitacoes(id) on delete cascade,
@@ -237,7 +198,7 @@ create table if not exists public.pagamentos (
 
 
 -- ----------------------------------------------------------------------------
--- 11. MENSAGENS DO PEDIDO — substitui o WhatsApp entre as áreas
+-- 9. MENSAGENS DO PEDIDO — substitui o WhatsApp entre as áreas
 -- ----------------------------------------------------------------------------
 create table if not exists public.mensagens (
   id             uuid primary key default gen_random_uuid(),
@@ -254,7 +215,7 @@ create index if not exists idx_mensagens_sol on public.mensagens(solicitacao_id,
 
 
 -- ----------------------------------------------------------------------------
--- 12. NOTIFICAÇÕES — substitui o e-mail de aviso entre etapas
+-- 10. NOTIFICAÇÕES — substitui o e-mail de aviso entre etapas
 -- ----------------------------------------------------------------------------
 create table if not exists public.notificacoes (
   id             uuid primary key default gen_random_uuid(),
@@ -275,7 +236,7 @@ create index if not exists idx_notif_usuario on public.notificacoes(destino_usua
 
 
 -- ============================================================================
--- 13. RLS — mesma filosofia das tabelas que você já tem:
+-- 11. RLS — mesma filosofia das tabelas que você já tem:
 --     usuário autenticado lê; escrita liberada para autenticado (o controle
 --     fino de quem pode agir em cada etapa é feito pelo front-end + auditoria).
 --     Ajuste conforme o rigor que você já aplica nas demais tabelas.
@@ -284,7 +245,7 @@ do $$
 declare
   t text;
   tabelas text[] := array[
-    'clientes','pedido_lotes','fiscal_cadastros','comunicacoes_transportadora',
+    'pedido_lotes','comunicacoes_transportadora',
     'carregamentos','documentos_fiscais','pagamentos','mensagens','notificacoes'
   ];
 begin
@@ -312,7 +273,7 @@ end $$;
 do $$
 declare
   t text;
-  tabelas text[] := array['pedido_lotes','documentos_fiscais','mensagens','notificacoes','clientes'];
+  tabelas text[] := array['pedido_lotes','documentos_fiscais','mensagens','notificacoes'];
 begin
   foreach t in array tabelas loop
     execute format('drop policy if exists %I on public.%I', t||'_del', t);
@@ -324,7 +285,7 @@ end $$;
 
 
 -- ============================================================================
--- 14. VIEW AUXILIAR — resumo por pedido (opcional, usada em relatórios)
+-- 12. VIEW AUXILIAR — resumo por pedido (opcional, usada em relatórios)
 -- ============================================================================
 create or replace view public.vw_pedido_resumo_v2 as
 select
@@ -332,15 +293,13 @@ select
   s.numero_pedido_mobi,
   s.pedido_sap,
   s.cliente,
-  c.codigo               as codigo_cliente,
+  s.codigo_cliente,
   s.tipo_cliente,
-  s.documentos_ok,
   s.status,
   s.data_entrega_negociada,
   a.resultado_estoque,
   a.prazo_tratamento,
   a.tratamento_concluido,
-  f.possui_cadastro,
   fin.decisao            as decisao_credito,
   l.transportadora,
   l.transportadora_email,
@@ -353,9 +312,7 @@ select
   (select count(*) from public.pedido_lotes pl where pl.solicitacao_id = s.id) as qtd_lotes,
   (select count(*) from public.mensagens m  where m.solicitacao_id  = s.id) as qtd_mensagens
 from public.solicitacoes s
-left join public.clientes                    c   on c.id  = s.cliente_id
 left join public.adm_ubs_avaliacoes          a   on a.solicitacao_id  = s.id
-left join public.fiscal_cadastros            f   on f.solicitacao_id  = s.id
 left join public.financeiro_decisoes         fin on fin.solicitacao_id = s.id
 left join public.logistica_fretes            l   on l.solicitacao_id  = s.id
 left join public.carregamentos               car on car.solicitacao_id = s.id
@@ -363,5 +320,7 @@ left join public.pagamentos                  p   on p.solicitacao_id  = s.id;
 
 
 -- ============================================================================
--- FIM. Após rodar, confira em Table Editor se as 9 tabelas novas apareceram.
+-- FIM. Após rodar, confira em Table Editor se as 7 tabelas novas apareceram:
+--   pedido_lotes · comunicacoes_transportadora · carregamentos
+--   documentos_fiscais · pagamentos · mensagens · notificacoes
 -- ============================================================================

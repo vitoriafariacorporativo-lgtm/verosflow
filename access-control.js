@@ -3,7 +3,8 @@
    - RC: somente seus próprios pedidos.
    - UBS (ADM_UBS): pedidos cuja UNIDADE DO PEDIDO seja igual à unidade da UBS.
      Pode existir mais de um usuário UBS para a mesma unidade; todos visualizam.
-   - Fiscal: TODOS os pedidos (o cadastro do cliente é corporativo, não por unidade).
+   O escopo do sistema começa no pedido JÁ EMITIDO no Mobi — cadastro do cliente
+   e validações fiscais acontecem lá, não aqui.
    - Financeiro: TODOS os pedidos, independentemente da unidade, crédito ou status.
    - Logística: TODOS os pedidos, independentemente da unidade ou status.
    - Operações de Negócio: TODOS os pedidos, independentemente da unidade ou status.
@@ -40,7 +41,6 @@
       RC:'RC', SOLICITANTE:'RC', REQUISITANTE:'RC',
       ADM_UBS:'ADM_UBS', ADM_UBS_:'ADM_UBS', ADMINISTRADOR_UBS:'ADM_UBS', ADMINISTRADOR_DA_UBS:'ADM_UBS',
       UBS:'ADM_UBS', UNIDADE_DE_BENEFICIAMENTO:'ADM_UBS',
-      FISCAL:'FISCAL', ANALISTA_FISCAL:'FISCAL', SETOR_FISCAL:'FISCAL', CADASTRO:'FISCAL',
       COORD_FIN:'COORD_FIN', COORDENADOR_FINANCEIRO:'COORD_FIN', COORDENADOR_FINANCEIRO_ADM:'COORD_FIN',
       COORD_LOG:'COORD_LOG', COORDENADOR_LOGISTICA:'COORD_LOG', COORDENADOR_LOGISTICA_ADM:'COORD_LOG',
       OPERACOES:'OPERACOES', OPERACOES_DE_NEGOCIO:'OPERACOES', OPERACOES_NEGOCIO:'OPERACOES',
@@ -85,7 +85,7 @@
     if(r === 'COMERCIAL_ADM') return true;
     if(r === 'RC') return own(sol);
     if(r === 'ADM_UBS') return unitMatches(sol,u);
-    if(r === 'FISCAL' || r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
+    if(r === 'COORD_FIN' || r === 'COORD_LOG' || r === 'OPERACOES') return true;
     return false;
   }
 
@@ -155,7 +155,6 @@
         regra: role()==='COORD_FIN' ? 'FINANCEIRO — TODOS OS PEDIDOS' :
                role()==='COORD_LOG' ? 'LOGÍSTICA — TODOS OS PEDIDOS' :
                role()==='OPERACOES' ? 'OPERAÇÕES — TODOS OS PEDIDOS' :
-               role()==='FISCAL' ? 'FISCAL — TODOS OS PEDIDOS' :
                role()==='ADM_UBS' ? 'UBS — UNIDADE DO PEDIDO' :
                role()==='RC' ? 'RC — PRÓPRIOS' :
                role()==='COMERCIAL_ADM' ? 'COMERCIAL ADM — TODOS' : 'SEM REGRA'

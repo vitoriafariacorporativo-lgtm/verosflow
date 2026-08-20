@@ -11,7 +11,8 @@
     'Aguardando cadastro','Aguardando crédito','Crédito recusado',
     'Aguardando aprovação do RC','Aguardando faturamento','Aguardando frete',
     'Aguardando transportadora','Em carregamento','Faturado','Em transporte',
-    'Entregue','Aguardando pagamento','Pago','Em renegociação','Cancelado',
+    'Finalizado','Pago','Em renegociação','Cancelado',
+    /* legado */ 'Entregue','Aguardando pagamento',
     /* Status legados — pedidos criados antes da v2 */
     'Aguardando Saldo','Aguardando Aprovação Financeira',
     'Aguardando Crédito e Logística','Produção','Aguardando Frete','Frete contratado'
