@@ -22,6 +22,7 @@ ferramenta — e mesmo essa etapa é gerada e registrada dentro do VerOS Flow.
 | `kanban-screen-fix.js` | Correção de rolagem do Kanban |
 | `veros_flow_schema_v2.sql` | **Migração do banco** — rode antes de publicar |
 | `veros_flow_ajuste_remocao_aprovacao_rc.sql` | Rode só se você já tinha pedidos parados em "Aguardando aprovação do RC" |
+| `veros_flow_notificacoes_unidade.sql` | **Rode antes de publicar** — corrige a notificação da UBS |
 
 ---
 
@@ -103,15 +104,21 @@ Os status antigos continuam reconhecidos, para que pedidos criados antes da v2 n
 ## Notificações por unidade (UBS)
 
 A UBS é o único perfil dividido por unidade — pode existir mais de um usuário ADM_UBS, um por
-planta (Buritis, Formosa, etc.). Por isso, toda notificação destinada à UBS vai só para os usuários
-ADM_UBS **da mesma unidade do pedido** (`Data.notificarUBSDaUnidade`), nunca para o perfil inteiro.
-Isso vale tanto para o pedido novo quanto para quando o RC reencaminha um pedido "sem estoque" para
-outra unidade — a UBS antiga para de ser notificada e a nova passa a receber.
+planta (Buritis, Formosa, etc.).
 
-Se um usuário UBS relatar que não vê ou não consegue abrir um pedido que a notificação anunciou,
-confira em **Cadastros → Usuários** se a unidade dele está preenchida corretamente — sem isso,
-`notificarUBSDaUnidade` não encontra ninguém para notificar (a falha é registrada no console, não
-trava o sistema).
+**Importante sobre como isso funciona:** a notificação da UBS **não** é resolvida procurando, no
+navegador de quem cria o pedido, quais usuários pertencem àquela unidade — isso exigiria ler o
+cadastro de outras contas na tabela `usuarios`, o que normalmente é bloqueado pela política de
+segurança do banco (RLS) para qualquer perfil que não seja administrador. Se essa leitura falhar
+em silêncio, a notificação nunca é criada — foi exatamente esse o bug relatado.
+
+Em vez disso, a notificação é marcada com `destino_perfil='ADM_UBS'` **+** a unidade do pedido
+(`unidade_id`). Cada usuário UBS, ao carregar suas notificações, filtra usando a **própria**
+unidade — informação que ele sempre pode ler, porque é o cadastro dele mesmo. Ninguém precisa
+enxergar o cadastro de mais ninguém.
+
+Se um usuário UBS ainda assim relatar que não recebe notificação de pedidos da própria unidade,
+confira em **Cadastros → Usuários** se a unidade dele está preenchida corretamente.
 
 ---
 

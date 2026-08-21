@@ -1034,11 +1034,22 @@ const Data = {
       .order('created_at', {ascending:false})
       .limit(300);
     if(error){ console.warn('[VerOS Flow] Notificações indisponíveis:', error); DB.notificacoes = []; return; }
-    DB.notificacoes = (data||[]).map(n=>({
+    let lista = (data||[]).map(n=>({
       id:n.id, solicitacaoId:n.solicitacao_id, titulo:n.titulo, texto:n.texto,
       tipo:n.tipo||'info', lida:!!n.lida, criadoEm:n.created_at,
-      origemUsuario:n.origem_usuario, destinoPerfil:n.destino_perfil,
+      origemUsuario:n.origem_usuario, destinoPerfil:n.destino_perfil, unidadeId:n.unidade_id||null,
     }));
+    // A UBS é o único perfil dividido por unidade. Uma notificação de
+    // destino_perfil='ADM_UBS' só é relevante se foi marcada com a MESMA
+    // unidade do usuário atual — o filtro usa a unidade do próprio usuário
+    // logado, então não depende de enxergar o cadastro de ninguém mais
+    // (o que falharia se a política de segurança da tabela `usuarios`
+    // restringir a leitura entre contas diferentes).
+    if(STATE.currentProfile === 'ADM_UBS'){
+      const minhaUnidade = STATE.currentUser.unidade;
+      lista = lista.filter(n => n.destinoPerfil !== 'ADM_UBS' || !n.unidadeId || n.unidadeId === minhaUnidade);
+    }
+    DB.notificacoes = lista;
   },
 
   naoLidas(){ return (DB.notificacoes||[]).filter(n=>!n.lida).length; },
@@ -1067,17 +1078,23 @@ const Data = {
     }catch(e){ console.warn('[VerOS Flow] Falha ao notificar usuário:', e); }
   },
 
-  // Notifica só os usuários ADM_UBS da MESMA unidade do pedido — nunca o
-  // perfil inteiro. Sem isso, um pedido de Buritis notificava também o
-  // ADM_UBS de Formosa, que não tem visibilidade sobre aquele pedido e não
-  // conseguia abri-lo.
+  // Notifica a UBS da unidade do pedido. Em vez de resolver "quem são os
+  // usuários ADM_UBS dessa unidade" (o que exigiria ler a tabela `usuarios`
+  // de contas de outras pessoas — e falha em silêncio se a política de
+  // segurança do banco não permitir isso para quem está criando o pedido),
+  // a notificação é marcada com destino_perfil='ADM_UBS' + a unidade do
+  // pedido. Cada usuário UBS filtra para si mesmo em loadNotificacoes(),
+  // usando só a própria unidade — que ele sempre pode ler.
   async notificarUBSDaUnidade(solicitacaoId, unidadeId, titulo, texto, tipo){
-    const destinatarios = (DB.usuarios||[]).filter(u => u.perfil === 'ADM_UBS' && u.unidade === unidadeId && u.status === 'Ativo');
-    if(!destinatarios.length){
-      console.warn('[VerOS Flow] Nenhum usuário ADM_UBS ativo para a unidade', unidadeId);
-      return;
-    }
-    await Promise.all(destinatarios.map(u => Data.notificarUsuario(solicitacaoId, u.id, titulo, texto, tipo)));
+    try{
+      await supabaseClient.from('notificacoes').insert({
+        solicitacao_id: solicitacaoId,
+        destino_perfil: 'ADM_UBS',
+        unidade_id: unidadeId || null,
+        titulo, texto: texto || null, tipo: tipo || 'info',
+        origem_perfil: STATE.currentProfile, origem_usuario: STATE.currentUser ? STATE.currentUser.id : null,
+      });
+    }catch(e){ console.warn('[VerOS Flow] Falha ao notificar UBS da unidade:', e); }
   },
 
   async marcarNotificacaoLida(id){
