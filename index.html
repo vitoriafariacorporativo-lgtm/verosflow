@@ -757,10 +757,10 @@ const supabaseClient = SUPABASE_CONFIGURED
 const DB = {
   perfis: [
     { id:'RC', nome:'RC · Comercial (Solicitante)', descricao:'Registra o pedido no VerOS Flow, acompanha o andamento e aprova faturamento e cotação de frete.', permissoes:['Registrar pedido','Anexar documentos do cliente','Aprovar faturamento e frete','Conversar com todas as áreas','Acompanhar timeline'] },
-    { id:'ADM_UBS', nome:'UBS · Estoque e Tratamento', descricao:'Consulta estoque, informa prazos de disponibilidade e tratamento e registra os lotes tratados.', permissoes:['Consultar estoque','Informar prazo de disponibilidade','Informar prazo de tratamento','Registrar lotes tratados'] },
+    { id:'ADM_UBS', nome:'UBS · Estoque e Tratamento', descricao:'Consulta estoque, informa prazos de disponibilidade e tratamento, registra os lotes tratados e controla o carregamento do caminhão.', permissoes:['Consultar estoque','Informar prazo de disponibilidade','Informar prazo de tratamento','Registrar lotes tratados','Receber e carregar caminhão'] },
     { id:'COORD_FIN', nome:'Financeiro · Análise de Crédito', descricao:'Analisa crédito, aprova ou reprova com justificativa registrada no pedido.', permissoes:['Visualizar todos os pedidos','Aprovar / Recusar crédito','Registrar justificativa'] },
-    { id:'COORD_LOG', nome:'Logística · Frete e Carregamento', descricao:'Cota frete, comunica a transportadora por e-mail, valida a saída e controla o carregamento.', permissoes:['Cotar frete','Comunicar transportadora (e-mail)','Registrar carregamento','Liberar caminhão','Atualizar entrega'] },
-    { id:'OPERACOES', nome:'Comercial ADM · Faturamento', descricao:'Imputa o pedido no SAP, fatura, anexa a NF e vincula os lotes tratados.', permissoes:['Imputar pedido no SAP','Emitir NF','Anexar NF e lotes','Registrar documentos fiscais'] },
+    { id:'COORD_LOG', nome:'Logística · Frete e Entrega', descricao:'Cota e contrata frete, comunica a transportadora por e-mail e informa a entrega ao cliente.', permissoes:['Cotar frete','Contratar frete','Comunicar transportadora (e-mail)','Atualizar entrega'] },
+    { id:'OPERACOES', nome:'Operações de Negócio', descricao:'Imputa o pedido no SAP, fatura, anexa a NF e vincula os lotes tratados.', permissoes:['Imputar pedido no SAP','Emitir NF','Anexar NF e lotes','Registrar documentos fiscais'] },
     { id:'COMERCIAL_ADM', nome:'Administrador do Sistema', descricao:'Acesso total — cadastros, indicadores, edição de qualquer etapa e configurações.', permissoes:['Acesso total','Gerenciar cadastros','Editar qualquer etapa','Visualizar auditoria'] },
   ],
   unidades: [],
@@ -851,7 +851,7 @@ const U = {
   // o nome completo do perfil polui o cabeçalho do cartão.
   perfilCurto(id){
     return ({ RC:'RC · Comercial', ADM_UBS:'UBS', COORD_FIN:'Financeiro',
-              COORD_LOG:'Logística', OPERACOES:'Comercial ADM',
+              COORD_LOG:'Logística', OPERACOES:'Operações de Negócio',
               COMERCIAL_ADM:'Administrador' })[id] || U.perfilNome(id);
   },
   initials(name){ if(!name) return '--'; const parts = name.trim().split(' '); return (parts[0][0] + (parts[1]? parts[1][0]:'')).toUpperCase(); },
@@ -1065,6 +1065,19 @@ const Data = {
         origem_perfil: STATE.currentProfile, origem_usuario: STATE.currentUser ? STATE.currentUser.id : null,
       });
     }catch(e){ console.warn('[VerOS Flow] Falha ao notificar usuário:', e); }
+  },
+
+  // Notifica só os usuários ADM_UBS da MESMA unidade do pedido — nunca o
+  // perfil inteiro. Sem isso, um pedido de Buritis notificava também o
+  // ADM_UBS de Formosa, que não tem visibilidade sobre aquele pedido e não
+  // conseguia abri-lo.
+  async notificarUBSDaUnidade(solicitacaoId, unidadeId, titulo, texto, tipo){
+    const destinatarios = (DB.usuarios||[]).filter(u => u.perfil === 'ADM_UBS' && u.unidade === unidadeId && u.status === 'Ativo');
+    if(!destinatarios.length){
+      console.warn('[VerOS Flow] Nenhum usuário ADM_UBS ativo para a unidade', unidadeId);
+      return;
+    }
+    await Promise.all(destinatarios.map(u => Data.notificarUsuario(solicitacaoId, u.id, titulo, texto, tipo)));
   },
 
   async marcarNotificacaoLida(id){
@@ -1328,7 +1341,8 @@ const Data = {
     await Data.logAcao(sol.id, 'Pedido registrado', '—', payload.cliente);
 
     // Substitui o "Comunicar UBS" que antes era feito por e-mail.
-    await Data.notificar(sol.id, 'ADM_UBS', 'Novo pedido para consulta de estoque',
+    // Só a UBS da UNIDADE do pedido é notificada — não o perfil inteiro.
+    await Data.notificarUBSDaUnidade(sol.id, payload.unidade, 'Novo pedido para consulta de estoque',
       `${ref} — ${payload.quantidade} sc. Informe estoque e prazos.`);
     if(payload.solicitaCredito){
       await Data.notificar(sol.id, 'COORD_FIN', 'Nova análise de crédito',
@@ -1447,7 +1461,7 @@ const Data = {
     const nomeNova = U.unidadeNome(novaUnidadeId);
     await Data.addTimeline(solId, `Pedido reencaminhado para outra unidade — ${U.unidadeNome(unidadeAnterior)} → ${nomeNova}`);
     await Data.logAcao(solId, 'Unidade', U.unidadeNome(unidadeAnterior), nomeNova);
-    await Data.notificar(solId, 'ADM_UBS', 'Novo pedido para consulta de estoque',
+    await Data.notificarUBSDaUnidade(solId, novaUnidadeId, 'Novo pedido para consulta de estoque',
       `${Data.ref(solAntes)} — reencaminhado de outra unidade, sem estoque lá.`);
     return novo;
   },
@@ -1721,7 +1735,7 @@ const FLOW = {
     pedido:'RC', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
     financeiro:'COORD_FIN',
     faturamento:'OPERACOES', logistica:'COORD_LOG', transportadora:'COORD_LOG',
-    carregamento:'COORD_LOG', entrega:'COORD_LOG', pagamento:'COORD_FIN',
+    carregamento:'ADM_UBS', entrega:'COORD_LOG', pagamento:'COORD_FIN',
   },
 
   async definirEstoque(sol, resultado, prazos){
@@ -1809,7 +1823,7 @@ const FLOW = {
     const map = {
       admUbs:'ADM_UBS', estoque:'ADM_UBS', tratamento:'ADM_UBS', lotes:'ADM_UBS',
       financeiro:'COORD_FIN',
-      logistica:'COORD_LOG', transportadora:'COORD_LOG', carregamento:'COORD_LOG',
+      logistica:'COORD_LOG', transportadora:'COORD_LOG', carregamento:'ADM_UBS',
       faturamento:'OPERACOES', pedido:'RC',
       // Pagamento (pós-venda): só Financeiro e Administrador.
       pagamento:'COORD_FIN',
@@ -2646,13 +2660,13 @@ const Render = {
 
           <!-- 6. COMERCIAL ADM — SAP -->
           <div class="stage-block ${sol.pedidoSap?'done':''} ${(!can('faturamento'))?'locked':''}">
-            <h4>${Ic('fileText',15)} Comercial ADM · Pedido no SAP ${dono('OPERACOES')}</h4>
+            <h4>${Ic('fileText',15)} Operações de Negócio · Pedido no SAP ${dono('OPERACOES')}</h4>
             ${sol.pedidoSap ? `
               <div class="info-list"><div class="it"><b>Pedido SAP</b><span>${U.esc(sol.pedidoSap)}</span></div></div>
             ` : !FLOW.creditoLiberado(sol) ? `<span class="lock-note">Disponível assim que o crédito for aprovado — segue em paralelo com o frete, sem aprovação do RC.</span>`
               : can('faturamento') ? `
               <button class="btn btn-primary btn-sm" onclick="Render.abrirSapModal('${sol.id}')">Imputar pedido no SAP</button>
-            ` : `<span class="lock-note">Aguardando o Comercial ADM imputar no SAP.</span>`}
+            ` : `<span class="lock-note">Aguardando Operações de Negócio imputar no SAP.</span>`}
           </div>
 
           <!-- 8. TRANSPORTADORA — ÚNICO E-MAIL -->
@@ -2681,7 +2695,7 @@ const Render = {
 
           <!-- 9. CARREGAMENTO -->
           <div class="stage-block ${(sol.carregamento&&sol.carregamento.carregadoEm)?'done':''} ${(!can('carregamento'))?'locked':''}">
-            <h4>${Ic('truck',15)} Logística · Receber e carregar caminhão ${dono('COORD_LOG')}</h4>
+            <h4>${Ic('truck',15)} UBS · Receber e carregar caminhão ${dono('ADM_UBS')}</h4>
             ${sol.carregamento && (sol.carregamento.chegadaEm||sol.carregamento.carregadoEm) ? `
               <div class="info-list">
                 <div class="it"><b>Placa</b><span>${U.esc(sol.carregamento.placa)||'—'}</span></div>
@@ -2694,13 +2708,13 @@ const Render = {
                 ${!(sol.carregamento&&sol.carregamento.chegadaEm)?`<button class="btn btn-secondary btn-sm" onclick="Render.abrirCarregamentoModal('${sol.id}')">Registrar chegada do caminhão</button>`:''}
                 ${(sol.carregamento&&sol.carregamento.chegadaEm&&!sol.carregamento.carregadoEm)?`<button class="btn btn-primary btn-sm" onclick="Render.marcarCarregadoAction('${sol.id}')">Caminhão carregado · solicitar faturamento</button>`:''}
                 ${(sol.faturamento&&sol.faturamento.concluido&&!(sol.carregamento&&sol.carregamento.liberadoEm))?`<button class="btn btn-primary btn-sm" onclick="Render.liberarCaminhaoAction('${sol.id}')">Liberar caminhão</button>`:''}
-              </div>` : `<span class="lock-note">Controle de pátio conduzido pela Logística.</span>`}
+              </div>` : `<span class="lock-note">Controle de pátio conduzido pela UBS.</span>`}
             ${sol.carregamento&&sol.carregamento.liberadoEm?`<div style="margin-top:8px;"><span class="status-pill on">Caminhão liberado em ${U.fmtDateTime(sol.carregamento.liberadoEm)}</span></div>`:''}
           </div>
 
           <!-- 10. FATURAMENTO -->
           <div class="stage-block ${(sol.faturamento&&sol.faturamento.concluido)?'done':''} ${(!can('faturamento'))?'locked':''}">
-            <h4>${Ic('fileText',15)} Comercial ADM · Faturar pedido ${dono('OPERACOES')}</h4>
+            <h4>${Ic('fileText',15)} Operações de Negócio · Faturar pedido ${dono('OPERACOES')}</h4>
             ${sol.faturamento && sol.faturamento.concluido ? `
               <div class="info-list">
                 <div class="it"><b>Número da NF</b><span>${U.esc(sol.faturamento.numeroNF)}</span></div>
@@ -2715,7 +2729,7 @@ const Render = {
 
           <!-- 11. ENTREGA -->
           <div class="stage-block ${(sol.logistica&&sol.logistica.statusEntrega==='Entregue')?'done':''} ${(!can('logistica'))?'locked':''}">
-            <h4>${Ic('check',15)} Cliente · Recebimento ${dono('COORD_LOG')}</h4>
+            <h4>${Ic('check',15)} Logística · Recebimento ${dono('COORD_LOG')}</h4>
             ${sol.logistica && sol.logistica.statusEntrega==='Entregue' ? `
               <div class="info-list">
                 <div class="it"><b>Entregue em</b><span>${U.fmtDate(sol.logistica.dataEntrega)}</span></div>
@@ -2804,7 +2818,7 @@ const Render = {
       <div class="card card-pad" style="max-width:860px;">
         <div class="section-title">Mensagens do pedido</div>
         <p style="font-size:12.5px;color:var(--v-ink-500);margin-bottom:14px;">
-          Substitui o WhatsApp e as respostas por e-mail entre Comercial, UBS, Financeiro, Logística e Comercial ADM.
+          Substitui o WhatsApp e as respostas por e-mail entre Comercial, UBS, Financeiro, Logística e Operações de Negócio.
           Quem for marcado recebe uma notificação dentro do sistema.
         </p>
         ${msgs.length ? `<div class="msg-thread">
@@ -2833,7 +2847,7 @@ const Render = {
               <option value="ADM_UBS">UBS</option>
               <option value="COORD_FIN">Financeiro</option>
               <option value="COORD_LOG">Logística</option>
-              <option value="OPERACOES">Comercial ADM</option>
+              <option value="OPERACOES">Operações de Negócio</option>
             </select>
             <label class="btn btn-ghost btn-sm" style="margin:0;">
               ${Ic('paperclip',13)} Anexo
@@ -3049,7 +3063,7 @@ const Render = {
             germinacao: Number(document.getElementById('l_germ').value)||null,
             observacoes: document.getElementById('l_obs').value||null,
           });
-          Modal.close(); App.toast('Lote registrado','Comercial ADM e RC foram notificados.','ok'); Render.detail();
+          Modal.close(); App.toast('Lote registrado','Operações de Negócio e RC foram notificados.','ok'); Render.detail();
         }catch(err){ App.toast('Erro ao registrar', err.message||'Tente novamente.','err'); }
       }},
     ]);
@@ -3320,7 +3334,7 @@ Produtiva Sementes`;
   async marcarCarregadoAction(id){
     try{
       await FLOW.salvarCarregamento(DB.solicitacoes.find(s=>s.id===id), { carregado:true });
-      App.toast('Caminhão carregado','Solicitação de faturamento enviada ao Comercial ADM.','ok'); Render.detail();
+      App.toast('Caminhão carregado','Solicitação de faturamento enviada a Operações de Negócio.','ok'); Render.detail();
     }catch(err){ App.toast('Erro', err.message||'Tente novamente.','err'); }
   },
 
@@ -3551,10 +3565,12 @@ Produtiva Sementes`;
         if(!(s.logistica && s.logistica.transportadora)) add('Registrar cotação de frete');
         else if(FLOW.creditoLiberado(s) && !s.logistica.contratado) add('Contratar frete');
         else if(s.logistica.contratado && !(s.logistica && s.logistica.emailEnviadoEm)) add('Acionar transportadora por e-mail');
-        else if(s.logistica && s.logistica.liberacaoConfirmada && !(s.carregamento && s.carregamento.chegadaEm)) add('Registrar chegada do caminhão');
+        else if(s.carregamento && s.carregamento.liberadoEm && s.logistica.statusEntrega!=='Entregue') add('Confirmar entrega');
+      }
+      if(perfil==='ADM_UBS' || perfil==='COMERCIAL_ADM'){
+        if(s.logistica && s.logistica.liberacaoConfirmada && !(s.carregamento && s.carregamento.chegadaEm)) add('Registrar chegada do caminhão');
         else if(s.carregamento && s.carregamento.chegadaEm && !s.carregamento.carregadoEm) add('Confirmar carregamento');
         else if(s.faturamento && s.faturamento.concluido && !(s.carregamento && s.carregamento.liberadoEm)) add('Liberar caminhão');
-        else if(s.carregamento && s.carregamento.liberadoEm && s.logistica.statusEntrega!=='Entregue') add('Confirmar entrega');
       }
       if(perfil==='OPERACOES' || perfil==='COMERCIAL_ADM'){
         if(FLOW.creditoLiberado(s) && !s.pedidoSap) add('Imputar pedido no SAP');
